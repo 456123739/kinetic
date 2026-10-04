@@ -1,0 +1,37 @@
+# eclipse
+bin
+*.launch
+.settings
+.metadata
+.classpath
+.project
+.profileconfig.json
+
+# idea
+out
+*.ipr
+*.iws
+*.iml
+.idea
+
+# gradle
+build
+.gradle
+/local.properties
+
+# native
+/src/main/resources/META-INF/native/*
+
+# other
+eclipse
+/run
+/logs
+__pycache__
+/.codegraph
+/.gitnexus/
+
+# Files from Forge MDK
+forge*changelog.txt
+
+# dark past
+hs_err_pid*

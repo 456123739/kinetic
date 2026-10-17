@@ -41,7 +41,7 @@
 
 ## 推送源码仓库
 
-源码仓库是 `456123739/ysm`（private，默认分支 `main`）。
+源码仓库是 `456123739/kinetic`（private，默认分支 `main`）；改名前叫 `ysm`，GitHub 会自动重定向旧地址。
 
 本机全局 git 配置里有一条 `url.<代理>.insteadOf https://github.com/` 规则，会把所有 GitHub URL
 改写到代理；该代理由此在 `git push` 这类大 POST 上返回 **429**。可用的做法是绕开它、走工作区的
@@ -52,7 +52,7 @@ nohup python3 tools/gh-tunnel.py 18443 &
 PROXY_PREFIX='https://gitproxy.mrhjx.cn/https://github.com/'
 git config --global --unset "url.${PROXY_PREFIX}.insteadof"
 git -c http.proxy=http://127.0.0.1:18443 -c http.version=HTTP/1.1 \
-    push https://github.com/456123739/ysm.git main
+    push https://github.com/456123739/kinetic.git main
 git config --global --add "url.${PROXY_PREFIX}.insteadof" "https://github.com/"   # 记得恢复
 ```
 

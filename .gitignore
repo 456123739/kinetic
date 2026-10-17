@@ -19,8 +19,7 @@ build
 .gradle
 /local.properties
 
-# native
-/src/main/resources/META-INF/native/*
+# native：随源码一起提交（构建与发布都直接取这两份产物）
 
 # other
 eclipse

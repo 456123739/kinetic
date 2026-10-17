@@ -1,0 +1,23 @@
+package com.kinetic.client.animation.molang.functions;
+
+import com.kinetic.geckolib3.core.molang.context.IContext;
+import com.kinetic.geckolib3.core.molang.function.ContextFunction;
+import com.kinetic.molang.runtime.ExecutionContext;
+
+public class ResetController extends ContextFunction<Object> {
+    @Override
+    protected Object eval(ExecutionContext<IContext<Object>> ctx, ArgumentCollection arguments) {
+        var controller = ctx.entity().animationEvent().getCodedController();
+        if (controller == null) {
+            return null;
+        }
+
+        controller.reset();
+        return null;
+    }
+
+    @Override
+    public boolean validateArgumentSize(int size) {
+        return size == 0;
+    }
+}

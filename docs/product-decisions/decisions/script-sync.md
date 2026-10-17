@@ -1,7 +1,7 @@
 # script-sync
 
 - Requirement: [REQ.bounded-model-distribution](../requirements/req-bounded-model-distribution.md#reqbounded-model-distribution)
-- Select: roaming 累积状态、ysm.sync 瞬时事件
+- Select: roaming 累积状态、kinetic.sync 瞬时事件
 - Needs:
   - 同步范围与漂移: [DD.tracking-scopes-state-sync](player-state-sync.md#ddtracking-scopes-state-sync)
   - 服务端校验: [DD.validate-client-before-effect](trust-boundaries.md#ddvalidate-client-before-effect)
@@ -16,7 +16,7 @@
 
 ### BC.script-sync-goes-through-server
 
-- Claim: 联机时 LocalPlayer 通过 `ysm.sync` 上报瞬时事件及其数据，服务端验证后向相关客户端尽力转发；该函数不承担累积状态保存或向新追踪者补发旧事件的义务。
+- Claim: 联机时 LocalPlayer 通过 `kinetic.sync` 上报瞬时事件及其数据，服务端验证后向相关客户端尽力转发；该函数不承担累积状态保存或向新追踪者补发旧事件的义务。
 
 ### BC.roaming-carries-accumulated-state
 
@@ -24,4 +24,4 @@
 
 ### BC.creator-defines-synchronized-state
 
-- Claim: 累积状态的设计、划分及 roaming 与 `ysm.sync` 的选择由模型创作者负责；YSM 不自动识别哪些脚本结果需要保存，也不承诺恢复创作者未声明的状态。
+- Claim: 累积状态的设计、划分及 roaming 与 `kinetic.sync` 的选择由模型创作者负责；KINETIC 不自动识别哪些脚本结果需要保存，也不承诺恢复创作者未声明的状态。

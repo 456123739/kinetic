@@ -6,7 +6,7 @@ PG = 产品目标；SCN = 场景；CON = 跨域约束。业务正文仅在此定
 
 ### PG.model-replacement
 
-- Claim: YSM 显式替换原版模型与动画系统以增强视觉表现，覆盖玩家、投射物和载具，并接受这项系统替换对相关内容造成的兼容损失。
+- Claim: KINETIC 显式替换原版模型与动画系统以增强视觉表现，覆盖玩家、投射物和载具，并接受这项系统替换对相关内容造成的兼容损失。
 
 ### PG.creator-controlled-content
 
@@ -18,7 +18,7 @@ PG = 产品目标；SCN = 场景；CON = 跨域约束。业务正文仅在此定
 
 ### PG.preserve-host-gameplay
 
-- Claim: YSM 的正常使用不损害游戏进程、主逻辑、整体画面、数据一致性及无关原版或其他模组内容。
+- Claim: KINETIC 的正常使用不损害游戏进程、主逻辑、整体画面、数据一致性及无关原版或其他模组内容。
 
 ### PG.maintainable-open-mainline
 
@@ -26,7 +26,7 @@ PG = 产品目标；SCN = 场景；CON = 跨域约束。业务正文仅在此定
 
 ### PG.compose-mod-presentation
 
-- Claim: YSM 通过与武器、装备、饰品及渲染模组联动，尽可能补回系统替换造成的相关内容损失，并接纳明确的新增表现能力，同时保持各自的玩法职责。
+- Claim: KINETIC 通过与武器、装备、饰品及渲染模组联动，尽可能补回系统替换造成的相关内容损失，并接纳明确的新增表现能力，同时保持各自的玩法职责。
 
 ## Scenarios
 

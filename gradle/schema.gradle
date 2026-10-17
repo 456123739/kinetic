@@ -1,5 +1,5 @@
 def generatedProtobufDir = layout.buildDirectory.dir('generated/source/proto/main')
-def generatedProtobufDescriptor = layout.buildDirectory.file('generated/descriptors/ysm-main.pb')
+def generatedProtobufDescriptor = layout.buildDirectory.file('generated/descriptors/kinetic-main.pb')
 
 protobuf {
     protoc {
@@ -7,7 +7,7 @@ protobuf {
     }
     plugins {
         quickbuf {
-            artifact = 'libs:protoc-gen-quickbuf:1.4.1-ysm:shaded@jar'
+            artifact = 'libs:protoc-gen-quickbuf:1.4.1-kinetic:shaded@jar'
         }
     }
     generateProtoTasks {
@@ -17,8 +17,8 @@ protobuf {
             }
             task.plugins {
                 quickbuf {
-                    option "replace_package=ysm=com.elfmcys.ysm.proto"
-                    option "replace_package=^mixel=com.elfmcys.ysm.proto.mixel"
+                    option "replace_package=kinetic=com.kinetic.proto"
+                    option "replace_package=^mixel=com.kinetic.proto.mixel"
                     option 'indent=4'
                 }
             }
@@ -49,7 +49,7 @@ tasks.named('processTestResources') {
     dependsOn tasks.named('generateProto')
     from(generatedProtobufDescriptor) {
         into 'proto'
-        rename { 'ysm-main.pb' }
+        rename { 'kinetic-main.pb' }
     }
 }
 

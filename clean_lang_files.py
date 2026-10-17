@@ -72,7 +72,7 @@ def clean_language_file(en_data, lang_data, lang_name):
 def main():
     """主函数"""
     # 设置语言文件目录
-    lang_dir = Path("src/main/resources/assets/yes_steve_model/lang")
+    lang_dir = Path("src/main/resources/assets/kinetic/lang")
 
     if not lang_dir.exists():
         print(f"错误：语言文件目录不存在: {lang_dir}")

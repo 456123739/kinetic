@@ -1,6 +1,6 @@
 # REQ.integrate-mod-content
 
-- Claim: 通过联动尽可能恢复因 YSM 系统替换而失效的其他模组关联内容，并让兼容组合使用外部装备、动作、状态查询和高级材质能力。
+- Claim: 通过联动尽可能恢复因 KINETIC 系统替换而失效的其他模组关联内容，并让兼容组合使用外部装备、动作、状态查询和高级材质能力。
 - Decision-status: Complete
 - Motivation: [PG.compose-mod-presentation](../shared.md#pgcompose-mod-presentation); [SCN.replacement-breaks-dependent-content](../shared.md#scnreplacement-breaks-dependent-content)
 - Constraints: [CON.normal-use-isolation](../shared.md#connormal-use-isolation); [CON.visual-only-scope](../shared.md#convisual-only-scope)

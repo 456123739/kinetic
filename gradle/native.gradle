@@ -1,7 +1,7 @@
-def ysmNativeEnvironment = 'YSM_NATIVE_PATH'
-def ysmNativeProperty = 'ysm.native_path'
-def localPropertiesFile = ysmLocalPropertiesFile
-def localProperties = ysmLocalProperties
+def kineticNativeEnvironment = 'KINETIC_NATIVE_PATH'
+def kineticNativeProperty = 'kinetic.native_path'
+def localPropertiesFile = kineticLocalPropertiesFile
+def localProperties = kineticLocalProperties
 
 def validateNativeLibraryPath = { String value, String source ->
     java.nio.file.Path path
@@ -23,27 +23,27 @@ def validateNativeLibraryPath = { String value, String source ->
 }
 
 def nativeLibraryPath = providers.provider {
-    def environmentValue = providers.environmentVariable(ysmNativeEnvironment).orNull
+    def environmentValue = providers.environmentVariable(kineticNativeEnvironment).orNull
     if (environmentValue != null && !environmentValue.isBlank()) {
-        return validateNativeLibraryPath(environmentValue.trim(), ysmNativeEnvironment)
+        return validateNativeLibraryPath(environmentValue.trim(), kineticNativeEnvironment)
     }
 
-    def propertyValue = localProperties.getProperty(ysmNativeProperty)
+    def propertyValue = localProperties.getProperty(kineticNativeProperty)
     if (propertyValue != null && !propertyValue.isBlank()) {
         return validateNativeLibraryPath(propertyValue.trim(),
-                "${localPropertiesFile.name}:${ysmNativeProperty}")
+                "${localPropertiesFile.name}:${kineticNativeProperty}")
     }
 
     def osName = System.getProperty('os.name').toLowerCase(Locale.ROOT)
     String libraryName
     if (osName.contains('win')) {
-        libraryName = 'ysm.dll'
+        libraryName = 'kinetic.dll'
     } else if (osName.contains('linux')) {
-        libraryName = 'libysm.so'
+        libraryName = 'libkinetic.so'
     } else if (osName.contains('mac') || osName.contains('darwin')) {
-        libraryName = 'libysm.dylib'
+        libraryName = 'libkinetic.dylib'
     } else {
-        throw new GradleException("Unsupported operating system for YSM native library: ${System.getProperty('os.name')}")
+        throw new GradleException("Unsupported operating system for KINETIC native library: ${System.getProperty('os.name')}")
     }
 
     def resourcePath = layout.projectDirectory
@@ -54,24 +54,24 @@ def nativeLibraryPath = providers.provider {
     }
 
     throw new GradleException(
-            "YSM native library is not configured. Set ${ysmNativeEnvironment}, " +
-                    "set ${ysmNativeProperty} in ${localPropertiesFile.name}, " +
+            "KINETIC native library is not configured. Set ${kineticNativeEnvironment}, " +
+                    "set ${kineticNativeProperty} in ${localPropertiesFile.name}, " +
                     "or provide ${resourcePath}.")
 }
 
-ext.ysmNativeLibraryPath = nativeLibraryPath
+ext.kineticNativeLibraryPath = nativeLibraryPath
 def nativeLibraryFile = layout.file(nativeLibraryPath.map { path -> new File(path) })
-ext.ysmNativeLibraryFile = nativeLibraryFile
+ext.kineticNativeLibraryFile = nativeLibraryFile
 
 legacyForge.runs.configureEach {
-    environment.put(ysmNativeEnvironment, nativeLibraryPath)
+    environment.put(kineticNativeEnvironment, nativeLibraryPath)
 }
 
 tasks.withType(Test).configureEach {
     inputs.file(nativeLibraryFile)
-            .withPropertyName('ysmNativeLibrary')
+            .withPropertyName('kineticNativeLibrary')
             .withPathSensitivity(PathSensitivity.NONE)
     doFirst {
-        environment ysmNativeEnvironment, nativeLibraryPath.get()
+        environment kineticNativeEnvironment, nativeLibraryPath.get()
     }
 }

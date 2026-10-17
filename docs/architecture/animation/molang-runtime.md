@@ -1,6 +1,6 @@
 # Molang 运行时
 
-Molang 是 YSM 的 authoring/import language，也是正式模型内的运行时表示：容器把每个 execution 字段编码为 `mixel.common.Program` 信封，本工程只写、也只读 `format = 0` + `source`，加载期由 in-Java 解释器把 `source` 解析成 AST，求值期直接在 AST 上遍历。`Program` 的 oneof 另有 `bytecode`（field 2）分支，它保留给已移除的 AOT 引擎：本工程从不生产也不消费，因此当前不存在第二套执行语言，也没有转译产物、artifact store、host ABI 或 interpreter fallback，也没有为兼容旧机制保留的执行分支。lexer、parser 与 `ExpressionEvaluator` 在 `com.elfmcys.ysm.molang`，binding、context 与变量存储在 `com.elfmcys.ysm.geckolib3.core.molang`，YSM 自己的 binding、函数与 roaming struct 在 `com.elfmcys.ysm.client.animation.molang`。
+Molang 是 KINETIC 的 authoring/import language，也是正式模型内的运行时表示：容器把每个 execution 字段编码为 `mixel.common.Program` 信封，本工程只写、也只读 `format = 0` + `source`，加载期由 in-Java 解释器把 `source` 解析成 AST，求值期直接在 AST 上遍历。`Program` 的 oneof 另有 `bytecode`（field 2）分支，它保留给已移除的 AOT 引擎：本工程从不生产也不消费，因此当前不存在第二套执行语言，也没有转译产物、artifact store、host ABI 或 interpreter fallback，也没有为兼容旧机制保留的执行分支。lexer、parser 与 `ExpressionEvaluator` 在 `com.kinetic.molang`，binding、context 与变量存储在 `com.kinetic.geckolib3.core.molang`，KINETIC 自己的 binding、函数与 roaming struct 在 `com.kinetic.client.animation.molang`。
 
 ## 源码、解析与缓存
 
@@ -19,7 +19,7 @@ Molang 是 YSM 的 authoring/import language，也是正式模型内的运行时
 
 模型内容的解析只发生在加载期。`ModelRenderTargetLoader` 与 `AnimationProtoMapper` 为一次加载租用 `CustomMolangParser` 的 `MolangParser` 实例，把每个位置的 `Program.source`（literal 分量走 `ExpressionValue.num`）解析为 `IValue`，解析结果随 render target 资源一起保留：`MolangValue` 持有 `List<Expression>`，`Animation` 与 controller state 持有这些 `IValue`，`CommonAsset` 持有用户函数表与事件 handler 表。求值期只遍历这些 AST，不重新解析源文本。
 
-`CustomMolangParser` 用 `ConcurrentLinkedQueue` 池化 `MolangParser`，归还时 `reset()` 清空 scoped/transient 状态，避免为每个模型重建 parser 与 binding 集合。`MolangEngine.fromCustomBinding` 是解析入口，`PrimaryBinding` 在每次创建 parser 时装配全部根 binding。根名称与它的第一个 `.` 成员在解析期就解析成具体对象（`math.sqrt`、`ysm.bone_rot`、`v.xxx`），更后面的 `.` 变成 `StructAccessExpression`，求值期按 pooled 句柄访问结构体，因此热路径不按名称查找 binding。名称在解析期注册进进程级 `StringPool` 并只以 int 句柄参与后续访问；该表只增不删，长会话下的规模没有单独测量。
+`CustomMolangParser` 用 `ConcurrentLinkedQueue` 池化 `MolangParser`，归还时 `reset()` 清空 scoped/transient 状态，避免为每个模型重建 parser 与 binding 集合。`MolangEngine.fromCustomBinding` 是解析入口，`PrimaryBinding` 在每次创建 parser 时装配全部根 binding。根名称与它的第一个 `.` 成员在解析期就解析成具体对象（`math.sqrt`、`kinetic.bone_rot`、`v.xxx`），更后面的 `.` 变成 `StructAccessExpression`，求值期按 pooled 句柄访问结构体，因此热路径不按名称查找 binding。名称在解析期注册进进程级 `StringPool` 并只以 int 句柄参与后续访问；该表只增不删，长会话下的规模没有单独测量。
 
 `BuiltinModelMaterializer.bindCommonStrings` 在 builtin 模型物化时把所有内建用户函数走一遍解析并丢弃结果；由于 `parseExpression` 会吞掉解析失败，这一步不构成内容校验。
 
@@ -49,7 +49,8 @@ flowchart LR
 |---|---|---|
 | `math` | `MathBinding` | 内建数学函数 |
 | `query` / `q` | `QueryBinding` | Minecraft query，值按当前 context 直接读取 |
-| `ysm` | `YSMBinding` | YSM 自有函数、变量与效果入口；可选模组 binding 在自己的 compat 类注册 |
+| `kinetic` | `KineticBinding` | KINETIC 自有函数、变量与效果入口；可选模组 binding 在自己的 compat 类注册 |
+| `ysm` | `KineticBinding` | **兼容别名**，与上一行指向同一个 binding。改名前的模型内容写的是 `ysm.*`，没有它就整段表达式解析失败 |
 | `ctrl` | `CtrlBinding` | coded controller 状态与语义槽判定 |
 | `tlm` | `TLMBinding` | 女仆联动的可选 binding，未安装时仍存在以保证动画不报错 |
 | `fn` | `UserFunctionBinding` | 用户函数按名调用；每个 parser 实例一份，不能单例 |
@@ -61,7 +62,9 @@ flowchart LR
 
 值本身带类型校验：`EntityVariable`、`LivingEntityVariable`、`PlayerVariable`、`LocalPlayerVariable`、`ProjectileVariable` 等只在当前 `IContext.entity()` 是相应类型时求值，否则返回 `null`；`ContextFunction` 同理。`MolangContext.createChild` 在变量指向另一个对象（如投射物 owner）时构造子 context，使 query 继续读对应实体的数据。嵌套用户函数调用与 `t` 槽共用 `StackMemory`，栈深上限 `32`，超限时 `callUserFunction` 返回 `null`。
 
-`allowEmitting` 是 context 上的效果门禁，由调用方在求值前后设置：事件 handler、instruction keyframe、controller on-entry/on-exit、coded controller predicate 与显式命令传入 `true`，其余观察性遍历保持 `false`。粒子、音效、骨骼着色/发光/透明与 `ysm.sync`、`ysm.defer` 都先检查它，为假时直接返回 `null`。它只覆盖这些效果入口，不覆盖 `ysm.set_animation`、`ysm.reset_controller` 这类直接改 controller 状态的函数，也不构成事务。
+`ysm` 只是同一个根名的第二种拼写，不引入第二套语义、不额外持有状态；新内容写 `kinetic.*`，旧内容写 `ysm.*`，两者求值结果完全相同。两者都在保留字表里，脚本不能拿它们做变量名。
+
+`allowEmitting` 是 context 上的效果门禁，由调用方在求值前后设置：事件 handler、instruction keyframe、controller on-entry/on-exit、coded controller predicate 与显式命令传入 `true`，其余观察性遍历保持 `false`。粒子、音效、骨骼着色/发光/透明与 `kinetic.sync`、`kinetic.defer` 都先检查它，为假时直接返回 `null`。它只覆盖这些效果入口，不覆盖 `kinetic.set_animation`、`kinetic.reset_controller` 这类直接改 controller 状态的函数，也不构成事务。
 
 `v` 变量的存储是 entity 自己的 `MolangMemory`：`AnimationProcessor.clearModel()` 调 `MolangMemory.initialize(null)` 清空 scoped 表，其中的 roaming struct 引用随之丢失，由下一帧的 `putRemoteStruct` 重新写入；`IForeignVariableStorage` 指向同一份 scoped 存储，供 compat 读写模型变量。
 
@@ -73,8 +76,8 @@ flowchart LR
 |---|---|---|
 | `player_init` | `CustomHumanoidEntity.preAnimationSetup`，每次装载 geo model 后触发一次，无参数 | 以 pre 任务入队，`allowEmitting = true` |
 | `player_update` | 同处每个更新帧，第 0 个参数是本次是否推进的 bool | 以 pre 任务入队，`allowEmitting = true` |
-| `sync` | `ysm.sync(...)`：本地玩家在远端通道存在时发 `emitMolangSync`，否则回调 `molangSync` 本地触发本模型 handler | 单次调用参数上限 `16`，以 post 任务入队 |
-| `defer` | `ysm.defer(name, ...)`：第 0 个参数只用于非空判断、不参与分发，其余已求值参数被拷贝进当前 `AnimationContext` 的缓冲 | 在 `AnimationContext.reset` 时按捕获顺序**逆序**排空，每个 handler 调用期间 `allowEmitting = true` |
+| `sync` | `kinetic.sync(...)`：本地玩家在远端通道存在时发 `emitMolangSync`，否则回调 `molangSync` 本地触发本模型 handler | 单次调用参数上限 `16`，以 post 任务入队 |
+| `defer` | `kinetic.defer(name, ...)`：第 0 个参数只用于非空判断、不参与分发，其余已求值参数被拷贝进当前 `AnimationContext` 的缓冲 | 在 `AnimationContext.reset` 时按捕获顺序**逆序**排空，每个 handler 调用期间 `allowEmitting = true` |
 | coded controller override | `CodedAnimationController.updateModel` 把 controller 名中的 `.` 替换为 `_ctrl_` 后取出该事件下的首个 handler 作为 predicate | 求值期间 `allowEmitting = true`；结果精确为 `2`/`3`/`4` 时覆盖为继续/停止/暂停，其余值（含 `5`）与 handler 缺失都委托 Java predicate |
 
 handler 的实际调用走 `MolangEventWrapper.wrap(...)`：它把 handler 列表包成一个 `IValue`，在求值时交给 `IContext.callUserFunction`，由 `StackMemory` 压入参数视图再求值。`defer` 是唯一跨调用保留参数的事件；它保存的是求值后的参数对象，不做有限数校验，也没有显式项数上限，缓冲数组随 animation player 复用，`AnimationContext.reset` 只把计数归零。排空时机绑定在 controller/player 的 `finalizeAnimationContext`（on-exit/on-entry、状态切换、循环重置）上，而 effect 在排空时立即生效，没有后续提交点。
@@ -130,7 +133,7 @@ Roaming 变量是跨玩家可见的模型自定义状态，所有权分三层：
 - `loop`/`for_each` 的循环次数上限 `1024`（`StandardBindings.MAX_LOOP_ROUND`）。
 - 用户函数与 `t` 槽共用 `StackMemory`，栈深上限 `32`；深层调用返回 `null` 而不是抛错。
 - 函数 arity 在解析期用 `Function.validateArgumentSize` 校验，不合法即 `ParseException`。
-- `ysm.sync` 单次调用参数上限 `16`，上行包同样限制 `16` 且要求所有参数是有限浮点。
+- `kinetic.sync` 单次调用参数上限 `16`，上行包同样限制 `16` 且要求所有参数是有限浮点。
 - Roaming：`LocalRoamingStruct.MAX_SIZE = 64`、`MAX_NAME_LENGTH = 32`，wire 侧另有 `ProtocolLimits.MAX_ROAMING_VARIABLES = 64`。
 - 网络执行入口：源长度上限 `4096`、目标数上限 `1024`（提交 roulette 表达式时同样限制源长度）。
 

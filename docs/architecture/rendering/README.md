@@ -2,7 +2,7 @@
 
 > **适用问题**：几何烘焙、骨骼状态提取、CPU 调度、顶点布局与 Minecraft 提交；**不包含**：动画脚本语义、模型授权和未来 GPU renderer。
 
-本主题描述当前 CPU renderer 的逻辑结构。顶层目标见[渲染系统](../../concepts/rendering.md)；公开模型数据以 [Model Schema](../../standards/model-schema/README.md) 为准。这里的 YSM native `BakedModel`、`ModelState`、`RenderSchedule`、`RenderTask` 和 `VertexKind` 都是内部实现契约，不反向定义模型格式。
+本主题描述当前 CPU renderer 的逻辑结构。顶层目标见[渲染系统](../../concepts/rendering.md)；公开模型数据以 [Model Schema](../../standards/model-schema/README.md) 为准。这里的 KINETIC native `BakedModel`、`ModelState`、`RenderSchedule`、`RenderTask` 和 `VertexKind` 都是内部实现契约，不反向定义模型格式。
 
 ## 责任边界
 
@@ -54,6 +54,7 @@ flowchart TB
 - [Bake、分区与 cache](bake-and-partition.md)：`BakedModel`、切线烘焙、四逻辑分区和 AoSoA。
 - [逐帧状态与调度](frame-execution.md)：extract、可见性、附着点、任务拆分与低延迟同步。
 - [CPU render 与顶点输出](vertex-output.md)：矩阵、剔除、normal / tangent、`RenderType`、`VertexConsumer`、输出区间、透明排序和 SIMD。
+- [受伤外观叠加层](wound-overlay.md)：血量档位、程序化遮罩、纹理生命周期与第二遍提交。
 - [GPU Compute Renderer](../../future/gpu-compute-renderer.md)：尚未实现的 GPU 资源与调度方向。
 - [渲染已知问题](../../status/known-issues/rendering.md)：当前可证实的视觉、失败处理、验证和重入缺口。
 
@@ -61,8 +62,8 @@ flowchart TB
 
 | 要检查的边界 | Java 入口 | Native 入口 |
 |---|---|---|
-| 资源到静态几何 | `natives.render.NativeBakedModel` | `ysm::gfx::bake::BakeModel`、`BakedModel` |
+| 资源到静态几何 | `natives.render.NativeBakedModel` | `kinetic::gfx::bake::BakeModel`、`BakedModel` |
 | 骨骼数组到帧状态 | `GeoModelState`、`natives.render.NativeModelState` | `ModelState::Extract`、`RenderSchedule` |
-| Draw 到输出区间 | `natives.render.NativeRenderer.render()`、`VertexBufferAccessor`、`FallbackVertexWriter` | `ysm::gfx::renderer::Render`、`RenderParameters` |
+| Draw 到输出区间 | `natives.render.NativeRenderer.render()`、`VertexBufferAccessor`、`FallbackVertexWriter` | `kinetic::gfx::renderer::Render`、`RenderParameters` |
 
-Java 包名前缀为 `com.elfmcys.ysm`。跨 JNI 保活见[JNI 与内存](../native-runtime/jni-and-memory.md)，可取消绘制窗口见[游戏与扩展接入](../integration/README.md)。
+Java 包名前缀为 `com.kinetic`。跨 JNI 保活见[JNI 与内存](../native-runtime/jni-and-memory.md)，可取消绘制窗口见[游戏与扩展接入](../integration/README.md)。

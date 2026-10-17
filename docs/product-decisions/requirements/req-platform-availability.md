@@ -1,6 +1,6 @@
 # REQ.platform-availability
 
-- Claim: YSM 在明确的系统与 CPU 基线上提供基础可用性，控制分发体积和平台维护成本，并保留高端设备的内容呈现与性能空间。
+- Claim: KINETIC 在明确的系统与 CPU 基线上提供基础可用性，控制分发体积和平台维护成本，并保留高端设备的内容呈现与性能空间。
 - Decision-status: Complete
 - Motivation: [PG.maintainable-open-mainline](../shared.md#pgmaintainable-open-mainline)
 

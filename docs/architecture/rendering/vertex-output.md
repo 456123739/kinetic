@@ -55,6 +55,19 @@ Fallback 中间顶点的 packed normal 从低字节起依次保存 X、Y、Z，�
 
 Direct 路径预留连续区域并只在 native 成功后提交；fallback 也只在成功后回放，不产生部分模型顶点。失败降级缺口见[渲染已知问题](../../status/known-issues/rendering.md)。
 
+### Java 侧背面裁剪开关
+
+`ClientConfig.CullBackFaces`（默认 `false`）把 Java 选择的 `RenderType` 从 `entityCutoutNoCull` 换成 `entityCutout`，作用于 `IGeoRenderer.getRenderType`、`KineticRagdollRenderer.draw` 与 `GunLodHandle.renderType()`。它与 `ForceCutoutRenderer`（透明 vs alpha 裁剪）是两个独立决定，后者不变。
+
+默认关闭，因为 GPU 背面裁剪对 KINETIC 几何几乎没有收益、却有明确代价：
+
+- native 烘焙已经对封闭六面 cube 做过内部剔除：它们进入 culling 分区，每个盒子只发 3 个 quad（`PerformRender<true>` 丢弃背面）。对完整封闭模型，GPU 侧再剔除一次不改变结果。
+- TaCZ 枪包大量使用<b>刻意单面 / 空心</b>的 cube（ak47 617 个方块里 533 个不足 6 面，`eos_helenas_nail` 3053 个里有 3013 个、其中 1504 个只有单面）。native 把这些放进 no-culling 分区并保留正反面；开启 GPU 背面裁剪删掉的正是这些有意双面的面，表现为破洞。
+- 离线几何剔除测试（四个 TaCZ 夹具）：完整封闭模型 `eos_bayonet`（399/399 六面盒）逐像素相同；ak47 丢 169 px、hk416d 丢 26 px、`eos_helenas_nail` 丢 2083 px（LOD 2550 px）。
+- Java 侧没有"只提交被裁剪顶点"的安全路径：`nRender` 只接收 `{context, vertex_kind}`，没有分区选择器；Java 的 `vertexCount` 是输出区间预留量，传裁剪后的计数会触发 native 容量断言。
+
+因此该开关只适合已知完全封闭的模型，默认保持关闭。产品选择（默认关闭、显式启用才放弃不完整块背面）见 [DD.gpu-backface-culling-is-explicit-opt-in](../../product-decisions/decisions/geometry-regions.md#ddgpu-backface-culling-is-explicit-opt-in)；验证缺口见[渲染已知问题](../../status/known-issues/rendering.md#背面裁剪与枪械-lod)。
+
 ## 顶点输出区间与 translucent 排序
 
 最终逻辑布局为：

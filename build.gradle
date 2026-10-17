@@ -31,8 +31,8 @@ apply from: 'gradle/schema.gradle'
 apply from: 'gradle/builtin-index.gradle'
 
 version = mod_version
-group = 'com.elfmcys.ysm'
-archivesBaseName = 'ysm'
+group = 'com.kinetic'
+archivesBaseName = 'kinetic'
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(17)
@@ -75,10 +75,10 @@ legacyForge {
     // accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
 
     mods {
-        ysm {
+        kinetic {
             sourceSet sourceSets.main
         }
-        ysmMockHost {
+        kineticMockHost {
             sourceSet sourceSets.mockHost
         }
     }
@@ -95,29 +95,29 @@ legacyForge {
         client {
             client()
             gameDirectory = project.file('run/client_a')
-            loadedMods = [mods.ysm]
+            loadedMods = [mods.kinetic]
         }
 
         client2 {
             client()
             gameDirectory = project.file('run/client_b')
             programArguments = ["--username", "tartaric_acid"]
-            loadedMods = [mods.ysm]
+            loadedMods = [mods.kinetic]
         }
 
         server {
             server()
             gameDirectory = project.file('run/server')
-            loadedMods = [mods.ysm]
+            loadedMods = [mods.kinetic]
         }
 
         mockHostClientA {
             client()
             sourceSet = sourceSets.mockHost
             gameDirectory = layout.buildDirectory.dir('model-management-mock/unused/client-a')
-            programArguments = ["--username", "YsmHostA",
-                                "--mixin.config", "ysm.mixins.json"]
-            loadedMods = [mods.ysm, mods.ysmMockHost]
+            programArguments = ["--username", "KineticHostA",
+                                "--mixin.config", "kinetic.mixins.json"]
+            loadedMods = [mods.kinetic, mods.kineticMockHost]
             disableIdeRun()
         }
 
@@ -125,9 +125,9 @@ legacyForge {
             client()
             sourceSet = sourceSets.mockHost
             gameDirectory = layout.buildDirectory.dir('model-management-mock/unused/client-b')
-            programArguments = ["--username", "YsmHostB",
-                                "--mixin.config", "ysm.mixins.json"]
-            loadedMods = [mods.ysm, mods.ysmMockHost]
+            programArguments = ["--username", "KineticHostB",
+                                "--mixin.config", "kinetic.mixins.json"]
+            loadedMods = [mods.kinetic, mods.kineticMockHost]
             disableIdeRun()
         }
 
@@ -135,8 +135,8 @@ legacyForge {
             server()
             sourceSet = sourceSets.mockHost
             gameDirectory = layout.buildDirectory.dir('model-management-mock/unused/server')
-            programArguments = ["--mixin.config", "ysm.mixins.json"]
-            loadedMods = [mods.ysm, mods.ysmMockHost]
+            programArguments = ["--mixin.config", "kinetic.mixins.json"]
+            loadedMods = [mods.kinetic, mods.kineticMockHost]
             disableIdeRun()
         }
     }
@@ -145,8 +145,8 @@ legacyForge {
 }
 
 mixin {
-    add sourceSets.main, "ysm.refmap.json"
-    config "ysm.mixins.json"
+    add sourceSets.main, "kinetic.refmap.json"
+    config "kinetic.mixins.json"
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
@@ -215,9 +215,9 @@ configurations {
         canBeConsumed = false
         canBeResolved = true
     }
-    ysmImplementation
-    implementation.extendsFrom ysmImplementation
-    additionalRuntimeClasspath.extendsFrom ysmImplementation
+    kineticImplementation
+    implementation.extendsFrom kineticImplementation
+    additionalRuntimeClasspath.extendsFrom kineticImplementation
 }
 
 def relocateProcessorAsmTask = tasks.register(
@@ -226,9 +226,9 @@ def relocateProcessorAsmTask = tasks.register(
     group = 'build setup'
     description = 'Relocates the ASM implementation embedded for the annotation processor.'
     configurations = [project.configurations.processorAsm]
-    archiveFileName = 'ysm-processor-asm.jar'
+    archiveFileName = 'kinetic-processor-asm.jar'
     destinationDirectory = layout.buildDirectory.dir('processor-libs')
-    relocate 'org.objectweb.asm', 'com.elfmcys.ysm.api.internal.processor.asm'
+    relocate 'org.objectweb.asm', 'com.kinetic.api.internal.processor.asm'
 }
 
 dependencies {
@@ -241,8 +241,8 @@ dependencies {
 
     compileOnly 'org.jetbrains:annotations:26.0.2'
 
-    ysmImplementation files('libs/quickbuf-runtime-1.4.1-ysm.jar')
-    ysmImplementation 'org.jetbrains:annotations:26.0.2'
+    kineticImplementation files('libs/quickbuf-runtime-1.4.1-kinetic.jar')
+    kineticImplementation 'org.jetbrains:annotations:26.0.2'
     implementation 'com.palantir.javapoet:javapoet:0.19.0'
     implementation 'org.yaml:snakeyaml:2.2'
 
@@ -266,6 +266,8 @@ dependencies {
     modCompileOnly 'libs:notenoughanimations-forge:1.6.4-mc1.20'
     modCompileOnly 'libs:oculus_legacy:mc1.20.1-1.6.13'
     modCompileOnly 'libs:oculus:mc1.20.1-1.7.0'
+    // 布娃娃联动：仅编译期，不打包、不硬依赖。缺失时兼容层整体不装载。
+    modCompileOnly 'libs:ragdollified-1.20.1:1.1.1-hotfix-RELEASE'
     collabClientImplementation "curse.maven:embeddium-908741:${embeddium_id}"
 
     // 需要这样写，才能通过编译，并优先运行重锋
@@ -406,7 +408,7 @@ tasks.register('modelManagementMockDomain', Test) {
             throw new GradleException("Default evidence directory escaped build/: ${evidenceRoot}")
         }
 
-        def marker = new File(evidenceRoot, '.ysm-model-management-evidence')
+        def marker = new File(evidenceRoot, '.kinetic-model-management-evidence')
         def underBuild = evidenceRoot.toPath().startsWith(buildRoot.toPath())
         if (evidenceRoot.exists() && evidenceRoot.listFiles()?.length > 0 &&
                 !underBuild && !marker.isFile()) {
@@ -417,14 +419,14 @@ tasks.register('modelManagementMockDomain', Test) {
         delete evidenceRoot
         mkdir evidenceRoot
         java.nio.file.Files.writeString(marker.toPath(), 'model-management-mock\n')
-        systemProperty 'ysm.mock.evidenceRoot', evidenceRoot.absolutePath
-        systemProperty 'ysm.mock.javaRevision', modelManagementMockJavaRevision.get()
-        systemProperty 'ysm.mock.startedAt', java.time.Instant.now().toString()
-        systemProperty 'ysm.mock.implementationRevision',
+        systemProperty 'kinetic.mock.evidenceRoot', evidenceRoot.absolutePath
+        systemProperty 'kinetic.mock.javaRevision', modelManagementMockJavaRevision.get()
+        systemProperty 'kinetic.mock.startedAt', java.time.Instant.now().toString()
+        systemProperty 'kinetic.mock.implementationRevision',
                 modelManagementMockImplementationRevision.toString()
-        systemProperty 'ysm.mock.command',
+        systemProperty 'kinetic.mock.command',
                 "./gradlew modelManagementMockDomain${explicitlyConfigured ? " -PmodelManagementMockEvidenceDir=${evidenceRoot.absolutePath}" : ''}${modelManagementMockIntentionalFailure.get() ? ' -PmodelManagementMockIntentionalFailure=true' : ''}"
-        systemProperty 'ysm.mock.intentionalFailure',
+        systemProperty 'kinetic.mock.intentionalFailure',
                 modelManagementMockIntentionalFailure.get().toString()
     }
 }
@@ -449,7 +451,7 @@ def validateMockEvidenceRoot = { File configured, boolean explicitlyConfigured -
     if (!explicitlyConfigured && !evidenceRoot.toPath().startsWith(buildRoot.toPath())) {
         throw new GradleException("Default evidence directory escaped build/: ${evidenceRoot}")
     }
-    def marker = new File(evidenceRoot, '.ysm-model-management-evidence')
+    def marker = new File(evidenceRoot, '.kinetic-model-management-evidence')
     def underBuild = evidenceRoot.toPath().startsWith(buildRoot.toPath())
     if (evidenceRoot.exists() && evidenceRoot.listFiles()?.length > 0 &&
             !underBuild && !marker.isFile()) {
@@ -472,12 +474,12 @@ tasks.register('verifyMockHostPackaging') {
     inputs.files(productionArchives)
     doLast {
         def forbidden = [
-                'com/elfmcys/ysm/mock/host/',
-                'com/elfmcys/ysm/mock/supervisor/',
-                'com/elfmcys/ysm/mock/evidence/',
-                'com/elfmcys/ysm/mock/classpath/',
-                'com/elfmcys/ysm/network/forge/MockClientEndpoint',
-                'com/elfmcys/ysm/network/forge/MockServerEndpoint',
+                'com/kinetic/mock/host/',
+                'com/kinetic/mock/supervisor/',
+                'com/kinetic/mock/evidence/',
+                'com/kinetic/mock/classpath/',
+                'com/kinetic/network/forge/MockClientEndpoint',
+                'com/kinetic/network/forge/MockServerEndpoint',
                 'log4j2-mock-smoke.xml'
         ]
         productionArchives.get().each { archive ->
@@ -519,9 +521,9 @@ tasks.register('modelManagementMockSupervisorTest', Test) {
     classpath = sourceSets.test.runtimeClasspath
     useJUnitPlatform()
     filter {
-        includeTestsMatching 'com.elfmcys.ysm.mock.supervisor.ProcessSupervisorTest'
-        includeTestsMatching 'com.elfmcys.ysm.mock.supervisor.MockExact100VerifierTest'
-        includeTestsMatching 'com.elfmcys.ysm.mock.supervisor.FinalClosureSupervisorTest'
+        includeTestsMatching 'com.kinetic.mock.supervisor.ProcessSupervisorTest'
+        includeTestsMatching 'com.kinetic.mock.supervisor.MockExact100VerifierTest'
+        includeTestsMatching 'com.kinetic.mock.supervisor.FinalClosureSupervisorTest'
     }
 }
 
@@ -534,7 +536,7 @@ tasks.register('modelManagementMockSmoke', JavaExec) {
     dependsOn tasks.named('modelManagementMockSupervisorTest')
     dependsOn tasks.named('verifyMockHostPackaging')
     classpath = sourceSets.mockSupervisor.runtimeClasspath
-    mainClass = 'com.elfmcys.ysm.mock.supervisor.MockSupervisor'
+    mainClass = 'com.kinetic.mock.supervisor.MockSupervisor'
     outputs.upToDateWhen { false }
 
     doFirst {
@@ -563,7 +565,7 @@ tasks.register('modelManagementMockSmoke', JavaExec) {
         delete evidenceRoot
         mkdir evidenceRoot
         java.nio.file.Files.writeString(
-                new File(evidenceRoot, '.ysm-model-management-evidence').toPath(),
+                new File(evidenceRoot, '.kinetic-model-management-evidence').toPath(),
                 'model-management-mock\n')
 
         def writeClasspath = { String name, FileCollection classpathFiles ->
@@ -603,7 +605,7 @@ tasks.register('modelManagementMockSystem', JavaExec) {
     dependsOn tasks.named('modelManagementMockSupervisorTest')
     dependsOn tasks.named('verifyMockHostPackaging')
     classpath = sourceSets.mockSupervisor.runtimeClasspath
-    mainClass = 'com.elfmcys.ysm.mock.supervisor.MockSupervisor'
+    mainClass = 'com.kinetic.mock.supervisor.MockSupervisor'
     outputs.upToDateWhen { false }
     doFirst {
         if (!modelManagementMockTaskRoot.isPresent()) {
@@ -630,7 +632,7 @@ tasks.register('modelManagementMockSystem', JavaExec) {
         delete evidenceRoot
         mkdir evidenceRoot
         java.nio.file.Files.writeString(
-                new File(evidenceRoot, '.ysm-model-management-evidence').toPath(),
+                new File(evidenceRoot, '.kinetic-model-management-evidence').toPath(),
                 'model-management-mock\n')
         def writeClasspath = { String name, FileCollection classpathFiles ->
             def target = new File(evidenceRoot, name)
@@ -656,7 +658,7 @@ tasks.register('modelManagementMockSystem', JavaExec) {
                  serverEntries.absolutePath,
                  sourceSets.mockClient.output.classesDirs.singleFile.absolutePath,
                  sourceSets.mockServer.output.classesDirs.singleFile.absolutePath,
-                 ysmNativeLibraryPath.get(),
+                 kineticNativeLibraryPath.get(),
                  'full'])
     }
 }
@@ -670,7 +672,7 @@ tasks.register('modelManagementMockExact100', JavaExec) {
     dependsOn tasks.named('modelManagementMockSupervisorTest')
     dependsOn tasks.named('verifyMockHostPackaging')
     classpath = sourceSets.mockSupervisor.runtimeClasspath
-    mainClass = 'com.elfmcys.ysm.mock.supervisor.MockSupervisor'
+    mainClass = 'com.kinetic.mock.supervisor.MockSupervisor'
     outputs.upToDateWhen { false }
     doFirst {
         if (!modelManagementMockTaskRoot.isPresent()) {
@@ -697,7 +699,7 @@ tasks.register('modelManagementMockExact100', JavaExec) {
         delete evidenceRoot
         mkdir evidenceRoot
         java.nio.file.Files.writeString(
-                new File(evidenceRoot, '.ysm-model-management-evidence').toPath(),
+                new File(evidenceRoot, '.kinetic-model-management-evidence').toPath(),
                 'model-management-mock\n')
         def writeClasspath = { String name, FileCollection classpathFiles ->
             def target = new File(evidenceRoot, name)
@@ -723,7 +725,7 @@ tasks.register('modelManagementMockExact100', JavaExec) {
                  serverEntries.absolutePath,
                  sourceSets.mockClient.output.classesDirs.singleFile.absolutePath,
                  sourceSets.mockServer.output.classesDirs.singleFile.absolutePath,
-                 ysmNativeLibraryPath.get(),
+                 kineticNativeLibraryPath.get(),
                  'exact-100'])
     }
 }
@@ -737,7 +739,7 @@ tasks.register('modelManagementMockForge', JavaExec) {
     dependsOn tasks.named('createMockHostClientBLaunchScript')
     dependsOn tasks.named('verifyMockHostPackaging')
     classpath = sourceSets.mockSupervisor.runtimeClasspath
-    mainClass = 'com.elfmcys.ysm.mock.supervisor.HostSupervisor'
+    mainClass = 'com.kinetic.mock.supervisor.HostSupervisor'
     outputs.upToDateWhen { false }
 
     doFirst {
@@ -755,13 +757,13 @@ tasks.register('modelManagementMockForge', JavaExec) {
         delete evidenceRoot
         mkdir evidenceRoot
         java.nio.file.Files.writeString(
-                new File(evidenceRoot, '.ysm-model-management-evidence').toPath(),
+                new File(evidenceRoot, '.kinetic-model-management-evidence').toPath(),
                 'model-management-mock\n')
 
         args projectDir.absolutePath,
                 evidenceRoot.absolutePath,
                 modelManagementMockJavaRevision.get(),
-                ysmNativeLibraryPath.get(),
+                kineticNativeLibraryPath.get(),
                 modelManagementMockImplementationRevision.toString(),
                 layout.buildDirectory.file(
                         'moddev/runMockHostServer.cmd').get().asFile.absolutePath,
@@ -783,7 +785,7 @@ tasks.register('modelManagementMockFinal', JavaExec) {
     dependsOn tasks.named('modelManagementMockExact100')
     dependsOn tasks.named('verifyMockHostPackaging')
     classpath = sourceSets.mockSupervisor.runtimeClasspath
-    mainClass = 'com.elfmcys.ysm.mock.supervisor.FinalClosureSupervisor'
+    mainClass = 'com.kinetic.mock.supervisor.FinalClosureSupervisor'
     outputs.upToDateWhen { false }
 
     doFirst {
@@ -810,7 +812,7 @@ tasks.register('modelManagementMockFinal', JavaExec) {
         def evidenceRoot = validateMockEvidenceRoot(configured, explicitlyConfigured)
         def nativeRoot = modelManagementMockNativeRoot.isPresent()
                 ? new File(modelManagementMockNativeRoot.get()).canonicalFile
-                : new File(taskRoot.parentFile.parentFile.parentFile, 'ysm-ng').canonicalFile
+                : new File(taskRoot.parentFile.parentFile.parentFile, 'kinetic-ng').canonicalFile
         if (!nativeRoot.isAbsolute() || !new File(nativeRoot, '.git').exists()) {
             throw new GradleException(
                     "Invalid modelManagementMockNativeRoot: ${nativeRoot}")
@@ -818,7 +820,7 @@ tasks.register('modelManagementMockFinal', JavaExec) {
         delete evidenceRoot
         mkdir evidenceRoot
         java.nio.file.Files.writeString(
-                new File(evidenceRoot, '.ysm-model-management-evidence').toPath(),
+                new File(evidenceRoot, '.kinetic-model-management-evidence').toPath(),
                 'model-management-mock\n')
 
         setArgs([projectDir.absolutePath,
@@ -857,7 +859,7 @@ sourceSets {
 }
 
 def playgroundMainClass = providers.gradleProperty('playgroundMainClass')
-        .orElse('com.elfmcys.ysm.playground.Playground')
+        .orElse('com.kinetic.playground.Playground')
 
 tasks.register('runPlayground', JavaExec) {
     group = 'application'
@@ -871,7 +873,7 @@ jar {
     manifest.attributes([
             "Implementation-Title"  : project.name,
             "Implementation-Version": "${version}",
-            "MixinConfigs"          : "ysm.mixins.json"
+            "MixinConfigs"          : "kinetic.mixins.json"
     ])
     archiveClassifier = "raw"
     destinationDirectory = layout.buildDirectory.dir('devlibs')
@@ -896,7 +898,7 @@ tasks.named('shadowJar') {
     from(relocateProcessorAsmTask.flatMap { it.archiveFile }.map { archive ->
         project.zipTree(archive.asFile)
     })
-    configurations = [project.configurations.ysmImplementation]
+    configurations = [project.configurations.kineticImplementation]
     archiveClassifier = ''
     exclude { entry ->
         def entryPath = entry.file.toPath().toAbsolutePath().normalize()
@@ -906,8 +908,17 @@ tasks.named('shadowJar') {
     exclude '/META-INF/maven/**'
     exclude '/META-INF/native-image/*'
     exclude '/META-INF/proguard/*'
-    relocate 'us.hebi.quickbuf', 'com.elfmcys.quickbuf'
-    relocate 'mixel', 'com.elfmcys.mixel'
+    relocate 'us.hebi.quickbuf', 'com.kinetic.shaded.quickbuf'
+    relocate 'mixel', 'com.kinetic.shaded.mixel'
+
+    // org.jetbrains:annotations 是 Multi-Release JAR。Shadow 9 默认会在输出清单中写入
+    // Multi-Release: true（"Adds the multi-release attribute to the manifest if any
+    // dependencies contain it."），但该依赖 META-INF/versions/9/ 下唯一的内容
+    // module-info.class 会在打包时被剥离，最终 JAR 内并不存在 /META-INF/versions/ 目录。
+    // 清单与内容不一致时，securejarhandler（ModLauncher）初始化会去遍历这个不存在的
+    // 路径并抛出 NoSuchFileException，进而导致游戏启动崩溃。这里关闭该属性注入，
+    // 保持 MANIFEST 与实际内容一致。
+    addMultiReleaseAttribute = false
 }
 
 tasks.withType(JavaCompile).configureEach {

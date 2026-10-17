@@ -12,7 +12,7 @@
 
 ## DD.preserve-vanilla-attachments
 
-- Claim: YSM 显式重建原版附着内容，以补回系统替换造成的表现损失。
+- Claim: KINETIC 显式重建原版附着内容，以补回系统替换造成的表现损失。
 - Rationale: 原版附着绘制依赖已被取代的模型与动画，旧流程因此失效；重新实现持物、鞘翅、披风和肩部鹦鹉是在降低已接受的替换破坏，保留玩家本来就应有的内容。
 
 ### BC.vanilla-attachments-remain-visible

@@ -47,8 +47,11 @@ LOCAL_PATH_RE = re.compile(
     r"/(?:Users|home)/[^/\s]+(?:/|$)|/mnt/[a-z](?:/|$)|~[\\/]|"
     r"%(?:USERPROFILE|HOMEPATH)%[\\/]|\$HOME[\\/])"
 )
+# 只拦本机检出目录的别名。-ng 是本工作区里指向同一份源码的另一个检出；
+# 项目自身的名称（Kinetic）与 native 仓库名不是本地别名，不能进这个列表，
+# 否则每一处正当提及都会被判错。
 LOCAL_DIRECTORY_ALIAS_RE = re.compile(
-    r"(?i)(?<![\w-])(?:ysm-ng|ysm-native|YesSteveModel)(?![\w-])"
+    r"(?i)(?<![\w-])kinetic-ng(?![\w-])"
 )
 LOCAL_METADATA_RE = re.compile(
     r"(?im)^\s*(?:[-*]\s*)?(?:文档编写时间|文档更新时间|最后更新|提交时间|"

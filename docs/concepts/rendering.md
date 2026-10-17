@@ -1,6 +1,6 @@
 # 渲染系统
 
-YSM 当前使用 native CPU renderer，将静态模型处理、逐帧状态更新和顶点输出拆为 bake / extract / render 三阶段。Java 负责模型、纹理、[动画求值](animation.md)、`RenderType`、`VertexConsumer` 与资源生命周期；native 负责烘焙、提取、调度和顶点生成；Minecraft 最终上传并 draw。YSM `BakedModel` 及其磁盘 cache 都是内部派生格式，不属于 [Model Schema](../standards/model-schema/README.md)，也不是 Minecraft 同名类型。
+KINETIC 当前使用 native CPU renderer，将静态模型处理、逐帧状态更新和顶点输出拆为 bake / extract / render 三阶段。Java 负责模型、纹理、[动画求值](animation.md)、`RenderType`、`VertexConsumer` 与资源生命周期；native 负责烘焙、提取、调度和顶点生成；Minecraft 最终上传并 draw。KINETIC `BakedModel` 及其磁盘 cache 都是内部派生格式，不属于 [Model Schema](../standards/model-schema/README.md)，也不是 Minecraft 同名类型。
 
 ## 设计目标
 
@@ -12,7 +12,7 @@ YSM 当前使用 native CPU renderer，将静态模型处理、逐帧状态更�
 
 ## 本地呈现边界
 
-本机的模型与第一人称手臂屏蔽、恢复原版表现及音效调节由 [DD.local-player-controls-presentation](../product-decisions/decisions/local-presentation-control.md#ddlocal-player-controls-presentation) 定义。本页渲染管线说明适用于启用 YSM 替换的绘制；产品控制契约不表示具体开关已完成实现或验证。
+本机的模型与第一人称手臂屏蔽、恢复原版表现及音效调节由 [DD.local-player-controls-presentation](../product-decisions/decisions/local-presentation-control.md#ddlocal-player-controls-presentation) 定义。本页渲染管线说明适用于启用 KINETIC 替换的绘制；产品控制契约不表示具体开关已完成实现或验证。
 
 ## 三阶段管线
 

@@ -24,12 +24,12 @@ flowchart LR
     Server --> Update["best-effort PlayerState FULL / DELTA"]
     Update --> Client["client entity projection"]
     Client --> Runtime["animation runtime"]
-    Sync["ysm.sync event"] --> Server
+    Sync["kinetic.sync event"] --> Server
     Server --> Event["best-effort control broadcast"]
     Event --> Runtime
 ```
 
-Roaming 随 PlayerState FULL/DELTA 的到达机会累积；消息没有 revision、ACK、重放或顺序保证，合法遗漏、重复与延迟可造成投影漂移。`ysm.sync` 是瞬时事件，产品边界见[script-sync](../../product-decisions/decisions/script-sync.md)，消息限制见[当前协议](../../standards/protocol-v1/README.md)。
+Roaming 随 PlayerState FULL/DELTA 的到达机会累积；消息没有 revision、ACK、重放或顺序保证，合法遗漏、重复与延迟可造成投影漂移。`kinetic.sync` 是瞬时事件，产品边界见[script-sync](../../product-decisions/decisions/script-sync.md)，消息限制见[当前协议](../../standards/protocol-v1/README.md)。
 
 ## Roaming
 
@@ -42,9 +42,9 @@ Roaming 是模型作用域内、可跨帧和 controller 使用的一组 float �
 
 Roaming 当前没有删除语义，也不能作为可靠事件队列。短键碰撞与真正 Forge 双端收敛仍有缺口，见[动画已知问题](../../status/known-issues/animation.md)。
 
-## `ysm.sync`
+## `kinetic.sync`
 
-`ysm.sync` 是模型 `sync` handler 的即时事件通道：client 在允许发射的 logical phase 构造 `EmitMolangSync`（至多 16 个有限 F32），服务端以已认证 connection 确定主体并广播 `MolangSyncEvent` 给可见客户端及发送者，接收端同步执行该 entity 当前的 `sync` handler。
+`kinetic.sync` 是模型 `sync` handler 的即时事件通道：client 在允许发射的 logical phase 构造 `EmitMolangSync`（至多 16 个有限 F32），服务端以已认证 connection 确定主体并广播 `MolangSyncEvent` 给可见客户端及发送者，接收端同步执行该 entity 当前的 `sync` handler。
 
 消息不携带 expression identity、model/target 版本或 generation，接收端也不做 identity 比较；`RemotePlayer` 发起时接收端忽略，超界或非有限值在广播前拒绝。因此它不保证与发送端模型版本一致，也没有重放或顺序保证。
 

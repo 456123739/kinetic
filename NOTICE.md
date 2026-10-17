@@ -4,7 +4,7 @@
 
 内置模型资产不属于 Apache License 2.0。
 
-`assets/ysm/builtin/**/ysm.json` 中的 `metadata.license` 是每个内置模型资产的权威许可证声明，`metadata.authors` 保留其作者与归属信息。
+`assets/kinetic/builtin/**/kinetic.json` 中的 `metadata.license` 是每个内置模型资产的权威许可证声明，`metadata.authors` 保留其作者与归属信息。
 
 ## 第三方许可证与来源声明
 
@@ -14,11 +14,11 @@
 
 | 仓库内范围 | 上游项目 | 许可证 | 快照说明 | 随包许可证 |
 |---|---|---|---|---|
-| `com/elfmcys/ysm/lib/concentus` | [Concentus](https://github.com/lostromb/concentus) | BSD-style Opus/Concentus terms | 无法从当前源码证明确切 revision | `licenses/concentus` |
-| `com/elfmcys/ysm/lib/gagravarr` | [VorbisJava / Gagravarr](https://github.com/Gagravarr/VorbisJava) | Apache-2.0 | 无法从当前源码证明确切 revision | `licenses/vorbis-java-core` |
-| `com/elfmcys/ysm/geckolib3` | [GeckoLib](https://github.com/bernie-g/geckolib) | MIT | 包含本项目修改；无法从当前源码证明确切 revision | `licenses/geckolib` |
-| `com/elfmcys/ysm/mclib` | [McLib](https://github.com/mchorse/mclib) | MIT | 无法从当前源码证明确切 revision | `licenses/mclib` |
-| `com/elfmcys/ysm/molang` | [Mocha](https://github.com/unnamed/mocha) | MIT | 包含本项目修改；无法从当前源码证明确切 revision | `licenses/molang` |
+| `com/kinetic/lib/concentus` | [Concentus](https://github.com/lostromb/concentus) | BSD-style Opus/Concentus terms | 无法从当前源码证明确切 revision | `licenses/concentus` |
+| `com/kinetic/lib/gagravarr` | [VorbisJava / Gagravarr](https://github.com/Gagravarr/VorbisJava) | Apache-2.0 | 无法从当前源码证明确切 revision | `licenses/vorbis-java-core` |
+| `com/kinetic/geckolib3` | [GeckoLib](https://github.com/bernie-g/geckolib) | MIT | 包含本项目修改；无法从当前源码证明确切 revision | `licenses/geckolib` |
+| `com/kinetic/mclib` | [McLib](https://github.com/mchorse/mclib) | MIT | 无法从当前源码证明确切 revision | `licenses/mclib` |
+| `com/kinetic/molang` | [Mocha](https://github.com/unnamed/mocha) | MIT | 包含本项目修改；无法从当前源码证明确切 revision | `licenses/molang` |
 
 ### 随包依赖
 
@@ -30,6 +30,6 @@ Legacy native importer 内嵌了格式兼容所需的修改版 CityHash 64-bit �
 ChaCha/HChaCha 参考实现。其来源和许可分别见 `licenses/cityhash` 与
 `licenses/legacy-chacha`；这些声明必须与三个平台的主 native 库一同分发。
 
-Native 项目的第三方组件、版本和许可证清单由其自身仓库维护：[THIRD_PARTY_LICENSES.md](https://github.com/YesSteveModel/YesSteveModel-Native/blob/dev/THIRD_PARTY_LICENSES.md)。
+Native 项目的第三方组件、版本和许可证清单由其自身仓库维护：[THIRD_PARTY_LICENSES.md](https://github.com/456123739/kinetic-native/blob/dev/THIRD_PARTY_LICENSES.md)。
 
 本清单是合规辅助材料，不替代各上游许可证正文。

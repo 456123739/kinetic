@@ -1,0 +1,501 @@
+package com.kinetic.model.service;
+
+import com.kinetic.AssetPaths;
+import com.kinetic.Kinetic;
+import com.kinetic.client.sound.stream.AudioStreamProvider;
+import com.kinetic.client.texture.CustomTexture;
+import com.kinetic.model.ModelRuntime;
+import com.kinetic.model.catalog.client.ClientCatalogManager;
+import com.kinetic.model.catalog.client.ClientCatalogSnapshot;
+import com.kinetic.model.catalog.builtin.BuiltinModelIndex;
+import com.kinetic.model.catalog.content.ModelContent;
+import com.kinetic.model.domain.Hash256;
+import com.kinetic.model.domain.RenderTargetIds;
+import com.kinetic.model.resource.RuntimeContentStore;
+import com.kinetic.model.resource.client.BakeProfile;
+import com.kinetic.model.resource.client.ClientModelRenderTargetManager;
+import com.kinetic.model.resource.client.ModelRenderTarget;
+import com.kinetic.model.resource.client.ResourceLease;
+import com.kinetic.model.resource.client.ResourceRequest;
+import com.kinetic.model.resource.client.SoundSource;
+import com.kinetic.model.resource.client.asset.ClientAssetBatch;
+import com.kinetic.model.resource.client.asset.ClientAssetRepository;
+import com.kinetic.model.resource.client.audio.ClientAudioRuntime;
+import com.kinetic.model.resource.client.preview.ClientPreviewGenerator;
+import com.kinetic.model.resource.client.remote.RemoteChunkFetcher;
+import com.kinetic.model.resource.client.remote.RemoteMetadataFetcher;
+import com.kinetic.model.resource.client.remote.RemoteModelStore;
+import com.kinetic.model.resource.client.render.BakedAnimationCache;
+import com.kinetic.model.resource.client.render.BakedModelCache;
+import com.kinetic.model.resource.client.render.DefaultAnimationRuntime;
+import com.kinetic.model.resource.client.render.ModelRenderTargetLoader;
+import com.kinetic.model.session.client.RemoteCatalogActivation;
+import com.kinetic.model.session.client.state.ActivationSnapshot;
+import com.kinetic.model.storage.AtomicSharedCache;
+import com.kinetic.model.storage.PreviewStore;
+import com.kinetic.natives.image.ImageSource;
+import com.kinetic.proto.mixel.manifest.asset.RenderTargetKind;
+import com.kinetic.util.Closeable;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import net.minecraft.client.Minecraft;
+import net.minecraft.resources.ResourceLocation;
+
+public final class ClientModelService implements AutoCloseable {
+    private static volatile ClientModelService INSTANCE;
+
+    private final ScheduledThreadPoolExecutor workers;
+    private final ClientCatalogManager catalogManager;
+    private final ClientAssetRepository assetRepository;
+    private final ClientModelRenderTargetManager renderTargetManager;
+    private final ClientAudioRuntime audioRuntime;
+    private final ClientPreviewGenerator previewOperations;
+    private final Closeable exportPreviewRegistration;
+    private final Path gameDirectory;
+    private RemoteModelStore remoteStore;
+    private final AtomicBoolean closed = new AtomicBoolean();
+
+    private ClientModelService(ScheduledThreadPoolExecutor workers,
+                               ClientCatalogManager catalogManager,
+                               ClientAssetRepository assetRepository,
+                               ClientModelRenderTargetManager renderTargetManager,
+                               ClientPreviewGenerator previewOperations,
+                               Closeable exportPreviewRegistration,
+                               Path gameDirectory) {
+        this.workers = workers;
+        this.catalogManager = catalogManager;
+        this.assetRepository = assetRepository;
+        this.renderTargetManager = renderTargetManager;
+        this.audioRuntime = new ClientAudioRuntime(
+                workers, renderTargetManager::resolveSound);
+        this.previewOperations = previewOperations;
+        this.exportPreviewRegistration = exportPreviewRegistration;
+        this.gameDirectory = gameDirectory;
+    }
+
+    private ClientModelService(ScheduledThreadPoolExecutor workers,
+                               ClientCatalogManager catalogManager,
+                               ClientAssetRepository assetRepository,
+                               ClientModelRenderTargetManager renderTargetManager,
+                               Path gameDirectory) {
+        this(workers, catalogManager, assetRepository, renderTargetManager,
+                null, () -> { }, gameDirectory);
+    }
+
+    private static BootstrapCandidate createCandidate() {
+        var threadCount = Math.max(2, Runtime.getRuntime().availableProcessors() / 2);
+        var candidateWorkers = new ScheduledThreadPoolExecutor(threadCount, runnable -> {
+            var thread = new Thread(runnable, "KINETIC Client Model Worker");
+            thread.setDaemon(true);
+            thread.setPriority(Math.max(Thread.MIN_PRIORITY,
+                    Thread.NORM_PRIORITY - 1));
+            return thread;
+        });
+        candidateWorkers.setRemoveOnCancelPolicy(true);
+        ClientCatalogManager candidateCatalog = null;
+        ClientModelRenderTargetManager candidateTargets = null;
+        ClientPreviewGenerator candidatePreviews = null;
+        Closeable candidateExportRegistration = null;
+        try {
+            var system = ModelRuntime.system();
+            var storage = system.storage();
+            var gameCacheRoot = storage.gameCacheRoot();
+            var shared = storage.cache();
+            var gameDirectory = Minecraft.getInstance().gameDirectory.toPath();
+            var bakedRoot = AssetPaths.bakedRoot(gameDirectory);
+            var bakedShared = new AtomicSharedCache(bakedRoot);
+            var builtins = system.builtins();
+            candidateCatalog = new ClientCatalogManager(system.catalog());
+            var defaultAnimations = new DefaultAnimationRuntime(system.builtinContract());
+            var bakedModelCache = new BakedModelCache(bakedRoot, bakedShared);
+            var renderTargetLoader = new ModelRenderTargetLoader(
+                    bakedModelCache,
+                    new BakedAnimationCache(bakedRoot, bakedShared), candidateWorkers,
+                    defaultAnimations);
+            var contentStore = new RuntimeContentStore(error ->
+                    Kinetic.LOGGER.warn(
+                            "Model source instance became corrupted", error));
+            candidateTargets = new ClientModelRenderTargetManager(
+                    candidateCatalog, renderTargetLoader,
+                    defaultAnimations, candidateWorkers,
+                    ClientModelService::executeOnRenderThread, contentStore);
+            var previewStore = new PreviewStore(gameCacheRoot, shared);
+            var previews = new ClientPreviewGenerator(candidateCatalog, candidateTargets,
+                    renderTargetLoader, previewStore,
+                    ClientModelService::executeOnRenderThread, candidateWorkers);
+            candidatePreviews = previews;
+            var candidateAssets = new ClientAssetRepository(candidateCatalog, contentStore,
+                    previewStore, candidateWorkers,
+                    previews::resolveLocal, previews::probeRemote);
+            candidateExportRegistration = ModelExportService.registerExporter(
+                    previews::export);
+            candidateCatalog.setListener(candidateTargets::catalogChanged);
+            var required = candidateTargets.startRequired(candidateCatalog.initialize());
+            // 枪械 LOD 的构建入口在 worker 线程、拿不到这个对象，所以把实例登记成进程级引用，
+            // 让两边共用同一个烘焙缓存根目录与同一套 capabilityKey（磁盘缓存因此天然互通）。
+            BakedModelCache.installShared(bakedModelCache);
+            return new BootstrapCandidate(new ClientModelService(
+                    candidateWorkers, candidateCatalog, candidateAssets, candidateTargets,
+                    candidatePreviews, candidateExportRegistration,
+                    gameDirectory),
+                    required);
+        } catch (Throwable error) {
+            var failure = unwrap(error);
+            if (candidateExportRegistration != null) {
+                try {
+                    candidateExportRegistration.close();
+                } catch (Throwable closeFailure) {
+                    failure.addSuppressed(closeFailure);
+                }
+            }
+            if (candidatePreviews != null) {
+                try {
+                    candidatePreviews.close();
+                } catch (Throwable closeFailure) {
+                    failure.addSuppressed(closeFailure);
+                }
+            }
+            if (candidateTargets != null) {
+                try {
+                    candidateTargets.close();
+                } catch (Throwable closeFailure) {
+                    failure.addSuppressed(closeFailure);
+                }
+            }
+            if (candidateCatalog != null) {
+                try {
+                    candidateCatalog.close();
+                } catch (Throwable closeFailure) {
+                    failure.addSuppressed(closeFailure);
+                }
+            }
+            try {
+                candidateWorkers.shutdownNow();
+            } catch (Throwable closeFailure) {
+                failure.addSuppressed(closeFailure);
+            }
+            throw sneakyThrow(failure);
+        }
+    }
+
+    public static synchronized ClientModelService start() {
+        if (INSTANCE != null) {
+            return INSTANCE;
+        }
+        var candidate = publishRequired(ClientModelService::createCandidate,
+                ClientModelService::completeRequired,
+                value -> INSTANCE = value.service);
+        return candidate.service;
+    }
+
+    private static void completeRequired(BootstrapCandidate candidate) {
+        var minecraft = Minecraft.getInstance();
+        if (minecraft.isSameThread()) {
+            minecraft.managedBlock(candidate.required::isDone);
+        }
+        candidate.required.join();
+    }
+
+    private static void executeOnRenderThread(Runnable task) {
+        var minecraft = Minecraft.getInstance();
+        if (minecraft.isSameThread()) {
+            task.run();
+            return;
+        }
+        // BlockableEventLoop.execute may run inline during startup; tell keeps GPU publication
+        // on the render owner while managedBlock drains the same task queue.
+        minecraft.tell(task);
+    }
+
+    static <T extends AutoCloseable> T publishRequired(
+            Supplier<T> factory, Consumer<T> completeRequired,
+            Consumer<T> publish) {
+        T candidate = null;
+        try {
+            candidate = factory.get();
+            completeRequired.accept(candidate);
+        } catch (Throwable error) {
+            var failure = unwrap(error);
+            if (candidate != null) {
+                try {
+                    candidate.close();
+                } catch (Throwable closeFailure) {
+                    failure.addSuppressed(closeFailure);
+                }
+            }
+            throw sneakyThrow(failure);
+        }
+        publish.accept(candidate);
+        return candidate;
+    }
+
+    public static ClientModelService instance() {
+        var service = INSTANCE;
+        if (service == null) {
+            throw new IllegalStateException("Client model service is not running");
+        }
+        return service;
+    }
+
+    public static Optional<ClientModelService> current() {
+        return Optional.ofNullable(INSTANCE);
+    }
+
+    public ClientCatalogSnapshot catalog() {
+        return catalogManager.snapshot();
+    }
+
+    public Object beginConnection() {
+        ModelRuntime.system().activateCatalog();
+        return renderTargetManager.beginSession();
+    }
+
+    public RemoteCatalogActivation beginRemoteActivation(
+            RemoteMetadataFetcher fetcher,
+            RemoteChunkFetcher chunkFetcher,
+            Object sessionOwner) throws IOException {
+        renderTargetManager.bindRemoteFetcher(sessionOwner, chunkFetcher);
+        var active = catalogManager.beginRemote();
+        return new RemoteCatalogActivation(catalogManager::localIndex, active,
+                remoteStore(), fetcher, workers);
+    }
+
+    public void publishSessionActivation(
+            ActivationSnapshot activation) {
+        catalogManager.publishSession(activation);
+    }
+
+    public void failRemoteCatalog() {
+        catalogManager.failRemote();
+    }
+
+    public boolean contains(Hash256 hash) {
+        return catalogManager.contains(hash);
+    }
+
+    public Optional<String> findRenderTarget(Hash256 hash,
+                                             RenderTargetKind kind,
+                                             ResourceLocation entityType) {
+        return catalogManager.findRenderTarget(hash, kind, entityType);
+    }
+
+    public Optional<Hash256> resolvePath(String path) {
+        return catalogManager.resolvePath(path);
+    }
+
+    /**
+     * 该模型是否就是内置玩家模型（宽手臂的 {@code misc/2_steve} 或细手臂的 {@code misc/1_alex}）。
+     *
+     * <p>这两个模型的手臂宽度必须与玩家皮肤一致，而皮肤模型名只有客户端可得，因此它们属于
+     * 「随皮肤切换」的范畴；其它模型不在此列，客户端不得替玩家改写选择。
+     */
+    public boolean isBuiltinPlayerModel(Hash256 modelHash) {
+        if (modelHash == null) {
+            return false;
+        }
+        return modelHash.equals(resolvePath(BuiltinModelIndex.INTRINSIC_DEFAULT_PATH.value()).orElse(null))
+                || modelHash.equals(resolvePath(BuiltinModelIndex.SLIM_PLAYER_PATH.value()).orElse(null));
+    }
+
+    public String displayPath(Hash256 hash) {
+        return catalogManager.displayPath(hash);
+    }
+
+    public ModelRenderTarget defaultRenderTarget() {
+        return renderTargetManager.defaultRenderTarget();
+    }
+
+    public BakeProfile bakeProfile() {
+        return renderTargetManager.bakeProfile();
+    }
+
+    public ResourceRequest resourceRequest(Hash256 modelId, String textureName) {
+        return resourceRequest(modelId, RenderTargetIds.PLAYER, textureName);
+    }
+
+    public ResourceRequest resourceRequest(Hash256 modelId, String targetId, String textureName) {
+        return renderTargetManager.request(modelId, targetId, textureName);
+    }
+
+    public ResourceRequest defaultResourceRequest(String targetId) {
+        return renderTargetManager.defaultRequest(targetId);
+    }
+
+    public ResourceLease getOrStart(ResourceRequest request) {
+        return renderTargetManager.getOrStart(request);
+    }
+
+    public Optional<ResourceLease> findReady(ResourceRequest request) {
+        return renderTargetManager.findReady(request);
+    }
+
+    public CompletableFuture<Optional<ResourceLease>> getOrStartOffline(
+            ResourceRequest request) {
+        return renderTargetManager.getOrStartOffline(request);
+    }
+
+    public CompletableFuture<Optional<ResourceLease>> getOrStartCached(
+            ResourceRequest request) {
+        return renderTargetManager.getOrStartCached(request);
+    }
+
+    public void reportActiveModelFailure(ModelContent version, boolean fallbackAvailable) {
+        renderTargetManager.reportActiveFailure(version, fallbackAvailable);
+    }
+
+    public void reportActiveModelUse(ResourceRequest request) {
+        renderTargetManager.reportActiveUse(request);
+    }
+
+    public ClientAssetBatch createAssetBatch() {
+        return new ClientAssetBatch(assetRepository.openBatch());
+    }
+
+    public CustomTexture createTexture(ImageSource source) {
+        return new CustomTexture(source);
+    }
+
+    public AudioStreamProvider createSoundPlayback(SoundSource source) {
+        return audioRuntime.createPlayback(source);
+    }
+
+    public void disconnect(Object sessionOwner) {
+        audioRuntime.stopAll();
+        renderTargetManager.disconnect(sessionOwner);
+        catalogManager.endRemote();
+    }
+
+    public void tick() {
+        var system = ModelRuntime.system();
+        system.tickCatalog();
+        system.tickServerRuntime();
+        renderTargetManager.tick();
+        audioRuntime.maintain();
+        if (previewOperations != null) {
+            previewOperations.tick();
+        }
+    }
+
+    public int loadingCount() {
+        return renderTargetManager.loadingCount();
+    }
+
+    @Override
+    public void close() {
+        synchronized (ClientModelService.class) {
+            if (!closed.compareAndSet(false, true)) {
+                return;
+            }
+            if (INSTANCE == this) {
+                INSTANCE = null;
+            }
+            closeResourcesUnchecked();
+        }
+    }
+
+    private void closeResourcesUnchecked() {
+        try {
+            audioRuntime.close();
+        } finally {
+            try {
+                exportPreviewRegistration.close();
+            } finally {
+                try {
+                    if (previewOperations != null) {
+                        previewOperations.close();
+                    }
+                } finally {
+                    try {
+                        renderTargetManager.close();
+                    } finally {
+                        try {
+                            catalogManager.close();
+                        } finally {
+                            try {
+                                var store = detachRemoteStore();
+                                if (store != null) {
+                                    store.close();
+                                }
+                            } finally {
+                                workers.shutdown();
+                                awaitTermination(workers);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private synchronized RemoteModelStore remoteStore() throws IOException {
+        if (closed.get()) {
+            throw new IllegalStateException("Client model service is closed");
+        }
+        if (remoteStore == null) {
+            remoteStore = RemoteModelStore.create(gameDirectory);
+        }
+        return remoteStore;
+    }
+
+    private synchronized RemoteModelStore detachRemoteStore() {
+        var store = remoteStore;
+        remoteStore = null;
+        return store;
+    }
+
+    private static void awaitTermination(ScheduledThreadPoolExecutor workers) {
+        var interrupted = false;
+        while (!workers.isTerminated()) {
+            try {
+                if (workers.awaitTermination(Long.MAX_VALUE,
+                        TimeUnit.NANOSECONDS)) {
+                    break;
+                }
+            } catch (InterruptedException ignored) {
+                interrupted = true;
+            }
+        }
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private static Throwable unwrap(Throwable error) {
+        var current = error;
+        while ((current instanceof CompletionException
+                || current instanceof ExecutionException)
+                && current.getCause() != null) {
+            current = current.getCause();
+        }
+        return current;
+    }
+
+    private static RuntimeException sneakyThrow(Throwable error) {
+        ClientModelService.<RuntimeException>throwUnchecked(error);
+        throw new AssertionError("unreachable");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable> void throwUnchecked(Throwable error) throws E {
+        throw (E) error;
+    }
+
+    private record BootstrapCandidate(
+            ClientModelService service,
+            CompletableFuture<Void> required) implements AutoCloseable {
+        @Override
+        public void close() {
+            service.close();
+        }
+    }
+
+}

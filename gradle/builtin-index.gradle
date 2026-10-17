@@ -1,4 +1,4 @@
-import com.elfmcys.ysm.gradle.BuiltinModelToolTask
+import com.kinetic.gradle.BuiltinModelToolTask
 
 sourceSets {
     builtinIndexTool {
@@ -13,17 +13,17 @@ sourceSets.test {
     runtimeClasspath += sourceSets.builtinIndexTool.output
 }
 
-def builtinModelRoot = layout.projectDirectory.dir('src/main/resources/assets/ysm/builtin')
+def builtinModelRoot = layout.projectDirectory.dir('src/main/resources/assets/kinetic/builtin')
 // 内置模型库只保留 Steve/Alex；Steve 兼任 intrinsic default（共享动画提供者）。
 // 必须与 BuiltinModelIndex.INTRINSIC_DEFAULT_PATH 保持一致。
 def builtinDefaultRoot = builtinModelRoot.dir('misc/2_steve')
 def builtinIntrinsicDefaultExclude = 'misc/2_steve/**'
 def builtinAnimationHistory = layout.projectDirectory.file(
-        'src/main/resources/assets/ysm/default-animation-history.json')
+        'src/main/resources/assets/kinetic/default-animation-history.json')
 def builtinDefaultContract = layout.buildDirectory.file(
         'intermediates/builtinIndex/default-contract.json')
 def builtinIndexFile = layout.buildDirectory.file(
-        'generated/resources/builtinIndex/assets/ysm/builtin-index.json')
+        'generated/resources/builtinIndex/assets/kinetic/builtin-index.json')
 def builtinVerificationReceipt = layout.buildDirectory.file(
         'verification/builtinIndex/full-materialization.json')
 def builtinToolLauncher = javaToolchains.launcherFor {
@@ -33,7 +33,7 @@ def builtinToolLauncher = javaToolchains.launcherFor {
 def configureBuiltinToolTask = { BuiltinModelToolTask task, String command ->
     task.command.set(command)
     task.toolClasspath.from(sourceSets.builtinIndexTool.runtimeClasspath)
-    task.nativeLibrary.set(ysmNativeLibraryFile)
+    task.nativeLibrary.set(kineticNativeLibraryFile)
     task.operatingSystem.set(providers.systemProperty('os.name'))
     task.architecture.set(providers.systemProperty('os.arch'))
     task.javaExecutable.set(builtinToolLauncher.map {
@@ -89,7 +89,7 @@ tasks.register('verifyBuiltinModelIndex', BuiltinModelToolTask) {
 tasks.named('processResources') {
     dependsOn tasks.named('generateBuiltinModelIndex')
     from(builtinIndexFile) {
-        into 'assets/ysm'
+        into 'assets/kinetic'
     }
 }
 

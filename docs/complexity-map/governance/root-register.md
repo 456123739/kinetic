@@ -44,7 +44,7 @@
 | D-VANILLA-ACTION | [DD.model-controller-overrides-builtins](../../product-decisions/decisions/bone-and-controller.md#ddmodel-controller-overrides-builtins)：保留基础动作表现 |
 | D-AN-FALLBACK | [DD.model-controller-overrides-builtins](../../product-decisions/decisions/bone-and-controller.md#ddmodel-controller-overrides-builtins)：缺动画可借默认动作 |
 | D-EXT | [DD.local-failure-degradation](../../product-decisions/decisions/failure-isolation.md#ddlocal-failure-degradation)：可选联动不阻断 startup |
-| D-OUTPUT | [DD.authoring-semantics-before-optimization](../../product-decisions/decisions/geometry-regions.md#ddauthoring-semantics-before-optimization)：各输出/CPU 路径语义等价 |
+| D-OUTPUT | [DD.authoring-semantics-before-optimization](../../product-decisions/decisions/geometry-regions.md#ddauthoring-semantics-before-optimization)：各输出/CPU 路径语义等价；[DD.gpu-backface-culling-is-explicit-opt-in](../../product-decisions/decisions/geometry-regions.md#ddgpu-backface-culling-is-explicit-opt-in)：GPU 背面裁剪默认关闭，显式开启才放弃不完整块背面 |
 | D-HOST | [DD.local-failure-degradation](../../product-decisions/decisions/failure-isolation.md#ddlocal-failure-degradation)：失败不污染后续世界绘制 |
 | D-TRANSPARENCY | [DD.transparency-stops-at-model-boundary](../../product-decisions/decisions/transparency-scope.md#ddtransparency-stops-at-model-boundary)：透明保证有单模型边界 |
 
@@ -73,7 +73,7 @@
 | A-REPORT | 握手业务就绪后仍等待自身 authority FULL 才形成报告；该资格不依赖 catalog publication。首 FULL/DELTA/周期 FULL 按当前机会 best-effort 尝试，观测进度与投递结果分离，真实 FULL baseline 留在 exact model session；[玩家状态](../../architecture/network/player-state.md)。 |
 | A-AN-01 | Level entity 在 draw 前异步原地求值，本帧汇合消费；[帧执行](../../architecture/rendering/frame-execution.md)。比其他调度更好的理由未证明。 |
 | A-AN-02 | 各 RenderContext 共用实体动画历史与输入，按输出槽区分结果；[实体状态](../../architecture/animation/entity-and-frame-state.md)。 |
-| A-AN-03 | 按距离/可见性减少实际求值；[帧执行](../../architecture/rendering/frame-execution.md)。阈值收益及逻辑因果保持仍待 O-07 验证；限频本身是允许的架构选择。 |
+| A-AN-03 | 按距离/可见性减少实际求值，档位随距离非递增且不超过配置上限；[实体状态](../../architecture/animation/entity-and-frame-state.md#求值频率阶梯)。基准 60 Hz 与"整体流畅度优先"由 [DD.animation-presentation-rate-is-bounded](../../product-decisions/decisions/animation-sampling.md#ddanimation-presentation-rate-is-bounded) 裁决；实际观感及逻辑因果保持仍待 O-07 验证。 |
 | A-AN-04 | 生成依赖级 checker 在目标环境判定扩展兼容；[接入](../../architecture/integration/README.md#扩展兼容检查与注册)。范围必要性见 Q-07。 |
 | A-SIMD | 单次启动选 SIMD，bake/render 使用同宽度 group；[bake](../../architecture/rendering/bake-and-partition.md)。 |
 | A-BAKED-CACHE | 私有可重建 baked 表示按实际输入和 profile 复用；[cache 理由](../../architecture/rendering/design-rationale.md#派生-cache-按精确输入隔离)。 |

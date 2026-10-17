@@ -1,34 +1,33 @@
 modLoader="javafml"
 loaderVersion="[46,)"
 license="Apache-2.0"
-issueTrackerURL="https://github.com/YesSteveModel/YSM-Wiki-Issues/issues"
+issueTrackerURL="https://github.com/456123739/kinetic/issues"
 
 [[mods]]
-    modId="ysm"
+    modId="kinetic"
     version="${mod_version}"
-    displayName="Yes Steve Model"
-    displayURL="https://ysm.cfpa.team/"
+    displayName="Kinetic"
     # updateJSONURL="https://change.me.example.invalid/updates.json"
-    logoFile="ysm.png"
+    logoFile="kinetic.png"
     credits="bernie-g (GeckoLib), fadookie (mclib), TT432 & SQwatermark (helped me solve many difficult problems)"
-    authors="YS Group, TartaricAcid, TomatoPuddin, AryochiL"
-    description="A mod based on GeckoLib that modifies the player model"
+    authors="NimShade"
+    description="Replaces player, projectile and vehicle models with Bedrock Edition models"
 
-[[dependencies.ysm]]
+[[dependencies.kinetic]]
     modId="forge"
     mandatory=true
     versionRange="[46,)"
     ordering="NONE"
     side="BOTH"
 
-[[dependencies.ysm]]
+[[dependencies.kinetic]]
     modId="minecraft"
     mandatory=true
     versionRange="[1.20,1.20.2)"
     ordering="NONE"
     side="BOTH"
 
-[[dependencies.ysm]]
+[[dependencies.kinetic]]
     modId="tacz"
     mandatory=false
     versionRange="[1.0.2,)"

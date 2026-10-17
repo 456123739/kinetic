@@ -34,7 +34,7 @@ flowchart LR
 
 ## 定位与交接
 
-Java 网络实现集中在 `com.elfmcys.ysm.network`。按负责验证或发布的 owner 定位：
+Java 网络实现集中在 `com.kinetic.network`。按负责验证或发布的 owner 定位：
 
 | 问题 | 符号入口 | 关键边界 |
 |---|---|---|

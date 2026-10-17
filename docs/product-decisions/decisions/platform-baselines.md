@@ -12,7 +12,7 @@
 ## DD.bounded-platform-support
 
 - Claim: 主线适配支持 Minecraft Java 版的主流游戏平台，采用明确的最低平台组合；其余平台的适配由社区 fork 维护。
-- Rationale: 各平台所需库统一随 YSM 模组 jar 分发，扩大平台矩阵会增加 jar 体积、验证组合与持续维护成本，而开发者精力有限。适配使用量极低且已停止支持的早期平台还会限制对较新平台能力的利用，因此不为扩大最低范围持续承担这些成本。
+- Rationale: 各平台所需库统一随 KINETIC 模组 jar 分发，扩大平台矩阵会增加 jar 体积、验证组合与持续维护成本，而开发者精力有限。适配使用量极低且已停止支持的早期平台还会限制对较新平台能力的利用，因此不为扩大最低范围持续承担这些成本。
 
 ### BC.minimum-platform-baselines
 
@@ -29,7 +29,7 @@
 
 ### BC.native-distribution-is-self-contained
 
-- Claim: 所有平台的 YSM native 制品对宿主环境的外部运行库依赖仅限内核接口、libc 及其伴生系统库，如 libm、libdl。伴生库仍计入依赖，但通常由系统提供，无需额外处理；C++ runtime 及其余所需库必须由随模组 jar 分发的制品自包含提供，不依赖系统另行提供或要求玩家安装额外运行库。
+- Claim: 所有平台的 KINETIC native 制品对宿主环境的外部运行库依赖仅限内核接口、libc 及其伴生系统库，如 libm、libdl。伴生库仍计入依赖，但通常由系统提供，无需额外处理；C++ runtime 及其余所需库必须由随模组 jar 分发的制品自包含提供，不依赖系统另行提供或要求玩家安装额外运行库。
 
 macOS 同样不得依赖环境提供的动态 libc++；SDK 未提供 libc++ 静态库不构成例外，满足约束的构建方式由下游选择。
 
@@ -44,11 +44,11 @@ macOS 同样不得依赖环境提供的动态 libc++；SDK 未提供 libc++ 静�
 
 ## DD.android-via-community-launchers
 
-- Claim: YSM 在满足前置条件的 Android 社区启动器环境中运行，不把任意移动启动器都列为适配目标。
-- Rationale: JDK、Minecraft Java 及 Forge、Fabric、NeoForge 虽未官方支持移动设备，社区适配已形成多个开箱即用且稳定性合格的启动器；复用这些环境可以提供移动基础可用性，无需 YSM 自行承担整个游戏与 Java 运行环境的移植。
+- Claim: KINETIC 在满足前置条件的 Android 社区启动器环境中运行，不把任意移动启动器都列为适配目标。
+- Rationale: JDK、Minecraft Java 及 Forge、Fabric、NeoForge 虽未官方支持移动设备，社区适配已形成多个开箱即用且稳定性合格的启动器；复用这些环境可以提供移动基础可用性，无需 KINETIC 自行承担整个游戏与 Java 运行环境的移植。
 
 ### BC.android-launcher-runtime-prerequisite
 
-- Claim: Android 启动器必须配置 `MOD_ANDROID_RUNTIME`，指向用于存放 YSM native 文件且与 `libjvm.so` 同属一个 native library namespace 的目录，使模组库能够被 JVM 正常加载；未满足这一前提的启动器不在适配承诺内。
+- Claim: Android 启动器必须配置 `MOD_ANDROID_RUNTIME`，指向用于存放 KINETIC native 文件且与 `libjvm.so` 同属一个 native library namespace 的目录，使模组库能够被 JVM 正常加载；未满足这一前提的启动器不在适配承诺内。
 
 社区对 Fabric、NeoForge 的移动适配只解释运行环境来源，本决策仍以 Minecraft 1.20.1 Forge 主线为范围。

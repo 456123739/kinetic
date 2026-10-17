@@ -1,4 +1,4 @@
-# Yes Steve Model
+# Kinetic
 
 ## ⚠️ 警告
 
@@ -10,7 +10,7 @@
 
 本项目正在进行大规模重构，目前公开代码主要用于审阅、协作和验证设计。
 
-目前仅协作者可贡献代码，如有贡献意愿可加入 YSM 开发者交流群了解详情。须知当前代码结构还未稳定，贡献者的本地开发进程可能得跟着主线一起重构。待模型管理和网络协议完成开发、旧版能力完成迁移，将会开放贡献。
+目前仅协作者可贡献代码，如有贡献意愿可加入 KINETIC 开发者交流群了解详情。须知当前代码结构还未稳定，贡献者的本地开发进程可能得跟着主线一起重构。待模型管理和网络协议完成开发、旧版能力完成迁移，将会开放贡献。
 
 更多信息见 [迁移概览](docs/migration-overview.md) 
 
@@ -38,8 +38,8 @@
 ## 许可证
 
 - 除另有声明的内容外，本仓库的原创代码按 [Apache License 2.0](LICENSE) 开源。
-- Asset Container Spec、Model Schema、规范性 Proto 快照及一致性要求是独立于 YSM 和 Minecraft 的标准，按 [CC0 1.0 Universal](LICENSES/CC0-1.0.txt) 发布。
-- 内置模型资产不属于 Apache-2.0；每个资产目录中的 `ysm.json` 是其许可证的权威清单。
+- Asset Container Spec、Model Schema、规范性 Proto 快照及一致性要求是独立于 KINETIC 和 Minecraft 的标准，按 [CC0 1.0 Universal](LICENSES/CC0-1.0.txt) 发布。
+- 内置模型资产不属于 Apache-2.0；每个资产目录中的 `kinetic.json` 是其许可证的权威清单。
 - 项目包含直接拷贝或修改的第三方代码以及随包依赖，详见[NOTICE.md](NOTICE.md)。
 
 Apache-2.0 不覆盖上述独立标准、内置资产或第三方作品；对应文件中的单独声明优先。

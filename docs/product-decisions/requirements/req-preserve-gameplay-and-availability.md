@@ -1,6 +1,6 @@
 # REQ.preserve-gameplay-and-availability
 
-- Claim: 玩家、服主和同环境模组必须能在 YSM 的普通内容处理、网络分发或联动功能运行及出错时继续正常游戏。
+- Claim: 玩家、服主和同环境模组必须能在 KINETIC 的普通内容处理、网络分发或联动功能运行及出错时继续正常游戏。
 
 平台范围、最低基线、运行依赖和设备可用性边界见[平台适配现状与原则](req-platform-availability.md)。
 - Decision-status: Complete

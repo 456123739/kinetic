@@ -1,6 +1,6 @@
 # 项目说明
 
-YSM 是 Minecraft Java 模组，用于将玩家、投射物和载具模型替换为基岩版模型。
+KINETIC 是 Minecraft Java 模组，用于将玩家、投射物和载具模型替换为基岩版模型。
 
 ## 项目文档
 [文档入口](docs/README.md)

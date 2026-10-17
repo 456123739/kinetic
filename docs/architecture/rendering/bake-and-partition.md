@@ -62,6 +62,18 @@ UV 先按来源版本转换为最终采样语义，再参与 alpha 分类和 tan
 
 Alpha 分类只读取基础 RGBA 纹理的相关 UV 区域：全透明面可删除；二值透明和部分 alpha 进入透明分区，全不透明进入 opaque 分区。`BakeModelOptions` 控制版本化 UV、PBR tangent 与强制分区，但不改写原始 normal、UV 或 winding；PBR 图片仍由 Java 与 Iris 管理。
 
+### 玩家目标的烘焙贴图掩码
+
+「全透明面可删除」这条优化只在**烘焙贴图就是绘制贴图**时成立。玩家模型的绘制贴图是玩家自己的皮肤（`SpecialPlayerRenderEvent` → `CustomPlayerRenderer.textureOverride`），模型自带贴图只是它的回退值。读不到玩家皮肤时用的是模组自带的兜底皮肤（`DefaultPlayerSkins` → `textures/default/steve.png` / `alex.png`，粗/细手臂各一张），而不是原版 `textures/entity/player/...`：后者会被资源包替换，也不保证仍是默认外观；活人渲染与死亡布娃娃共用同一个判定，避免同一个人两边皮肤不一致。若仍按自带贴图的 alpha 删面，模型贴图里恰好透明、而玩家皮肤里不透明的部位会被永久删除，绘制时无法恢复。
+
+因此 `ModelRenderTargetLoader` 对 `RENDER_TARGET_KIND_PLAYER` 的渲染目标改用掩码贴图烘焙：同尺寸、`alpha == 0` 抬到 255、其余像素原样保留。这样
+
+- 不再有面被判成全透明而删除；
+- 半透明像素仍按半透明分类，透明分区与 `hasTranslucentVertices` 的语义不变；
+- 真正的透明由绘制时的 `RenderType` alpha 裁剪按玩家皮肤决定，即烘焙只负责几何、贴图只负责可见性。
+
+掩码烘焙使用独立的贴图哈希域（`maskedTextureHash`），烘焙、校验与 `cacheOnly` 读取三条路径共用同一个哈希，因此升级后不会复用旧版本里已经删面的缓存。代价是玩家模型不再靠「把 UV 指向全透明texel」隐藏几何，且透明区域较大的玩家模型顶点数会比以前多。
+
 ## Tangent 与几何语义
 
 PBR tangent 在最终 UV 上由 face 几何与 UV 梯度预计算，保存方向与 handedness；退化 UV 产生确定性结果。Render 再按最终变换修正方向、镜像和背面 handedness；Bake 不预设本帧 model matrix。

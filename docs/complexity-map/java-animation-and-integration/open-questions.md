@@ -27,7 +27,7 @@
 
 | ID | 观察与约束 | 最小核验 / 判断边界 |
 |---|---|---|
-| O-07 实际求值限频 | [动画契约](../../product-decisions/decisions/animation-sampling.md)允许调度频率影响播放与动作次数；远处 RemotePlayer 可以降低骨骼、指令与 controller 推进频率，仍按 delta time 插值。 | 限频本身不再构成逐帧契约偏差；仍须验证整体表现和所有受支持逻辑/因果语义，尤其跨区间指令不漏、不回退、不在同一播放生命周期重复。未运行这些验证，不能据此宣称现有实现完全符合。 |
+| O-07 实际求值限频 | [动画契约](../../product-decisions/decisions/animation-sampling.md)允许调度频率影响播放与动作次数；远处 RemotePlayer 可以降低骨骼、指令与 controller 推进频率，仍按 delta time 插值。基准 60 Hz 与单调档位由 [DD.animation-presentation-rate-is-bounded](../../product-decisions/decisions/animation-sampling.md#ddanimation-presentation-rate-is-bounded) 裁决。 | 限频本身不再构成逐帧契约偏差；仍须验证整体表现和所有受支持逻辑/因果语义，尤其跨区间指令不漏、不回退、不在同一播放生命周期重复，以及 60 Hz 基准在不同刷新率下的实际观感。未运行这些验证，不能据此宣称现有实现完全符合。 |
 
 Live 游戏/第三方 API 的 worker 读取、同帧 pose 复用但 draw context 未刷新的问题已在[动画](../../status/known-issues/animation.md)和[渲染](../../status/known-issues/rendering.md)保留；本图不把安全快照或未接通的 `RenderStateModifier` 画成现存解决机制。`GeoReplacedEntityRenderer.setupRotations` 的 live entity 临时修改/恢复也是候选，但其 superclass 语义和异常路径尚未展开，未纳入本轮节点与排名。
 

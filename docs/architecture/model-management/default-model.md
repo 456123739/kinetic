@@ -12,7 +12,8 @@ Intrinsic default 按[分类降级与启动基线](../../product-decisions/decis
 | `misc/1_alex` | 窄手臂（slim skin）玩家模型，动画经默认动画回退继承 Steve 的集合 |
 
 - 路径常量唯一来源是 `BuiltinModelIndex.INTRINSIC_DEFAULT_PATH` / `SLIM_PLAYER_PATH`；构建期 `gradle/builtin-index.gradle` 与 `BuiltinModelIndexTool` 的 default root 必须与之一致。
-- 皮肤类型只在客户端可知，取值来自 `AbstractClientPlayer#getModelName()`（其下层是 `PlayerInfo#getModelName()`）：`slim` → `misc/1_alex`，其余 → intrinsic default。客户端在选择请求里发送对应模型 hash；服务端只负责在客户端未给出可用选择时回退到 intrinsic default。映射函数是 `BuiltinModelIndex.playerPathForSkin`。
+- 皮肤类型只在客户端可知，取值来自 `AbstractClientPlayer#getModelName()`（其下层是 `PlayerInfo#getModelName()`）：`slim` → `misc/1_alex`，其余 → intrinsic default。映射函数是 `BuiltinModelIndex.playerPathForSkin`。
+- 宽/细手臂与皮肤的一致性分两层保证。会话层：客户端在选择请求里发送按皮肤映射的模型 hash，服务端只负责在客户端未给出可用选择时回退到 intrinsic default。渲染层：客户端在每次模型更新前，把「当前选择属于这两个内置玩家模型」的玩家收敛到与当前皮肤一致的变体，作为实际绘制的依据。第二层不可省略——服务端既看不到皮肤，也只在会话协商时对齐一次，玩家在游戏中换皮肤（含在皮肤类模组里切换宽/细）之后不会重新协商，只靠第一层会让变体停留在登录时的宽度，并与皮肤贴图错位。两层都只作用于这两个内置玩家模型：当前选择是别的模型时客户端不改写选择。
 - 原 `default/animations/**`（含 `parcool.animation.json`）已按动画名合并进 Steve 与 Alex 的动画集；模型自带同名动画优先。合并后 Steve 的动画集合即构建期 contract 的 default animations，Alex 中与之逐字节相同的条目由既有 dedup 过滤移除并在运行期回退。
 - 构建期 `generateBuiltinDefaultContract` 仍会物化 intrinsic default 以冻结身份与默认动画集合，但它的输入已改为 `misc/2_steve`；它只从源码树生成，不会把已删除的模型重新带回产物。
 

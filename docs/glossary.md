@@ -11,9 +11,9 @@
 | chunk hash | 单个 logical content 的完整性摘要。 |
 | raw model | 作者仍可修改、尚未写成 Asset Container 的模型源资源集合。 |
 | 容器语义冻结 / semantic freeze | Raw 或 legacy source 成功导出后，该 Asset Container 的 logical content 成为后续兼容需要保持的语义快照；只冻结该导出物的已定义行为，不表示当前格式版本已经稳定。 |
-| legacy v1/v2 与 v3 加密模型 | 旧版私有 `.ysm` 格式世代，与 Asset Container、Model Schema 和 Protocol 版本无关。 |
+| legacy v1/v2 与 v3 加密模型 | 旧版私有 `.kinetic` 格式世代，与 Asset Container、Model Schema 和 Protocol 版本无关。 |
 | model render target / loaded render target | Model Schema 中按用途声明的目标 / 客户端结合纹理与行为资源装配、由 cache 和 lease 管理的运行时对象；均非 Minecraft framebuffer。 |
-| YSM `BakedModel` / `CubeGroup` | Native CPU renderer 的不可变烘焙结果，与 Minecraft 同名类型无关；后者是同一骨骼和逻辑分区内不可拆分的 SIMD 几何与调度单元。 |
+| KINETIC `BakedModel` / `CubeGroup` | Native CPU renderer 的不可变烘焙结果，与 Minecraft 同名类型无关；后者是同一骨骼和逻辑分区内不可拆分的 SIMD 几何与调度单元。 |
 | serialized baked cache | `BakedModel` 的内部缓存表示，不是公开模型格式。 |
 | current protocol | 当前 `0.3.0-unstable` 的单字节 message tag、simple/full frame、typed collection publication、typed model distribution 与 gameplay 消息语义；Forge 是 transport adapter。 |
 | `SessionMode` / `ActiveSessionMode` | 用户选择策略 / 当前实际玩家状态权威；`AUTO` 只属于前者。 |
@@ -38,7 +38,7 @@
 | `EntityModelBinding` / `AnimatableEntity` / `AnimatedGeoModel` | 分别负责 render-target 绑定、`entity` 动画生命周期和 `BoneAttribute` 所有权。 |
 | `BoneAttribute` | Native 读取的逐骨骼记录；Java `AnimatedGeoModel` 持有布局等价的连续 attribute 数组。 |
 | Roaming | 通过 PlayerState 同步、按模型短键分组并暴露为 `v.roaming` 的持久 float 变量。 |
-| `ysm.sync` | 触发模型 `sync` handler 的尽力而为瞬时事件，不是状态或骨骼同步。 |
+| `kinetic.sync` | 触发模型 `sync` handler 的尽力而为瞬时事件，不是状态或骨骼同步。 |
 | `GeoModelState` / `GeoRenderData` | 前者拥有 canonical 或 mutable 的 native `ModelState` 与 Java locator mapping，并借用 native pose view；后者组合其借用视图和本次 draw metadata。 |
 | `ModelState` | Native extract 结果；共享 `BakedModel`，拥有 pose、可见骨骼索引、locator scratch 和 `RenderSchedule`；Java 借用其 view。 |
 | `RenderSchedule` / `RenderTask` | 按可见骨骼与四个几何分区形成的只读 CPU 工作及固定输出区间计划。 |
@@ -52,4 +52,4 @@
 | `ModelFileView` / `ModelInfoView` / `ChunkDataSource` | 模型 Manifest 与引用的唯一解析视图 / 共享 immutable Info 与 player target、只增加可重建 metadata lookup 的视图 / 按 descriptor 取得 payload 的内容来源；metadata 成功不证明全部资源已取得。 |
 | `UniBuffer` / ownership token | 统一 array/native bytes 的 Java 视图 / 决定该 owning 引用是否已关闭的所有权凭据；slice 共享 token，acquire 建立独立引用。 |
 | `ClientAssetBatch` | 页面显式收集并提交的 preview、pack cover 与 presentation 需求集合，不是通用 wire batch 或 model body 下载 owner。 |
-| `@YsmExtension` / `@YsmEventHandler` | 扩展兼容检查入口声明 / 可自动发现、通过生成 checker 后再实例化注册的 handler 声明；不构成稳定公共 API 承诺。 |
+| `@KineticExtension` / `@KineticEventHandler` | 扩展兼容检查入口声明 / 可自动发现、通过生成 checker 后再实例化注册的 handler 声明；不构成稳定公共 API 承诺。 |

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ysm.network;
+package kinetic.network;
 
 message ServerHello {
   string protocol_version = 1;

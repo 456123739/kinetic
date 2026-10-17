@@ -8,7 +8,9 @@
 - [产品决策](product-decisions/README.md)：声明范围内产品目标、需求、业务约束、领域决策、理由与稳定行为契约的 Root Authority。
 - [复杂度地图](complexity-map/README.md)：当前机制的因果来源、高扇出决策、归约支点与待裁决缺口；不拥有产品或架构决策权威。
 - [模型兼容与容器语义冻结](concepts/model-compatibility.md)：旧模型单向迁移目标、raw export 的语义边界与 representation normalization 原则。
-- [扩展模组兼容性检测](extension-compatibility.md)：扩展入口注解处理器、生成的启动期 checker、检测范围与 `@YsmEventHandler` 自动注册。
+- [模型管理概念](concepts/model-management.md)：catalog、远端 activation 与共享资源 lease 的概念目标。
+- [网络系统概念](concepts/network.md)：单 wire path、业务本地 owner 与 exact connection retirement 的概念目标。
+- [扩展模组兼容性检测](extension-compatibility.md)：扩展入口注解处理器、生成的启动期 checker、检测范围与 `@KineticEventHandler` 自动注册。
 - [独立格式标准](standards/README.md)
 - [架构总览](architecture/README.md) / [运行模型](architecture/runtime-model.md)：跨语言职责、问题定位、side、线程与生命周期。
 - [当前支持状态](status/support-and-verification.md)

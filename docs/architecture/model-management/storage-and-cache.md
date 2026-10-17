@@ -31,22 +31,22 @@ Catalog 移除只撤销索引持有，不清除旧实例；已经完成的 targe
 派生 cache 按归属分布在两个 root：
 
 ```text
-<game-dir>/ysm/cache/converted/...                实例本地 root：converted 内容
-<game-dir>/ysm/cache/previews/...                 实例本地 root：独立 preview cache
-<game-dir>/ysm/cache/bake/...                     实例本地 root：baked render 派生物
-<platform-app-data>/ysm/cache/remote/...          平台级 root：remote 已验证内容
+<game-dir>/kinetic/cache/converted/...                实例本地 root：converted 内容
+<game-dir>/kinetic/cache/previews/...                 实例本地 root：独立 preview cache
+<game-dir>/kinetic/cache/bake/...                     实例本地 root：baked render 派生物
+<platform-app-data>/kinetic/cache/remote/...          平台级 root：remote 已验证内容
 ```
 
-`<platform-app-data>` 是平台级应用数据位置：Windows 取 `%LOCALAPPDATA%`，macOS 取用户 Library 的 Application Support，其余取用户 home 下的 `.local/share`；remote cache 的平台级 root 为该位置下的 `ysm/cache`。该位置不存在、不能创建或不可写时，remote 退回 `<game-dir>/ysm/cache/remote`。converted、preview 与 baked 只属于当前游戏实例，没有平台级替代位置。每个 `AtomicSharedCache` 实例只守卫一个内容 root：目标必须留在该 root 内，同 key lock 位于 `<root>/locks`，因此不同 root 的 cache 不会共享锁目录。
+`<platform-app-data>` 是平台级应用数据位置：Windows 取 `%LOCALAPPDATA%`，macOS 取用户 Library 的 Application Support，其余取用户 home 下的 `.local/share`；remote cache 的平台级 root 为该位置下的 `kinetic/cache`。该位置不存在、不能创建或不可写时，remote 退回 `<game-dir>/kinetic/cache/remote`。converted、preview 与 baked 只属于当前游戏实例，没有平台级替代位置。每个 `AtomicSharedCache` 实例只守卫一个内容 root：目标必须留在该 root 内，同 key lock 位于 `<root>/locks`，因此不同 root 的 cache 不会共享锁目录。
 
 ## Converted storage
 
 ```text
-<game-dir>/ysm/cache/converted/index.bin
-<game-dir>/ysm/cache/converted/<model-id>/<container-id>.mxc
+<game-dir>/kinetic/cache/converted/index.bin
+<game-dir>/kinetic/cache/converted/<model-id>/<container-id>.mxc
 ```
 
-Converted 内容属于当前游戏实例，因此不进入平台级 root；消费者登记与对象 lock 同样以 `<game-dir>/ysm/cache` 定位。
+Converted 内容属于当前游戏实例，因此不进入平台级 root；消费者登记与对象 lock 同样以 `<game-dir>/kinetic/cache` 定位。
 
 Raw conversion 的 index entry 为 `ModelId, ContainerId, rawRelativePath, fullModVersion`。复用要求 source probe、完整模组版本、路径、对象位置和当前 Model Schema 验证全部精确匹配。旧 schema 对象从 raw source 重建；不迁移旧 payload，也不保留兼容 reader。精确 converted object 的坏读只返回失败，不删除当前目标；后续验证通过的同一精确对象可原子覆盖，替换失败保留旧文件。可变 index 仍按自身一致性规则更新，不能套用精确对象的并发赢家规则。
 
@@ -55,6 +55,20 @@ Raw conversion 的 index entry 为 `ModelId, ContainerId, rawRelativePath, fullM
 每个参与 shared converted 的进程持有实际 OS 锁登记。新消费者只在 client join 或 server start 等首次使用点等待正在进行的 prune；startup 不等待。首次 scan 结束后，Catalog 在短期清理许可内按本次保留集合执行一次保守 prune；获取许可失败或仍有其他消费者时跳过。清理只触及已归属的 converted 派生物，不触及用户来源、remote、preview 或 baked cache。进程退出释放锁；残留登记文件不冒充活跃进程，不使用 PID、心跳或过期时间恢复。
 
 `AtomicSharedCache` 的同 key JVM/文件锁仍服务 baked 等独立派生 writer；direct container 不再是其消费者。不能由共享 helper 推定各 cache 的 identity、失效与清理语义已经统一。
+
+## 兼容别名
+
+改名的边界是「本模组自己的名字」，不是「别人已经产出的内容」。下面几处保留旧拼写，属于**有意的兼容面**，不是遗漏：
+
+| 位置 | 旧拼写 | 处理方式 |
+|---|---|---|
+| Molang 根名 | `ysm.*` | 与 `kinetic.*` 注册同一个 binding，见 [Binding 与 invocation](../animation/molang-runtime.md#binding-与-invocation) |
+| 模型包清单 | `ysm.json` | 目录模型先找 `kinetic.json`，没有则回退 `ysm.json`；只认新名会让旧包丢掉作者/许可/文件映射 |
+| 模型归档后缀 | `.ysm` | native 归档读取器按后缀路由，只接受 `.zip`/`.7z`/`.ysm`，其它后缀直接被拒 |
+
+容器魔数 `YSGP` / `YSGP2` 同样保持不变：它是容器的二进制标识，与模组名无关，改了会让既有容器与 legacy 解包全部失效。
+
+在此之外命名统一为 Kinetic。新导出的内容仍然写 `kinetic.json` 与 `.mxc`，上面三项只在**读**的时候兜底。
 
 ## Remote storage
 

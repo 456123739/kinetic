@@ -1,0 +1,40 @@
+# KINETIC 服务端动画优先级配置（默认值随模组发布）
+#
+# 规则：
+#   - 数值越大越优先；多个动画同时满足触发条件时，选数值最高的那个。
+#   - 数值相同时回退到模组内置的判断顺序（与改动前行为一致）。
+#   - 优先级只决定“播放哪一个动画”，不改变动画过渡与混合（blending）。
+#
+# 内置档位权重（未在此文件出现的动画使用它，用于与配置值一起排序）：
+#   HIGHEST = 1000   (death/riptide/sleep/swim/climb/ladder_*)
+#   HIGH    = 800    (fly/elytra_fly)
+#   NORMAL  = 600    (swim_stand/attacked/jump/sneak/sneaking)
+#   LOW     = 400    (run/walk)
+#   LOWEST  = 200    (idle)
+# 下面的默认值与内置档位一一对应，因此“保持默认”时判断结果与改动前完全一致。
+#
+# 键可以是下面两种写法：
+#   1. 逻辑别名（推荐，跨版本稳定）：
+#        attack        -> 受击动画        （实际 ID: attacked）
+#        walk          -> 行走
+#        idle          -> 待机
+#        sneak         -> 潜行/潜行移动   （实际 ID: sneak, sneaking）
+#        parcool_slide -> Parcool 滑铲    （实际 ID: parcool:sliding）
+#        tacz_crawl    -> TACZ 爬行       （实际 ID: tac:climb:* 与 tac:climbing:*）
+#   2. 精确动画 ID（例如 "parcool:wall_slide_left"、"tac:aim:rifle"）；
+#      以 ":" 结尾表示前缀匹配。
+#
+# 运行时生效值来自服务端 config/kinetic-server.toml 的 AnimationPriorities 列表，
+# 该列表由本文件的默认值初始化，并由 Forge 的 SERVER 配置同步机制下发到客户端。
+# 要修改优先级，请改服务端 config 文件（或在此处改默认值后重新发布）。
+
+[priorities]
+attack = 600
+walk = 400
+idle = 200
+sneak = 600
+
+# 跑酷滑铲必须高于 TACZ 爬行：持枪滑铲时应当播放滑铲，而不是 TACZ 爬行动作。
+# （Minecraft 的 Pose.SWIMMING 同时被游泳、爬行与 Parcool 滑铲复用，所以这里必须显式裁决。）
+parcool_slide = 1200
+tacz_crawl = 700

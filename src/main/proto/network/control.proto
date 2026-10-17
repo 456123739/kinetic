@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ysm.network;
+package kinetic.network;
 
 import "network/common.proto";
 

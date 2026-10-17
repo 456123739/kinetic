@@ -1,0 +1,2 @@
+v.roaming.wheelRocate = math.min_angle(v.roaming.wheelRocate - kinetic.ground_speed2 / kinetic.fps * 60);
+return v.roaming.wheelRocate;

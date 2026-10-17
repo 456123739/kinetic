@@ -19,7 +19,7 @@ Local reload 以完整 candidate 提交，remote activation 按 entry 隔离；�
 | remote delta remove 指向不存在项 | 成功 no-op，只记录 debug 诊断 |
 | publication remove 或 exact tuple replacement | 关闭旧 entry owner并拒绝 stale completion |
 | requested texture 不在当前已验证 representation，但 target 仍有可用 texture | 保持 request 不变，在 client render manager 内依次选择有效 requested、有效 manifest default、manifest 稳定顺序中的第一项作为 effective texture |
-| render target 不存在，或 projectile/vehicle target 没有 texture | 当前 scoped replacement 不激活，既有 projectile/vehicle owner 撤销 YSM 视觉替换并恢复宿主绘制；不扩成 alias、默认模型替代、修复状态或全局宽松 lookup |
+| render target 不存在，或 projectile/vehicle target 没有 texture | 当前 scoped replacement 不激活，既有 projectile/vehicle owner 撤销 KINETIC 视觉替换并恢复宿主绘制；不扩成 alias、默认模型替代、修复状态或全局宽松 lookup |
 | player target 没有 texture | 在 M1 reader fail closed，不能进入 catalog 或借用其他 target 的 texture |
 | expression 解析或求值失败 | 按 target、logical action 与 entity runtime 隔离；单个表达式失败不牵动 Catalog entry、其他 caller 或已发布内容 |
 | disconnect、protocol close 或切回 LOCAL | 关闭 exact session 的查询、请求与投影；共享 catalog/runtime work 不整体退休，client 立即投影最新 local snapshot |
@@ -33,7 +33,7 @@ Failed/cancelled Flight 退出命中集合，后续 acquire 可建立新 Flight�
 
 Cache-only model-card probe 的 miss、访问失败或取消同样是 transient：它只让当前卡片保持 2D，不能发布不完整 target，也不能污染随后带网络能力的 normal Flight。普通请求到来时可以建立新的 exact interest 并从 remote cache 或 server 继续获取。
 
-消费者在新 authoritative target Pending 或 Failed 时可保留旧 Ready lease；humanoid 没有旧 lease 时使用 intrinsic default，projectile/vehicle 没有可用 replacement 时保持或恢复宿主呈现。Textureless non-player target 仍属于已发布 container 的 logical content，但不进入主动 preload，也不创建 render lease、默认 YSM replacement、持久 unavailable 标记或 publication rollback。Requested texture 与由已验证 manifest 导出的 effective texture 始终分离：fallback 不修改 `ResourceRequest`，不回写 authoritative selection，也不触发仅为消除名称漂移的 exact fetch、ACK/reconciliation、持久 alias 或 cache repair。Disconnect 会撤销 remote-only catalog projection 与 selection residue，随后 UI、entity 与 resource lookup 共同切回进程 Catalog 的最新 local authority。
+消费者在新 authoritative target Pending 或 Failed 时可保留旧 Ready lease；humanoid 没有旧 lease 时使用 intrinsic default，projectile/vehicle 没有可用 replacement 时保持或恢复宿主呈现。Textureless non-player target 仍属于已发布 container 的 logical content，但不进入主动 preload，也不创建 render lease、默认 KINETIC replacement、持久 unavailable 标记或 publication rollback。Requested texture 与由已验证 manifest 导出的 effective texture 始终分离：fallback 不修改 `ResourceRequest`，不回写 authoritative selection，也不触发仅为消除名称漂移的 exact fetch、ACK/reconciliation、持久 alias 或 cache repair。Disconnect 会撤销 remote-only catalog projection 与 selection residue，随后 UI、entity 与 resource lookup 共同切回进程 Catalog 的最新 local authority。
 
 ## 恢复探测的调度边界
 

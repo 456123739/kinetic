@@ -1,5 +1,5 @@
 {{PACKAGE}}
-@javax.annotation.processing.Generated("com.elfmcys.ysm.api.internal.processor.YsmExtensionProcessor")
+@javax.annotation.processing.Generated("com.kinetic.api.internal.processor.KineticExtensionProcessor")
 public final class {{CHECKER}} {
     private static final String MANIFEST_RESOURCE = "{{RESOURCE}}";
     private static final int MANIFEST_VERSION = 1;
@@ -15,8 +15,8 @@ public final class {{CHECKER}} {
         COMPATIBLE,
         COMPATIBLE_WITH_WARNINGS,
         NOT_APPLICABLE,
-        YSM_NOT_LOADED,
-        YSM_UNAVAILABLE,
+        KINETIC_NOT_LOADED,
+        KINETIC_UNAVAILABLE,
         INCOMPATIBLE,
         CHECK_FAILED
     }
@@ -34,7 +34,7 @@ public final class {{CHECKER}} {
         MIXIN_RUNTIME_TRANSFORM,
         REOBF_CANARY_UNAVAILABLE,
         REOBF_PROBE_ERROR,
-        YSM_ENTRYPOINT_ERROR,
+        KINETIC_ENTRYPOINT_ERROR,
         MANIFEST_ERROR,
         UNKNOWN_COVERAGE_GAP
     }
@@ -79,9 +79,9 @@ public final class {{CHECKER}} {
             if (sideResult != null) {
                 return sideResult;
             }
-            Result ysmResult = checkYsmEntrypoint();
-            if (ysmResult != null) {
-                return ysmResult;
+            Result kineticResult = checkKineticEntrypoint();
+            if (kineticResult != null) {
+                return kineticResult;
             }
             Result canaryResult = checkReobfCanary(spec.canaryProbe());
             if (canaryResult != null) {
@@ -127,66 +127,66 @@ public final class {{CHECKER}} {
                 }
                 return null;
             } catch (ClassNotFoundException exception) {
-                return result(Status.CHECK_FAILED, IssueKind.YSM_ENTRYPOINT_ERROR,
+                return result(Status.CHECK_FAILED, IssueKind.KINETIC_ENTRYPOINT_ERROR,
                         "net.minecraftforge.fml.loading.FMLEnvironment.dist",
                         "Cannot determine the physical side outside a Forge runtime.");
             } catch (Throwable throwable) {
-                return result(Status.CHECK_FAILED, IssueKind.YSM_ENTRYPOINT_ERROR,
+                return result(Status.CHECK_FAILED, IssueKind.KINETIC_ENTRYPOINT_ERROR,
                         "net.minecraftforge.fml.loading.FMLEnvironment.dist", describe(throwable));
             }
         }
 
-        private static Result checkYsmEntrypoint() {
+        private static Result checkKineticEntrypoint() {
             Boolean modLoaded = null;
             try {
                 Class<?> modListClass = Class.forName("net.minecraftforge.fml.ModList", false, loader());
                 Object modList = modListClass.getMethod("get").invoke(null);
                 modLoaded = (Boolean) modListClass.getMethod("isLoaded", String.class)
-                        .invoke(modList, "ysm");
+                        .invoke(modList, "kinetic");
                 if (!modLoaded) {
-                    return new Result(Status.YSM_NOT_LOADED, java.util.List.of());
+                    return new Result(Status.KINETIC_NOT_LOADED, java.util.List.of());
                 }
             } catch (ClassNotFoundException ignored) {
                 // A plain JVM test/runtime has no ModList; class presence is the fallback.
             } catch (Throwable throwable) {
-                return result(Status.CHECK_FAILED, IssueKind.YSM_ENTRYPOINT_ERROR,
+                return result(Status.CHECK_FAILED, IssueKind.KINETIC_ENTRYPOINT_ERROR,
                         "net.minecraftforge.fml.ModList#isLoaded", describe(throwable));
             }
 
-            Class<?> ysm;
+            Class<?> kinetic;
             try {
-                ysm = Class.forName("com.elfmcys.ysm.YesSteveModel", false, loader());
+                kinetic = Class.forName("com.kinetic.Kinetic", false, loader());
             } catch (ClassNotFoundException | NoClassDefFoundError exception) {
-                return new Result(modLoaded == null ? Status.YSM_NOT_LOADED : Status.INCOMPATIBLE,
+                return new Result(modLoaded == null ? Status.KINETIC_NOT_LOADED : Status.INCOMPATIBLE,
                         java.util.List.of(new Issue(IssueKind.MISSING_CLASS,
-                                "com.elfmcys.ysm.YesSteveModel", describe(exception))));
+                                "com.kinetic.Kinetic", describe(exception))));
             } catch (Throwable throwable) {
-                return result(Status.CHECK_FAILED, IssueKind.YSM_ENTRYPOINT_ERROR,
-                        "com.elfmcys.ysm.YesSteveModel", describe(throwable));
+                return result(Status.CHECK_FAILED, IssueKind.KINETIC_ENTRYPOINT_ERROR,
+                        "com.kinetic.Kinetic", describe(throwable));
             }
 
             java.lang.reflect.Method method;
             try {
-                method = ysm.getMethod("isAvailable");
+                method = kinetic.getMethod("isAvailable");
             } catch (NoSuchMethodException exception) {
                 return result(Status.INCOMPATIBLE, IssueKind.MISSING_METHOD,
-                        "com.elfmcys.ysm.YesSteveModel#isAvailable()Z", describe(exception));
+                        "com.kinetic.Kinetic#isAvailable()Z", describe(exception));
             }
             if (!java.lang.reflect.Modifier.isStatic(method.getModifiers())
                     || method.getReturnType() != boolean.class) {
                 return result(Status.INCOMPATIBLE, IssueKind.TYPE_MISMATCH,
-                        "com.elfmcys.ysm.YesSteveModel#isAvailable()Z",
+                        "com.kinetic.Kinetic#isAvailable()Z",
                         "Expected a public static boolean method.");
             }
             try {
                 Object available = method.invoke(null);
                 if (!Boolean.TRUE.equals(available)) {
-                    return new Result(Status.YSM_UNAVAILABLE, java.util.List.of());
+                    return new Result(Status.KINETIC_UNAVAILABLE, java.util.List.of());
                 }
                 return null;
             } catch (Throwable throwable) {
-                return result(Status.CHECK_FAILED, IssueKind.YSM_ENTRYPOINT_ERROR,
-                        "com.elfmcys.ysm.YesSteveModel#isAvailable()Z", describe(throwable));
+                return result(Status.CHECK_FAILED, IssueKind.KINETIC_ENTRYPOINT_ERROR,
+                        "com.kinetic.Kinetic#isAvailable()Z", describe(throwable));
             }
         }
 
@@ -488,14 +488,14 @@ public final class {{CHECKER}} {
                 bytes = resource.readNBytes(MAX_MANIFEST_BYTES + 1);
             }
             if (bytes.length > MAX_MANIFEST_BYTES) {
-                throw new java.io.IOException("YSM compatibility manifest is too large.");
+                throw new java.io.IOException("KINETIC compatibility manifest is too large.");
             }
             com.google.gson.JsonElement document = com.google.gson.JsonParser.parseString(
                     new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
             com.google.gson.JsonObject root = requireObject(document, "manifest");
             int version = requireInteger(root.get("version"), "version");
             if (version != MANIFEST_VERSION) {
-                throw new java.io.IOException("Unsupported YSM compatibility manifest version: "
+                throw new java.io.IOException("Unsupported KINETIC compatibility manifest version: "
                         + version);
             }
             String canary = requireString(root.get("canaryProbe"), "canaryProbe");

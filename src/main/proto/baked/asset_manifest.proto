@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ysm.baked.asset;
+package kinetic.baked.asset;
 
 message BakedAssetManifest {
   bytes container_id = 1;

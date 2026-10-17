@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package ysm.network;
+package kinetic.network;
 
 message EntityRef {
   uint32 entity_id = 1;

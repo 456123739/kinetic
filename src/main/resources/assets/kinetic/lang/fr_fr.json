@@ -1,0 +1,19 @@
+{
+  "gui.kinetic.close": "Fermer",
+  "gui.kinetic.pre_page": "Page précédente",
+  "gui.kinetic.next_page": "Page suivante",
+  "gui.kinetic.all_models": "Tous les modèles",
+  "gui.kinetic.download": "Ouvrir l'interface de téléchargement",
+  "gui.kinetic.search": "Chercher un modèle...",
+  "gui.kinetic.model.texture": "Ouvrir l'interface de prévisualisation",
+  "gui.kinetic.model.return": "Retour",
+  "gui.kinetic.model.reset": "Réinitialiser la vue",
+  "gui.kinetic.model.stop": "Arrêter Animation",
+  "gui.kinetic.config.disable_self_model": "Empêche le rendu du modèle du joueur",
+  "gui.kinetic.config.disable_other_model": "Empêche le rendu du modèle d'un autre joueur",
+  "gui.kinetic.config.print_animation_roulette_msg": "Afficher ou non le message de lecture de la roulette d'animation",
+  "gui.kinetic.config.disable_self_hands": "Empêche le rendu des mains du joueur",
+  "gui.kinetic.config.disable_player_render": "Désactiver le rendu supplémentaire du joueur",
+  "gui.kinetic.disclaimer.read": "J'ai lu et j'accepte les conditions d'utilisation",
+  "gui.kinetic.disclaimer.close": "Fermer"
+}

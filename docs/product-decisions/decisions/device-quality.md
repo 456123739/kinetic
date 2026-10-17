@@ -25,6 +25,6 @@
 
 ### BC.frame-rate-depends-on-content
 
-- Claim: 实际客户端帧率受模型规模、同屏玩家数量与运行环境影响，YSM 不作严格帧率承诺；性能目标用于优化，不能作为任意内容和规模下的帧率保证。
+- Claim: 实际客户端帧率受模型规模、同屏玩家数量与运行环境影响，KINETIC 不作严格帧率承诺；性能目标用于优化，不能作为任意内容和规模下的帧率保证。
 
 性能观测的软约束与服务端优化目标见[保持游戏正常运行](../requirements/req-preserve-gameplay-and-availability.md)。

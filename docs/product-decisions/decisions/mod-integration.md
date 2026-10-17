@@ -20,23 +20,35 @@
 
 ## DD.compose-external-models-and-animation
 
-- Claim: 外部模组提供的模型与特效可接入 YSM 角色呈现，YSM 提供所需的角色动作适配。
+- Claim: 外部模组提供的模型与特效可接入 KINETIC 角色呈现，KINETIC 提供所需的角色动作适配。
 - Rationale: 枪械、武器和装备已有美术内容，但其角色依附关系与动作会因旧模型系统被替换而失效；接入已有绘制并提供对应角色动画，可以尽量补回这些损失，也避免重制资产带来的成本与表现偏差。
 
 ### BC.weapon-and-equipment-integration-scope
 
 - Claim: 已明确的武器与装备联动按以下分工形成玩家可见的组合表现。
 
-| 联动内容 | 外部内容职责 | YSM 职责 |
+| 联动内容 | 外部内容职责 | KINETIC 职责 |
 |---|---|---|
 | TaCZ | 枪械模型、特效及枪械玩法 | 接入枪械渲染，提供持枪、开枪、匍匐等角色动画 |
 | SlashBlade | 太刀模型、攻击特效及武器玩法 | 提供连招动画 |
 | Sophisticated Backpacks | 背包模型及背包玩法 | 接入背包渲染 |
 
+### BC.far-weapons-may-render-as-simplified-lod
+
+- Decision: [DD.compose-external-models-and-animation](#ddcompose-external-models-and-animation)
+- Claim: 其他玩家手持的枪械在远处可以改用 KINETIC 自建的简化模型与简化动画，只保留可辨识的轮廓与持枪姿态；持枪者自己看到的枪始终是提供方的完整表现，物品 LOD 与动画 LOD 是两个独立开关，且缺数据时必须原样回退到完整路径。
+
+机制、实测数据与失败边界见[枪械 LOD](../../architecture/integration/gun-lod.md)。
+
 ## DD.expose-integration-state-to-creators
 
 - Claim: 创作者可以通过脚本读取联动内容中与模型表现有关的状态。
-- Rationale: 饰品等装备信息能够让创作者重新适配作品外观与动作，每个作品需要的表现又不同；暴露状态读取能为修复和扩展这些关联表现提供空间，无需 YSM 为每种作品硬编码一套动作。
+- Rationale: 饰品等装备信息能够让创作者重新适配作品外观与动作，每个作品需要的表现又不同；暴露状态读取能为修复和扩展这些关联表现提供空间，无需 KINETIC 为每种作品硬编码一套动作。
+
+### BC.external-poses-do-not-replace-base-movement
+
+- Decision: [DD.compose-external-models-and-animation](#ddcompose-external-models-and-animation)
+- Claim: 外部武器与道具联动提供的姿势只占上半身，不替换玩家的基础移动动画：跑动、行走、潜行、滑铲等腿部与躯干动作在攻击、持械、投掷期间保持连续，不会被换成静态持械姿势。
 
 ### BC.script-can-query-curios-equipment
 
@@ -44,22 +56,22 @@
 
 ## DD.use-provider-render-capabilities
 
-- Claim: YSM 通过渲染联动向创作者开放宿主组合提供的高级材质能力。
+- Claim: KINETIC 通过渲染联动向创作者开放宿主组合提供的高级材质能力。
 - Rationale: 高级视觉效果需要与当前渲染管线共同工作，复用提供方能力可以提升作品表现，同时避免另建全局管线而破坏其他内容。
 
 ### BC.oculus-iris-exposes-pbr
 
-- Claim: YSM 向创作者开放相应加载器中兼容提供方的 PBR 能力：Forge 对接 Oculus，Fabric 对应 Iris；两者是不同环境下的对应提供方，不要求组合安装。
+- Claim: KINETIC 向创作者开放相应加载器中兼容提供方的 PBR 能力：Forge 对接 Oculus，Fabric 对应 Iris；两者是不同环境下的对应提供方，不要求组合安装。
 
 当前 Forge 1.20.1 主线的渲染联动对象是 Oculus，提及 Iris 只说明 Fabric 下的对应关系，不扩大当前主线的平台迁移范围。这些分工不承诺任意提供方版本均兼容，联动缺失或版本不匹配遵守共享的可选联动降级契约。
 
 ## DD.open-integration-to-external-adapters
 
 - Horizon: future
-- Claim: 未来提供公共 API，使其他模组可以直接适配 YSM 系统，也可由独立桥接模组实现双方联动。
-- Rationale: 系统替换影响的内容组合超出 YSM 自身能够逐一维护的范围；让内容提供方与第三方参与适配，可以进一步降低替换破坏，并分担持续增长的联动维护成本。
+- Claim: 未来提供公共 API，使其他模组可以直接适配 KINETIC 系统，也可由独立桥接模组实现双方联动。
+- Rationale: 系统替换影响的内容组合超出 KINETIC 自身能够逐一维护的范围；让内容提供方与第三方参与适配，可以进一步降低替换破坏，并分担持续增长的联动维护成本。
 
 ### BC.future-api-supports-direct-and-bridge-adaptation
 
 - Horizon: future
-- Claim: 规划中的公共适配 API 必须允许其他模组对接 YSM 模型与动画系统，也允许第三方作为桥梁组合双方能力；外部适配仍服从无关内容保护与联动失败降级边界。
+- Claim: 规划中的公共适配 API 必须允许其他模组对接 KINETIC 模型与动画系统，也允许第三方作为桥梁组合双方能力；外部适配仍服从无关内容保护与联动失败降级边界。

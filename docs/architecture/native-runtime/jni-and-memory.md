@@ -4,7 +4,7 @@
 
 ## Buffer 传递
 
-`buffer.UniBuffer` 统一 array 与 native memory 的访问。`natives.buffer.BufferArgument.packInput()` 把底层对象、类型、offset 和 size 编成 JNI 输入，`ysm::java::BufferInput` 在 native 入口还原范围并验证容量。该描述符只是本次调用的内存视图，不是持久资源 handle。
+`buffer.UniBuffer` 统一 array 与 native memory 的访问。`natives.buffer.BufferArgument.packInput()` 把底层对象、类型、offset 和 size 编成 JNI 输入，`kinetic::java::BufferInput` 在 native 入口还原范围并验证容量。该描述符只是本次调用的内存视图，不是持久资源 handle。
 
 | 形式 | 实现机制 | 使用边界 |
 |---|---|---|

@@ -5,6 +5,7 @@
 - Needs:
   - 远端与本地补充输入: [DD.game-state-plus-mod-projection](player-state-sync.md#ddgame-state-plus-mod-projection)
   - 更换采样策略: [DD.explicit-support-is-stable](model-compatibility.md#ddexplicit-support-is-stable)
+  - 受限设备降低呈现更新频率: [DD.high-end-quality-with-basic-availability](device-quality.md#ddhigh-end-quality-with-basic-availability)
 - Landing:
   - [architecture](../../architecture/animation/entity-and-frame-state.md#时间与更新频率)
   - [architecture](../../architecture/animation/state-inputs-and-sync.md#输入分类)
@@ -30,3 +31,12 @@
 ### BC.instruction-keyframes-preserve-causality
 
 - Claim: 有效动画的指令关键帧按播放顺序执行，不回退、不因降低更新频率漏掉中间指令；在同一动画播放生命周期内不重复执行同一指令帧。新的播放生命周期可再次执行相应指令，不保证不同帧率或调度频率下产生相同次数的播放和动作。
+
+## DD.animation-presentation-rate-is-bounded
+
+- Claim: 常规 `level` 实体的动画呈现更新频率默认以 60 Hz 为基准，并按距离分档进一步降低；该基准与各档位对玩家可配置。
+- Rationale: 60 Hz 的动画采样在视觉上已经足够平滑，继续跟随 144 Hz 等高刷显示器逐帧求值换来的观感提升有限，把每帧求值预算留给整体游戏流畅度更有价值。基准必须可调低，受限设备才能在不放弃模型玩法的前提下保留基础可用性。旧的距离阶梯在 30 Hz 显示器上还会出现近处 30、中距 60、远处 30 的非单调跳变，因此有效频率按距离单调不增。默认取安全、普适的一侧、更激进的选择由用户主动启用，这一原则同样用于 [DD.gpu-backface-culling-is-explicit-opt-in](geometry-regions.md#ddgpu-backface-culling-is-explicit-opt-in)。
+
+### BC.presentation-rate-is-monotonic-and-bounded
+
+- Claim: 常规 `level` 实体的动画呈现更新频率必须随距离非递增且不超过所配置的上限；上限与各距离档位只决定本机采样密度，可由玩家配置。

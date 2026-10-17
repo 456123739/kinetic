@@ -10,12 +10,12 @@
 
 ## DD.transparency-stops-at-model-boundary
 
-- Claim: YSM 保证单模型透明语义，并遵循宿主管线对跨对象内容的组织边界。
+- Claim: KINETIC 保证单模型透明语义，并遵循宿主管线对跨对象内容的组织边界。
 - Rationale: 跨模型、实体与世界的透明关系属于上层渲染管线；强行接管会越过局部视觉替换范围，并以高侵入增加原版与其他模组呈现被破坏的风险和维护成本。
 
 ### BC.cross-object-transparency-follows-host
 
-- Claim: 单模型受支持的透明关系必须保持；不同模型、实体与世界透明内容之间的整体排序和混合不由 YSM 保证，不为补齐这些场景擅自改变上层管线。
+- Claim: 单模型受支持的透明关系必须保持；不同模型、实体与世界透明内容之间的整体排序和混合不由 KINETIC 保证，不为补齐这些场景擅自改变上层管线。
 
 ## DD.attachment-order-is-creator-tunable
 

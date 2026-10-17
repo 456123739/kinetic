@@ -1,6 +1,6 @@
 # 运行模型
 
-YSM 运行时同时存在进程级基础设施、client/server 侧服务、exact connection session、共享模型资源和逐实体状态。它们的结束条件不同；同一 JVM 中的集成服务端也不能把 client 与 server 的 mutable facts 合并。
+KINETIC 运行时同时存在进程级基础设施、client/server 侧服务、exact connection session、共享模型资源和逐实体状态。它们的结束条件不同；同一 JVM 中的集成服务端也不能把 client 与 server 的 mutable facts 合并。
 
 ## 生命周期与线程
 
@@ -13,7 +13,7 @@ YSM 运行时同时存在进程级基础设施、client/server 侧服务、exact
 | 客户端连接 session | `ClientLoggedEvent` 的 `LoggingIn` / `LoggingOut` 进入 `ClientSessionRuntime` | 以 exact `Connection` 匹配 begin/disconnect；连接退出只释放该 session 的 query、request、assembly 与效果资格，共享 catalog/runtime work 可继续 |
 | 实体与 draw | `EntityModelBinding`、`AnimatableEntity`、`GeoModelState` | 绑定、播放和输出槽按 entity 隔离；动画与 extract 的调度见[帧执行](rendering/frame-execution.md) |
 
-这里的 Forge 事件是 YSM 的接入窗口。FML 扫描、类加载和事件调度内部属于外部 loader 边界；表格不额外假定未由 YSM 建立的第三方监听器先后顺序。
+这里的 Forge 事件是 KINETIC 的接入窗口。FML 扫描、类加载和事件调度内部属于外部 loader 边界；表格不额外假定未由 KINETIC 建立的第三方监听器先后顺序。
 
 ## 不可变 Proto 发布边界
 

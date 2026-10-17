@@ -1,0 +1,137 @@
+package com.kinetic.client.gui;
+
+import com.kinetic.client.animation.molang.PhysicsManager;
+import com.kinetic.client.entity.CustomPlayerEntity;
+import com.kinetic.client.entity.IPreviewEntity;
+import com.kinetic.client.event.ClientTickEvent;
+import com.kinetic.model.resource.client.ResourceLease;
+import com.kinetic.model.resource.client.ResourceRequest;
+import com.kinetic.geckolib3.core.event.predicate.AnimationEvent;
+import com.kinetic.geckolib3.core.molang.context.DebugSource;
+import com.kinetic.geckolib3.geo.GeoRenderData;
+import com.kinetic.geckolib3.geo.RenderContext;
+import com.mojang.authlib.GameProfile;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.world.entity.player.Player;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.UUID;
+
+public final class CustomGuiPlayerEntity extends CustomPlayerEntity implements IPreviewEntity {
+    private final PreviewAnimationInfo guiAnimationInfo;
+    private boolean allowEmitting;
+
+    public CustomGuiPlayerEntity() {
+        super(new FakePlayer(), false, false);
+        guiAnimationInfo = new PreviewAnimationInfo();
+    }
+
+    void installPreviewResource(ResourceRequest request, ResourceLease lease) {
+        super.installReadyForPreview(request, lease);
+    }
+
+    @Override
+    public void reset() {
+        guiAnimationInfo.setFocus("");
+        guiAnimationInfo.setPreview("");
+        guiAnimationInfo.setHover("");
+        allowEmitting = false;
+        super.reset();
+    }
+
+    @Override
+    public boolean determineImmutableContext(RenderContext context) {
+        return true;
+    }
+
+    @Override
+    public @NotNull PreviewAnimationInfo getPreviewInfo() {
+        return guiAnimationInfo;
+    }
+
+    @Override
+    public PhysicsManager getPhysicsManager(AnimationEvent<?> event) {
+        return physicsManager;
+    }
+
+    @Override
+    public void setAllowEmitting(boolean value) {
+        this.allowEmitting = value;
+    }
+
+    @Override
+    public boolean isActive() {
+        return true;
+    }
+
+    @Override
+    protected boolean allowEmitting() {
+        return allowEmitting;
+    }
+
+    @Override
+    public int getFrameRateLimit() {
+        // 预览实体没有距离概念，只用近处基准频率（刷新率，受 MaxAnimationEvaluationRate 限制）。
+        return ClientTickEvent.getAnimationRefreshRate();
+    }
+
+    @Override
+    public boolean isFakePlayer() {
+        return true;
+    }
+
+    @Override
+    protected GeoRenderData update(float partialTicks, RenderContext context) {
+        if (entity instanceof FakePlayer fakePlayer && !fakePlayer.updateClientLevel()) {
+            return null;
+        }
+        return super.update(partialTicks, context);
+    }
+
+    public static boolean isFakePlayer(Player player) {
+        return player instanceof FakePlayer;
+    }
+
+    @Override
+    public DebugSource getDebugSource() {
+        return null;
+    }
+
+    @Override
+    protected @NotNull HumanoidResourceHolder createResourceHolder(ResourceLease lease, boolean isFallback) {
+        return new HumanoidResourceHolder(lease, isFallback);
+    }
+
+    private static class FakePlayer extends AbstractClientPlayer {
+        @SuppressWarnings("DataFlowIssue")
+        public FakePlayer() {
+            super(Minecraft.getInstance().level, createRandomGameProfile());
+        }
+
+        private static GameProfile createRandomGameProfile() {
+            var uuid = UUID.randomUUID();
+            return new GameProfile(uuid, "kinetic_" + uuid.toString().replace('-', '_'));
+        }
+
+        @Override
+        public boolean isSpectator() {
+            return false;
+        }
+
+        @Override
+        public boolean isCreative() {
+            return false;
+        }
+
+        public boolean updateClientLevel() {
+            var level = Minecraft.getInstance().level;
+            if (level != null) {
+                this.setLevel(level);
+                return true;
+            } else {
+                return false;
+            }
+        }
+    }
+}

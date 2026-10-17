@@ -44,6 +44,6 @@ Cleaner 不承诺回收时限，HotSpot 也不会按 mimalloc/多数 GPU allocat
 
 `ClientAudioRuntime` 是客户端 encoded/PCM 保留事实的唯一 authority；`SoundSource` 只描述内容，render target 不拥有第二份声音 cache。每次 `createPlayback` 建立独立取得取消资格、decoder/PCM cursor、loop 状态和短 PCM 候选，共享的只有不可变 encoded 或完整 PCM。Stop、失败、disconnect 与 runtime close 先使本次迟到取得、下一段读取、下一周期 loop 和未完成候选失去资格，再关闭本播放独占的 stream/decoder；其他播放和已经合法发布的 Ready 数据不被追溯销毁。
 
-宿主交接由局部 handoff ticket 闭合。Provider future 完成只产生一个 offered stream；`Channel.attachBufferStream` 实际采用时才把消费责任交给 Minecraft channel。`ChannelHandle.release` 先记录 host 已释放，再允许 callback；即使宿主跳过 execute callback，未采用 stream 仍由 ticket 终结。采用后 Minecraft 推进和关闭 `AudioStream`，YSM stop 仍撤销自己的候选与后续效果，但不等待设备已排队声波消失。
+宿主交接由局部 handoff ticket 闭合。Provider future 完成只产生一个 offered stream；`Channel.attachBufferStream` 实际采用时才把消费责任交给 Minecraft channel。`ChannelHandle.release` 先记录 host 已释放，再允许 callback；即使宿主跳过 execute callback，未采用 stream 仍由 ticket 终结。采用后 Minecraft 推进和关闭 `AudioStream`，KINETIC stop 仍撤销自己的候选与后续效果，但不等待设备已排队声波消失。
 
 短 PCM 发布只撤销 runtime 对旧 encoded 的缓存引用。已经持有该 backing 的播放继续有效，最后 owning reference 退出后由 `UniBuffer`/Cleaner 完成物理回收；没有强制 GC 或固定回收期限。Accepted transfer、文件句柄、native decoder 和未采用 stream 仍由各自 exact owner 显式终结，不能用 Cleaner 代替。

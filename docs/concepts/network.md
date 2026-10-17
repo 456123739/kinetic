@@ -1,6 +1,6 @@
 # 网络系统
 
-YSM 在 Forge connection 上使用一条 `EventNetworkChannel`，同步模型 session、catalog、资产、玩家与 entity 状态以及控制事件。Server 是远端 catalog、grants、selection 和玩家状态的权威；client 只有在完整验证后才发布远端目录或资源。
+KINETIC 在 Forge connection 上使用一条 `EventNetworkChannel`，同步模型 session、catalog、资产、玩家与 entity 状态以及控制事件。Server 是远端 catalog、grants、selection 和玩家状态的权威；client 只有在完整验证后才发布远端目录或资源。
 
 ```mermaid
 flowchart LR

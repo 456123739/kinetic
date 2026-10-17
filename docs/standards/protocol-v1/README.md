@@ -1,6 +1,6 @@
 # 当前网络协议
 
-当前应用与 Forge transport version 均为 `0.3.0-unstable`。全部消息使用统一的 `ysm.network` Proto package；入口为 [model session](proto/network/model_session.proto)、[common](proto/network/common.proto)、[player state](proto/network/player_state.proto)、[control](proto/network/control.proto) 与 [Minecraft state](proto/network/minecraft_state.proto)。Proto package 不替代 transport version。当前或对端 transport qualifier 大小写不敏感地包含 `unstable`、`dev` 或 `snapshot` 时，兼容判断要求两个完整原始版本字符串严格相等；两侧均不含这些标记时才委托 protocol 的稳定版策略，当前该策略仍为 exact。
+当前应用与 Forge transport version 均为 `0.3.0-unstable`。全部消息使用统一的 `kinetic.network` Proto package；入口为 [model session](proto/network/model_session.proto)、[common](proto/network/common.proto)、[player state](proto/network/player_state.proto)、[control](proto/network/control.proto) 与 [Minecraft state](proto/network/minecraft_state.proto)。Proto package 不替代 transport version。当前或对端 transport qualifier 大小写不敏感地包含 `unstable`、`dev` 或 `snapshot` 时，兼容判断要求两个完整原始版本字符串严格相等；两侧均不含这些标记时才委托 protocol 的稳定版策略，当前该策略仍为 exact。
 
 协议尚未冻结；client 与 server 必须来自同步构建。实现只保留当前 reader/writer，不协商、探测、双读或兼容 `0.2.0-unstable` wire。
 
@@ -45,7 +45,7 @@ byte[attachmentSize] attachment
 - zstd 不使用 dictionary，必须精确产生 `decodedProtoSize` 并拒绝尾随压缩数据。Raw protobuf 的 decoded/stored size 必须相同。
 - Proto parser 与 frame decoder 都必须精确消费各自边界。所有多字节 wire 整数均为 little-endian。
 
-Frame transport 不解释 transfer、resource key、member、sequence、offset、completion、authorization 或 publication。Forge 外层压缩可以绕过，但不能改变上述 YSM frame 边界。Transport version 不匹配只关闭 YSM session 并进入 intrinsic-default-only，不主动断开 Minecraft connection。
+Frame transport 不解释 transfer、resource key、member、sequence、offset、completion、authorization 或 publication。Forge 外层压缩可以绕过，但不能改变上述 KINETIC frame 边界。Transport version 不匹配只关闭 KINETIC session 并进入 intrinsic-default-only，不主动断开 Minecraft connection。
 
 ## 消息注册
 
@@ -107,7 +107,7 @@ Proto 中显式 `optional` 的 ordinary singular 字段区分 absent、present-d
 
 ## Connection 与 model session
 
-发现 YSM channel 后，server 发送只含 exact protocol version 与 roaming policy 的 `ServerHello`，client 以 `SessionResponse` 接受或拒绝。Wire 不携带 `session_id`；来源玩家与 exact Forge `Connection` 是唯一连接 identity。每条 connection 至多有一个 model session：pending hello 重试复用同一 offer，session active 后 `/ysm ping` 只做无状态连通性探测，不替换 owner 或重置 publication/transfer 状态。
+发现 KINETIC channel 后，server 发送只含 exact protocol version 与 roaming policy 的 `ServerHello`，client 以 `SessionResponse` 接受或拒绝。Wire 不携带 `session_id`；来源玩家与 exact Forge `Connection` 是唯一连接 identity。每条 connection 至多有一个 model session：pending hello 重试复用同一 offer，session active 后 `/kinetic ping` 只做无状态连通性探测，不替换 owner 或重置 publication/transfer 状态。
 
 Client 将 `ACCEPT` 成功提交给当前 exact connection 后，C2S 业务消息即可进入发送门禁；server 只在同一 connection 的 model session 已处理该响应并进入 active 后执行。业务消息包括 Selection、PlayerState、收藏和控制请求，即 ID 9、16、19、20、22、23、25。该资格不等待 collection publication，也不因其 assembly、commit 或 activation 失败而撤销；ID 4..7 的 catalog/resource 请求仍服从已提交 publication 及各自 admission。非法 frame、协议不匹配、变更后的重复 Hello、断连或 connection replacement 会撤销业务资格。该顺序复用同一 connection 的 transport order 与 owner-thread active 复核，不新增 wire ACK、generation、重放或待发队列。
 

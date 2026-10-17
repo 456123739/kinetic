@@ -20,7 +20,7 @@ stateDiagram-v2
 状态语义：
 
 - `LOCAL` 使用本地 catalog。显式 Local 收到 `ServerHello` 时最多 decline 一次。
-- `NEGOTIATING` 只持有一个 connection-owned hello offer 和 full candidate。`ACCEPT` 已提交后可以同时存在业务就绪但 catalog 仍在协商的状态；`/ysm ping` 重发同一 pending hello，不创建第二 session。
+- `NEGOTIATING` 只持有一个 connection-owned hello offer 和 full candidate。`ACCEPT` 已提交后可以同时存在业务就绪但 catalog 仍在协商的状态；`/kinetic ping` 重发同一 pending hello，不创建第二 session。
 - `ACTIVE` 只表示已提交的 collection authority 与独立 activation state。Active ping 只探测连通性，不替换 owner、不重置 publication/data-transfer ID，也不重启 transfer。
 - `INTRINSIC_DEFAULT_ONLY` 只渲染 intrinsic default，直到重连；不能回退到可能与 server authority 不一致的本地 catalog。Catalog failure 到达该状态时保留已握手的业务资格；协议失败到达该状态时撤销资格，因此不能从此枚举反推业务可用性。
 - `CLOSED` seal 新 work，并关闭该 connection 的业务资格、publication assembler、typed distribution owner、activation 与 transport capability。
@@ -29,7 +29,7 @@ stateDiagram-v2
 
 失败按 provenance 收敛：collection assembly、commit 或 activation 失败只关闭 catalog/resource owner 并进入 intrinsic default，保留 `BusinessSession`；版本/非法 frame/冲突 Hello 等协议失败，以及 disconnect/replacement，才同时撤销业务资格。`SessionResponse.DECLINE` 只有在同一 server model session 成功执行 `PENDING -> DECLINED` 时生效；ACTIVE/DECLINED 后的 late 或 duplicate response 是 no-op。Player-state 的真实 FULL baseline 仍属于同一 exact server model session，不另建 generation 或恢复 owner。
 
-跨联机会话的网络隔离复用 Minecraft 网络框架：完全退出服务器或存档后，整个 Netty executor 会 drain，模组无需为框架已保障的边界重复增加跨会话隔离状态与协调机制。该宿主边界不替代 YSM 的 exact Connection 路由检查和本侧 work 退役。
+跨联机会话的网络隔离复用 Minecraft 网络框架：完全退出服务器或存档后，整个 Netty executor 会 drain，模组无需为框架已保障的边界重复增加跨会话隔离状态与协调机制。该宿主边界不替代 KINETIC 的 exact Connection 路由检查和本侧 work 退役。
 
 Wire 不携带 `session_id`。Server callback 的来源玩家与 exact `Connection` 是路由事实；每条 connection 至多一个 model session。网络线程在 enqueue 时捕获 exact connection，owner thread 执行时再次确认它仍是 current，不能按玩家 UUID 或 global current 借用 replacement session。
 

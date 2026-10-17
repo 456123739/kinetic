@@ -1,0 +1,49 @@
+package com.kinetic.natives;
+
+import com.kinetic.buffer.BufferType;
+import com.kinetic.buffer.UniBuffer;
+import com.kinetic.buffer.annotation.Owned;
+import com.kinetic.natives.buffer.BufferArgument;
+import org.jetbrains.annotations.Nullable;
+
+import java.lang.ref.Reference;
+
+public final class Zstd {
+    private static final int OP_COMPRESS = 1;
+    private static final int OP_DECOMPRESS = 2;
+
+    private Zstd() {
+    }
+
+    @Owned
+    public static UniBuffer compressAndHash(UniBuffer source, byte @Nullable [] hash, BufferType outputType, int level) {
+        var args = BufferArgument.packInput(source);
+        final Object result;
+        try {
+            result = nZstd(args.obj(), args.flags(), hash, level, outputType.id(), OP_COMPRESS);
+        } finally {
+            Reference.reachabilityFence(source);
+        }
+        if (result == null) {
+            throw new IllegalStateException("Native zstd compression returned no result");
+        }
+        return BufferArgument.unpackOutput(result);
+    }
+
+    @Owned
+    public static UniBuffer decompressAndValidate(UniBuffer source, int outputSize, byte @Nullable [] hash, BufferType outputType) {
+        var args = BufferArgument.packInput(source);
+        final Object result;
+        try {
+            result = nZstd(args.obj(), args.flags(), hash, outputSize, outputType.id(), OP_DECOMPRESS);
+        } finally {
+            Reference.reachabilityFence(source);
+        }
+        if (result == null) {
+            throw new IllegalStateException("Native zstd decompression returned no result");
+        }
+        return BufferArgument.unpackOutput(result);
+    }
+
+    private static native Object nZstd(Object source, long sourceFlags, byte @Nullable [] hashResult, int outputParam, int outputType, int op);
+}

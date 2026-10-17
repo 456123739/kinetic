@@ -2,7 +2,7 @@
 
 > **适用问题**：模型来源、目录与激活发布、资源取得、cache、lease 和失败隔离；**不包含**：容器字段、网络 frame 与动画或顶点算法。
 
-进程级 local catalog 持有跨游戏存续的已验证内容；client 与 game server 各自持有 session 投影和 runtime resource owner。连接到支持 YSM 的 server 后，client 先原子切换到 lean `RemotePublicationSnapshot` authority，再以 `ActivationSnapshot` 隔离每个 entry 的 Pending、Ready 与 Failed；`CatalogSnapshot` 始终只包含完整 Ready content。Resource 只通过内部 binding view 取得精确 `ModelContent`，使用资格仍来自当前 exact session。
+进程级 local catalog 持有跨游戏存续的已验证内容；client 与 game server 各自持有 session 投影和 runtime resource owner。连接到支持 KINETIC 的 server 后，client 先原子切换到 lean `RemotePublicationSnapshot` authority，再以 `ActivationSnapshot` 隔离每个 entry 的 Pending、Ready 与 Failed；`CatalogSnapshot` 始终只包含完整 Ready content。Resource 只通过内部 binding view 取得精确 `ModelContent`，使用资格仍来自当前 exact session。
 
 ```mermaid
 classDiagram
@@ -59,7 +59,7 @@ classDiagram
 
 ## 定位与交接
 
-`com.elfmcys.ysm.model` 承载领域状态，`com.elfmcys.ysm.client.model` 承载客户端资源与展示投影。对同一个 `ModelId`，先明确查询的是 authority、Ready content 还是 consumer target，再进入相应 owner。
+`com.kinetic.model` 承载领域状态，`com.kinetic.client.model` 承载客户端资源与展示投影。对同一个 `ModelId`，先明确查询的是 authority、Ready content 还是 consumer target，再进入相应 owner。
 
 | 问题 | 符号入口 |
 |---|---|

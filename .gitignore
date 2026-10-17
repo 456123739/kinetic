@@ -35,3 +35,8 @@ forge*changelog.txt
 
 # dark past
 hs_err_pid*
+
+# 参考用的第三方源码/JAR（仅本地阅读，不参与构建与版本控制）
+ragdollified-ref/
+quickskin-ref/
+analysis/

@@ -32,7 +32,7 @@ Portable profile 定义以下格式：
 | `WEBP` | 一个符合 [WebP Container Specification](https://developers.google.com/speed/webp/docs/riff_container) 的完整 RIFF WebP file；只允许一个静态 VP8 或 VP8L image |
 | `AVIF` | 一个符合 [AV1 Image File Format v1.2.0](https://aomediacodec.github.io/av1-avif/v1.2.0.html) 的完整 AVIF file；只允许一个 primary static image |
 
-外部格式 payload 解码后必须产生与 descriptor 宽高一致的 RGBA8 图像。Consumer 不得用文件扩展名替代 token，也不得猜测未知格式。颜色空间、ICC、方向 metadata、alpha 转换和尾随媒体字节策略尚未形成跨 codec 的稳定 YSM profile；producer 应输出已应用方向、无需外部颜色状态即可消费的静态图像，跨实现一致性测试必须固定最终 RGBA8 结果。
+外部格式 payload 解码后必须产生与 descriptor 宽高一致的 RGBA8 图像。Consumer 不得用文件扩展名替代 token，也不得猜测未知格式。颜色空间、ICC、方向 metadata、alpha 转换和尾随媒体字节策略尚未形成跨 codec 的稳定 KINETIC profile；producer 应输出已应用方向、无需外部颜色状态即可消费的静态图像，跨实现一致性测试必须固定最终 RGBA8 结果。
 
 `ZTX` 是当前实现可见的私有扩展 token，但端序、颜色、严格长度、版本升级和 fixtures 尚未冻结，因此不能用于 M2。实现可以显式接受它并报告 vendor extension 状态，但不得把结果标为 M2。
 
@@ -53,7 +53,7 @@ GeoModel 作为 ModelData map value 中的 bytes 二次编码；GeoModel 的 `cu
 - pivot 与 rotate 各有三个有限数。Pivot 使用模型像素单位，consumer 在应用平移时换算为 1/16 模型单位；rotate 使用弧度。
 - debug 缺省等同于 `false`；`cube_count` 缺省等同于零。Bone 按列表顺序连续拥有 `cube_count` 个 cube；总和必须恰好等于 Cubes 中的记录数。
 - 每个 cube 的 `face_count` 在 0 到 6 之间。
-- position 是 xyz 序列，长度可被 3 整除且最多八个顶点；其值已经处于 YSM 模型坐标，1 单位对应一个 Minecraft block。
+- position 是 xyz 序列，长度可被 3 整除且最多八个顶点；其值已经处于 KINETIC 模型坐标，1 单位对应一个 Minecraft block。
 - UV 是归一化的 uv 序列，长度可被 2 整除。Schema 不要求数值截断到 `[0, 1]`，以保留纹理寻址行为。
 - 每个 face 恰有四个 position index、四个 UV index 和一个三分量 normal；索引必须在各自数组范围内。
 - Index 顺序就是该 quad 的顶点顺序，consumer 必须保留。Normal 是 face 的显式方向，当前 schema 不强制单位长度，也不要求从 winding 重建。

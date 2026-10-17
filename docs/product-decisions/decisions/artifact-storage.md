@@ -20,7 +20,7 @@
 
 ### BC.local-catalog-input-is-never-mutated
 
-- Claim: 无论正常加载、转换、热加载、内容损坏还是访问失败，YSM 都不得修改、覆盖或删除 local catalog 的用户来源目录与原始文件。更新内存中的模型目录或转换生成独立产物不改变这一输入保护边界。
+- Claim: 无论正常加载、转换、热加载、内容损坏还是访问失败，KINETIC 都不得修改、覆盖或删除 local catalog 的用户来源目录与原始文件。更新内存中的模型目录或转换生成独立产物不改变这一输入保护边界。
 
 ### BC.cache-maintenance-does-not-own-sources
 

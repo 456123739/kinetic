@@ -36,18 +36,18 @@ Target 资源可跨 entity 共享；instance、播放进度和 `BoneAttribute` �
 - [Controller 与播放](controllers-and-playback.md)：coded、Bedrock、hybrid、状态机、override 与动作提交。
 - [Processor 与骨骼输出](processor-and-bone-output.md)：通道合成、复位、`BoneAttribute` 和 native 交接。
 - [Molang 运行时](molang-runtime.md)：源解析、binding、事件分发、roaming 与 failure。
-- [状态输入与同步](state-inputs-and-sync.md)：输入权威、PlayerState、Roaming、config action 与 `ysm.sync`。
+- [状态输入与同步](state-inputs-and-sync.md)：输入权威、PlayerState、Roaming、config action 与 `kinetic.sync`。
 - [模组动画联动](../../future/mod-animation-integration.md)：尚未收敛的适配边界与验收条件。
 
 ## 定位与交接
 
-`com.elfmcys.ysm.molang` 承载 lexer、parser、AST 与 `ExpressionEvaluator`；`com.elfmcys.ysm.geckolib3.core.molang` 承载 controller/query binding、变量存储与原版 query 变量；`com.elfmcys.ysm.client.animation.molang` 承载 YSM 自有 binding、函数、roaming struct 与事件包装；`com.elfmcys.ysm.geckolib3` 承载 controller、processor、动画/物理状态和输出；`client.controller` 与 `client.compat` 提供 coded controller 和可选模组输入。
+`com.kinetic.molang` 承载 lexer、parser、AST 与 `ExpressionEvaluator`；`com.kinetic.geckolib3.core.molang` 承载 controller/query binding、变量存储与原版 query 变量；`com.kinetic.client.animation.molang` 承载 KINETIC 自有 binding、函数、roaming struct 与事件包装；`com.kinetic.geckolib3` 承载 controller、processor、动画/物理状态和输出；`client.controller` 与 `client.compat` 提供 coded controller 和可选模组输入。
 
 | 问题 | 先定位的设计对象 |
 |---|---|
 | Molang 源没被解析、解析后退化为常量或模型加载失败 | `CustomMolangParser`、`MolangParser`、`AnimationProtoMapper`、`ModelRenderTargetLoader` |
 | 换模后变量、defer 或效果进入错误状态 | `EntityModelBinding`、`AnimatableEntity`、`AnimationProcessor`、`AnimationContext` |
-| Minecraft query、可选模组输入或效果路由错误 | `PrimaryBinding`、`QueryBinding`、`YSMBinding`、`CtrlBinding` |
+| Minecraft query、可选模组输入或效果路由错误 | `PrimaryBinding`、`QueryBinding`、`KineticBinding`、`CtrlBinding` |
 | Animation 选择、转换或混合 | `IAnimationController`、`AnimationPlayer`、`AnimationProcessor` |
 | Java 输出正确但姿态或 locator 错误 | `BoneAttribute`、`GeoModelState`、`ModelState::Extract` |
 

@@ -18,7 +18,7 @@
 | 选择/资产/展示权限、RESTRICTED_AUTH、接纳后撤权 | [model-authorization](../decisions/model-authorization.md) |
 | 会话归属与迟到结果 | [session-isolation](../decisions/session-isolation.md) |
 | 观察者状态取得、best-effort、游戏事实与本地输入 | [player-state-sync](../decisions/player-state-sync.md) |
-| roaming 累积状态、ysm.sync 瞬时事件 | [script-sync](../decisions/script-sync.md) |
+| roaming 累积状态、kinetic.sync 瞬时事件 | [script-sync](../decisions/script-sync.md) |
 | unstable/stable 协议兼容边界与 Minecraft 连接保留 | [session-failure](../decisions/session-failure.md) |
 
 ## Uses

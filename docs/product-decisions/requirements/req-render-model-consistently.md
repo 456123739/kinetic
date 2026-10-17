@@ -12,6 +12,7 @@
 | 模型体型、碰撞与非视觉玩法边界 | [visual-gameplay-boundary](../decisions/visual-gameplay-boundary.md) |
 | 原版附着层、定位组零缩放与自有几何替换 | [attachments](../decisions/attachments.md) |
 | 光照、着火、受击与发光轮廓 | [game-visual-signals](../decisions/game-visual-signals.md) |
+| 血量对应的受伤外观（伤口叠加层） | [player-wound-overlay](../decisions/player-wound-overlay.md) |
 | 受支持表面语义、艺术技巧例外与输出等价 | [geometry-regions](../decisions/geometry-regions.md) |
 | 单模型透明保证与 render layers first 调节 | [transparency-scope](../decisions/transparency-scope.md) |
 | 骨骼透明度只作用于透明区域 | [bone-opacity](../decisions/bone-opacity.md) |

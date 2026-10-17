@@ -17,7 +17,7 @@
 
 - Constraints: [CON.normal-use-isolation](../shared.md#connormal-use-isolation)
 - Claim: 正常使用中的失败必须降级受影响的内容或功能，并保留游戏主逻辑的可用性。
-- Rationale: YSM 提供视觉与创作价值；一个模型或一项联动失效不应让玩家失去整个游戏、服务端或其他内容，局部降级使故障代价与失败对象相称。可选联动或模型会话的价值不抵偿整个游戏启动或连接失败；共享渲染管线服务世界与其他模组，一次绘制也不能污染后续内容。
+- Rationale: KINETIC 提供视觉与创作价值；一个模型或一项联动失效不应让玩家失去整个游戏、服务端或其他内容，局部降级使故障代价与失败对象相称。可选联动或模型会话的价值不抵偿整个游戏启动或连接失败；共享渲染管线服务世界与其他模组，一次绘制也不能污染后续内容。
 
 ### BC.ordinary-failure-keeps-game-running
 
@@ -25,7 +25,7 @@
 
 ### BC.protect-game-data
 
-- Claim: 失败与降级不得破坏内存中的游戏实时数据、磁盘存档或与 YSM 无关的内容状态。
+- Claim: 失败与降级不得破坏内存中的游戏实时数据、磁盘存档或与 KINETIC 无关的内容状态。
 
 ### BC.render-failure-does-not-corrupt-scene
 

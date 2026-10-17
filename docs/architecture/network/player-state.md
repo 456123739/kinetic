@@ -19,7 +19,7 @@ Selection、PlayerState 与其余 C2S 控制请求在握手 ACCEPT 后即属于�
 
 Local player 的选择发送和运行资源请求在进入各自网络/资源 owner 前，分别应用[当前连续意图](../client-presentation/README.md#选择与显示的分离)门槛。该门槛只过滤快速切换产生的尚未发送效果，不改变服务端 authority，也不创建发送等待、完成或失败恢复状态；每个 remote entity 的资源需求独立计时，不能借另一个玩家的稳定选择提前发送。
 
-PlayerState、Roaming 与 `ysm.sync` 如何进入客户端动画运行时，见[动画状态输入与同步](../animation/state-inputs-and-sync.md)。
+PlayerState、Roaming 与 `kinetic.sync` 如何进入客户端动画运行时，见[动画状态输入与同步](../animation/state-inputs-and-sync.md)。
 
 ## 客户端报告机会
 

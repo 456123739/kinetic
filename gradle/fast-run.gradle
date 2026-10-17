@@ -1,6 +1,6 @@
-def fastRunProperty = 'ysm.fast_run'
-def fastRunWhitelistProperty = 'ysm.fast_run_whitelist'
-def fastRun = ysmLocalBooleanProperty(fastRunProperty, false)
+def fastRunProperty = 'kinetic.fast_run'
+def fastRunWhitelistProperty = 'kinetic.fast_run_whitelist'
+def fastRun = kineticLocalBooleanProperty(fastRunProperty, false)
 def fastRunWhitelist = new LinkedHashSet<String>()
 def clientRuntimeConfigurations = [
         'clientAdditionalRuntimeClasspath',
@@ -8,13 +8,13 @@ def clientRuntimeConfigurations = [
 ] as Set
 
 if (fastRun) {
-    def whitelistValue = ysmLocalProperties.getProperty(fastRunWhitelistProperty)
+    def whitelistValue = kineticLocalProperties.getProperty(fastRunWhitelistProperty)
     if (whitelistValue != null && !whitelistValue.isBlank()) {
         whitelistValue.split(',', -1).each { entry ->
             def coordinate = entry.trim()
             if (!(coordinate ==~ /[^:,\s]+:[^:,\s]+/)) {
                 throw new GradleException(
-                        "${ysmLocalPropertiesFile.name}:${fastRunWhitelistProperty} " +
+                        "${kineticLocalPropertiesFile.name}:${fastRunWhitelistProperty} " +
                                 "contains an invalid group:artifact entry: ${entry}")
             }
             fastRunWhitelist.add(coordinate)
@@ -88,7 +88,7 @@ if (fastRun) {
         unknownCoordinates.removeAll(availableCoordinates)
         if (!unknownCoordinates.isEmpty()) {
             throw new GradleException(
-                    "${ysmLocalPropertiesFile.name}:${fastRunWhitelistProperty} " +
+                    "${kineticLocalPropertiesFile.name}:${fastRunWhitelistProperty} " +
                             "contains unknown collaboration dependencies: " +
                             unknownCoordinates.join(', ') + ". Available entries: " +
                             availableCoordinates.join(', '))

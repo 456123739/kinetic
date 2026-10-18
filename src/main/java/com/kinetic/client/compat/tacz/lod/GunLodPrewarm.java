@@ -185,10 +185,17 @@ public final class GunLodPrewarm {
             startEnumeration(cache);
             return;
         }
-        if (inWorld) {
-            if (CURSOR.get() >= queue.size()) {
+        if (CURSOR.get() >= queue.size()) {
+            // 这一轮跑完了：把计划表放掉。它是一千把枪的 Slot 列表，没必要挂一整局。
+            // TOTAL/COMPLETED 已经记着进度，诊断与进度条不受影响。
+            if (!queue.isEmpty()) {
+                queue = List.of();
+            }
+            if (inWorld) {
                 return;
             }
+        }
+        if (inWorld) {
             if (!Policy.maySubmit(true, TACZCompat.hasPendingGunLod(), tickCount,
                     lastThrottledSubmitTick, IN_FLIGHT.get())) {
                 return;

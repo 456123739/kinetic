@@ -43,7 +43,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Locale;
 import java.util.Optional;
 
 class TacCompatInner {
@@ -457,6 +456,8 @@ class TacCompatInner {
     }
 
     private static boolean isType(String type, GunTabType tabType) {
-        return type.equals(tabType.name().toLowerCase(Locale.ENGLISH));
+        // TaCZ 的 type 是小写字符串，GunTabType 的枚举名是大写；用 equalsIgnoreCase 既等价于原来的
+        // toLowerCase 比较，又不会每次调用都新建一个 String。
+        return type.equalsIgnoreCase(tabType.name());
     }
 }

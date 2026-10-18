@@ -2373,7 +2373,7 @@
       }
     },
     "tac:reload:rifle": {
-      "animation_length": 10,
+      "animation_length": 1.75,
       "bones": {
         "UpBody": {
           "rotation": {

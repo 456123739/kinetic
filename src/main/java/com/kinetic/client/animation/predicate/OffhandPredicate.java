@@ -23,6 +23,11 @@ public class OffhandPredicate implements IAnimationPredicate<CustomHumanoidEntit
         if (entity == null || event.getAnimatableEntity() instanceof IPreviewEntity) {
             return PlayState.STOP;
         }
+        // 睡眠 / 死亡 / riptide 的手臂由主频道负责：hold 频道在它之后处理、并且直接覆盖同一份骨骼
+        // 快照，不让位的话尸体会保持举枪姿势、睡姿也会被持械姿势盖掉。
+        if (entity.isSleeping() || entity.isDeadOrDying() || entity.isAutoSpinAttack()) {
+            return PlayState.STOP;
+        }
 
         if (!checkSwingAndUse(entity, InteractionHand.OFF_HAND)) {
             return PlayState.PAUSE;

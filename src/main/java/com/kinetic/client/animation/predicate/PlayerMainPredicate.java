@@ -53,6 +53,11 @@ public class PlayerMainPredicate implements IAnimationPredicate<CustomPlayerEnti
         // 滑铲/墙跑姿势，尸体永远倒不下去。死亡动画本身仍按注册顺序走主频道。
         boolean dying = player.isDeadOrDying();
         String parcoolAnimation = ParCoolCompat.getAnimation(player);
+        if (parcoolAnimation != null && parcoolAnimation.startsWith("parcool:sliding")) {
+            // 记住"刚才在滑铲"：滑铲被开火打断后 Pose.SWIMMING 还会留一会儿，
+            // 这段时间必须压掉 climb/climbing，否则会渲染成匍匐。
+            com.kinetic.client.animation.AnimationRegister.markSliding(player);
+        }
         if (!dying && parcoolAnimation != null && event.getAnimatableEntity().getAnimation(parcoolAnimation) != null) {
             return PlayState.STOP;
         }

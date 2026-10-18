@@ -20,6 +20,36 @@ public class AnimationRegister {
 
     private static final float MIN_SPEED = 0.05f;
 
+    /**
+     * 最近一次"跑酷滑铲"的状态。
+     *
+     * <p>滑铲被任何原因打断（TaCZ 开火会取消疾跑，ParCool 随即停掉滑铲动画）之后，玩家的
+     * {@code Pose.SWIMMING} 还会保留若干 tick。这一段里没有滑铲动画，而 {@code climb}/{@code climbing}
+     * 是 HIGHEST——不记住"刚才在滑铲"，滑铲中的开火就会被渲染成匍匐。
+     *
+     * <p>只在客户端渲染线程读写，所以是普通静态字段而不是同步结构。
+     */
+    private static Player slidingPlayer;
+    private static long slidingSinceTick = Long.MIN_VALUE;
+
+    /** 跑酷正在演滑铲时由 {@code PlayerMainPredicate} 每帧调用。 */
+    public static void markSliding(Player player) {
+        slidingPlayer = player;
+        slidingSinceTick = player.tickCount;
+    }
+
+    /** 这名玩家最近 {@code ticks} 内是否在滑铲（用于压掉匍匐姿态）。 */
+    public static boolean wasSlidingRecently(Player player) {
+        return player == slidingPlayer && player.tickCount - slidingSinceTick <= SLIDE_GRACE_TICKS;
+    }
+
+    /**
+     * 滑铲被打断后保留"这是滑铲不是匍匐"的判断多久（tick）。
+     *
+     * <p>取 20：足够覆盖开火、被击退这类瞬时打断，又短到不会让真正的爬行迟迟不出来。
+     */
+    private static final int SLIDE_GRACE_TICKS = 20;
+
     public static void registerAnimationState() {
         // 死亡：Ragdollified 接管时让出死亡动画（布娃娃构造完成后其 HideDeadEntityMixin 会
         // 取消实体渲染并接管表现），否则维持 KINETIC 原有死亡动画。
@@ -32,9 +62,10 @@ public class AnimationRegister {
         // 一旦开火打断疾跑，ParCool 的滑铲动画会停下，而这一条仍然是 HIGHEST——不排除的话
         // 滑铲中的玩家会被立刻换成趴地爬行姿势。
         register("climb", Priority.HIGHEST, (player, event) -> player.getPose() == Pose.SWIMMING
-                && Math.abs(event.getLimbSwingAmount()) > MIN_SPEED && !isFastGroundMovement(player));
+                && Math.abs(event.getLimbSwingAmount()) > MIN_SPEED && !isFastGroundMovement(player)
+                && !wasSlidingRecently(player));
         register("climbing", Priority.HIGHEST, (player, event) -> player.getPose() == Pose.SWIMMING
-                && !isFastGroundMovement(player));
+                && !isFastGroundMovement(player) && !wasSlidingRecently(player));
 
         register("ladder_up", Priority.HIGHEST, (player, event) -> player.onClimbable() && getVerticalSpeed(player) > 0);
         register("ladder_stillness", Priority.HIGHEST, (player, event) -> player.onClimbable() && getVerticalSpeed(player) == 0);

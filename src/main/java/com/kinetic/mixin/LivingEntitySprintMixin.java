@@ -21,9 +21,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(LivingEntity.class)
 public abstract class LivingEntitySprintMixin {
-    /** 与 AnimationRegister 的滑铲判定保持一致：爬行约 0.03~0.1 格/tick，滑铲 0.4~0.6。 */
-    private static final double KINETIC_SLIDE_SPEED_SQR = 0.04;
-
     @Inject(method = "setSprinting", at = @At("HEAD"), cancellable = true)
     private void kinetic$keepSprintWhileSliding(boolean sprinting, CallbackInfo ci) {
         if (sprinting) {
@@ -35,9 +32,8 @@ public abstract class LivingEntitySprintMixin {
         if (player.getPose() != Pose.SWIMMING || player.isSwimming() || !player.onGround()) {
             return;
         }
-        if (player.getDeltaMovement().horizontalDistanceSqr() <= KINETIC_SLIDE_SPEED_SQR) {
-            return;
-        }
+        // 不再看速度：滑铲被打断往往就发生在速度骤降的那几个 tick，看速度会漏掉。
+        // 代价只是"趴着爬行的玩家也不会被取消疾跑"，而爬行本来就不疾跑，没有副作用。
         ci.cancel();
     }
 }

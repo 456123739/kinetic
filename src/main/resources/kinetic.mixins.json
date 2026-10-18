@@ -33,6 +33,7 @@
     "ConnectionMixin",
     "ProjectileEntityMixin",
     "ServerPlayerMixin",
-    "LivingEntitySprintMixin"
+    "LivingEntitySprintMixin",
+    "TaczSprintMixin"
   ]
 }

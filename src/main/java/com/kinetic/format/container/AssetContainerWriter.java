@@ -54,6 +54,14 @@ public class AssetContainerWriter implements AutoCloseable {
     }
 
     public void setSchema(String value) {
+        // 头部里 schema 是定长字段，超长写不进去。这里提前报错并带上具体取值——
+        // Shadow 的 relocate 会改写字符串常量，最终 JAR 里的值可能和源码里看到的不一样。
+        var bytes = value.getBytes(StandardCharsets.US_ASCII);
+        if (bytes.length > AssetContainerConstant.HEADER_SCHEMA_SIZE) {
+            throw new IllegalArgumentException("Schema \"" + value + "\" is " + bytes.length
+                    + " bytes, but the container header reserves only "
+                    + AssetContainerConstant.HEADER_SCHEMA_SIZE);
+        }
         this.schema = value;
     }
 

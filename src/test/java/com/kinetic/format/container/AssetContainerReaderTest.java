@@ -67,6 +67,19 @@ class AssetContainerReaderTest {
                 () -> AssetContainerReader.readPreamble(container));
     }
 
+    @Test
+    void schemaIdMustFitTheFixedSizeHeaderField() {
+        // 头部里 schema 是定长字段；超长会在写入中途抛异常，而生成内置默认模型时那条路径
+        // 位于启动阶段，异常会直接终止客户端。Shadow 的 relocate 会改写源码里的字符串常量，
+        // 所以最终长度由构建期的 checkShadedSchemaLength 负责，这里只锁住运行时的边界。
+        var maximum = "a".repeat(AssetContainerConstant.HEADER_SCHEMA_SIZE);
+        var writer = new AssetContainerWriter();
+
+        writer.setSchema(maximum);
+        assertThrows(IllegalArgumentException.class,
+                () -> writer.setSchema(maximum + "a"));
+    }
+
     private static byte[] writeEmptyContainer() throws IOException {
         var output = new ByteArrayOutputStream();
         try (var writer = new AssetContainerWriter();

@@ -39,6 +39,22 @@
 
 最终 JAR 位于 `build/libs/`。
 
+### 定长头部字段与 Shadow relocate 的冲突
+
+model 容器的 schema 标识写在**定长 32 字节**的头部字段里
+（`AssetContainerConstant.HEADER_SCHEMA_SIZE`），而 Shadow 的 `relocate` 会连字符串常量里
+「形如包路径」的前缀一起改写：源码里的 `mixel/character` 打进 JAR 后变成
+`<relocate 目标>/character`。目标包名一旦过长，游戏启动生成内置默认模型时就会抛
+`String utf8 byte size exceeds maximum allowed size of 32` 并崩溃——而普通单元测试跑的是
+未 relocate 的 class，发现不了。
+
+因此：
+
+- `MIXEL_RELOCATE_TARGET` 保持短名（当前 `com.ns.mixel`，产物里是
+  `com/ns/mixel/character`，22/32 字节）；
+- `checkShadedSchemaLength` 在构建期按同样的规则算一遍，超长直接让构建失败（已挂在
+  `check` 上，`./gradlew build` 会跑）。改 relocate 目标或 schema 标识后务必确认它通过。
+
 ## 推送源码仓库
 
 源码仓库是 `456123739/kinetic`（private，默认分支 `main`）；改名前叫 `ysm`，GitHub 会自动重定向旧地址。

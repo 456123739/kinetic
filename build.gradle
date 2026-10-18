@@ -889,6 +889,47 @@ def developmentMainOutput = sourceSets.main.output.files.collect {
     it.toPath().toAbsolutePath().normalize()
 }
 
+/*
+ * Shadow 的 relocate 会连字符串常量里「形如包路径」的前缀一起改写：mixel 库里的
+ * "mixel/character" 在最终 JAR 中会变成 "<本目标>/character"。而 model 容器的 schema 标识
+ * 写入的是定长头部字段（AssetContainerConstant.HEADER_SCHEMA_SIZE = 32），改写后一旦超长，
+ * 游戏启动生成内置默认模型时会直接抛异常崩溃——普通单元测试跑的是未 relocate 的 class，
+ * 发现不了这类问题（曾用 com.kinetic.shaded.mixel 触发过，见 docs/build.md）。
+ *
+ * 目标包名因此必须短：com/ns/mixel/character = 22 字节，留 10 字节余量。
+ * 改动它之后请确认 checkShadedSchemaLength 通过（已挂在 check 上，build 会跑）。
+ */
+def MIXEL_RELOCATE_TARGET = 'com.ns.mixel'
+
+/*
+ * 构建期校验：按 Shadow 同样的规则算出最终 JAR 里的 schema 标识，超过定长字段就让构建失败。
+ * schema 标识与字段大小都从源码读取，避免在 build.gradle 里再维护一份副本。
+ */
+def checkShadedSchemaLength = tasks.register('checkShadedSchemaLength') {
+    group = 'verification'
+    description = 'Fails the build when Shadow relocation makes the container schema id overflow its fixed-size header field.'
+    def schemaSource = file('src/main/java/com/kinetic/format/schema/model/ModelFileConstant.java')
+    def containerSource = file('src/main/java/com/kinetic/format/container/AssetContainerConstant.java')
+    inputs.files(schemaSource, containerSource)
+    def relocateTarget = MIXEL_RELOCATE_TARGET
+    doLast {
+        def schemaId = (schemaSource.text =~ /SCHEMA_ID\s*=\s*"([^"]+)"/)[0][1]
+        def limit = ((containerSource.text =~ /HEADER_SCHEMA_SIZE\s*=\s*(\d+)/)[0][1]) as int
+        def shaded = (schemaId.startsWith('mixel/') || schemaId.startsWith('mixel.'))
+                ? relocateTarget.replace('.', '/') + schemaId.substring('mixel'.length())
+                : schemaId
+        def size = shaded.length()
+        if (size > limit) {
+            throw new GradleException(
+                    "Container schema id overflows its fixed-size header field after Shadow relocation: " +
+                    "\"${schemaId}\" -> \"${shaded}\" is ${size} bytes, but HEADER_SCHEMA_SIZE is ${limit}. " +
+                    "Shorten MIXEL_RELOCATE_TARGET (currently \"${relocateTarget}\") or the schema id.")
+        }
+        logger.lifecycle("Container schema id after relocation: \"${shaded}\" (${size}/${limit} bytes)")
+    }
+}
+tasks.named('check') { dependsOn checkShadedSchemaLength }
+
 tasks.named('shadowJar') {
     dependsOn reobfJarTask
     dependsOn relocateProcessorAsmTask
@@ -909,7 +950,7 @@ tasks.named('shadowJar') {
     exclude '/META-INF/native-image/*'
     exclude '/META-INF/proguard/*'
     relocate 'us.hebi.quickbuf', 'com.kinetic.shaded.quickbuf'
-    relocate 'mixel', 'com.kinetic.shaded.mixel'
+    relocate 'mixel', MIXEL_RELOCATE_TARGET
 
     // org.jetbrains:annotations 是 Multi-Release JAR。Shadow 9 默认会在输出清单中写入
     // Multi-Release: true（"Adds the multi-release attribute to the manifest if any

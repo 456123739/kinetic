@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -79,6 +80,20 @@ class AnimationPriorityConfigTest {
                 "idle=10"));
         assertEquals(10, priority("idle"));
         assertEquals(777, AnimationPriorityConfig.priorityFor("walk", 777));
+    }
+
+    @Test
+    void slideOutranksCrawlFollowsTheTable() {
+        // 持枪与开火两条频道都靠这个结论决定 Pose.SWIMMING 归谁；配置反转时必须跟着反转，
+        // 否则开火仍会把跑酷滑铲顶成 TACZ 爬行。
+        AnimationPriorityConfig.refresh(List.of("parcool_slide=1200", "tacz_crawl=700"));
+        assertTrue(AnimationPriorityConfig.slideOutranksCrawl());
+
+        AnimationPriorityConfig.refresh(List.of("parcool_slide=600", "tacz_crawl=700"));
+        assertFalse(AnimationPriorityConfig.slideOutranksCrawl());
+
+        AnimationPriorityConfig.refresh(List.of("parcool_slide=700", "tacz_crawl=700"));
+        assertFalse(AnimationPriorityConfig.slideOutranksCrawl(), "同优先级时不应抢走爬行姿态");
     }
 
     private static int priority(String animationName) {

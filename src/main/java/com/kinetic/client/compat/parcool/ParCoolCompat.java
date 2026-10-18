@@ -2,6 +2,7 @@ package com.kinetic.client.compat.parcool;
 
 import com.kinetic.client.animation.molang.CtrlBinding;
 import com.kinetic.client.entity.CustomPlayerEntity;
+import com.kinetic.config.AnimationPriorityConfig;
 import com.kinetic.config.ClientConfig;
 import com.kinetic.geckolib3.core.controller.HybridAnimationController;
 import com.kinetic.geckolib3.core.controller.IAnimationController;
@@ -73,6 +74,16 @@ public class ParCoolCompat {
             return ParCoolAnimationManger.hasAnimation(player);
         }
         return false;
+    }
+
+    /**
+     * 玩家此刻的 {@code Pose.SWIMMING} 是否应该交给跑酷滑铲，而不是 TACZ 爬行。
+     *
+     * <p>该姿态被游泳、爬行和滑铲共用，光看 pose 分不出来；跑酷正在演滑铲、且滑铲优先级高于
+     * TACZ 爬行时才算数。持枪与开火两条频道都必须走这个判断，否则开火会把滑铲顶成爬行。
+     */
+    public static boolean isSliding(Player player) {
+        return hasAnimation(player) && AnimationPriorityConfig.slideOutranksCrawl();
     }
 
     @Nullable

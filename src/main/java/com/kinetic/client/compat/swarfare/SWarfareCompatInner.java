@@ -8,7 +8,6 @@ import com.atsuishio.superbwarfare.item.gun.GunItem;
 import com.kinetic.client.compat.parcool.ParCoolCompat;
 import com.kinetic.client.entity.CustomHumanoidEntity;
 import com.kinetic.client.model.locator.PlayerLocator;
-import com.kinetic.config.AnimationPriorityConfig;
 import com.kinetic.geckolib3.core.PlayState;
 import com.kinetic.geckolib3.core.builder.LoopType;
 import com.kinetic.geckolib3.core.event.predicate.AnimationEvent;
@@ -43,10 +42,6 @@ public class SWarfareCompatInner {
     static boolean isGun(ItemStack stack) {
         return stack.getItem() instanceof GunItem;
     }
-
-    /** 未配置时的兜底优先级，与服务端 kinetic_animation_priority.toml 的默认值一致。 */
-    private static final int FALLBACK_PARCOOL_PRIORITY = 1200;
-    private static final int FALLBACK_TACZ_CRAWL_PRIORITY = 700;
 
     /** 手雷类物品（标签由 data/kinetic/tags/items/grenade.json 维护）。 */
     static boolean isGrenade(ItemStack stack) {
@@ -172,12 +167,7 @@ public class SWarfareCompatInner {
 
         if (!livingEntity.isSwimming() && livingEntity.getPose() == Pose.SWIMMING) {
             // 跑酷滑铲优先时，腿部交给跑酷滑铲动画，上半身继续持枪，形成自然的滑铲持枪。
-            if (livingEntity instanceof Player player
-                    && ParCoolCompat.hasAnimation(player)
-                    && AnimationPriorityConfig.priorityFor("parcool:sliding",
-                            FALLBACK_PARCOOL_PRIORITY)
-                    > AnimationPriorityConfig.priorityFor("tac:climb:",
-                            FALLBACK_TACZ_CRAWL_PRIORITY)) {
+            if (livingEntity instanceof Player player && ParCoolCompat.isSliding(player)) {
                 return Math.abs(event.getLimbSwingAmount()) > 0.05
                         ? getGunTypeAnimation(event, heldItem, "tac:run:")
                         : getGunTypeAnimation(event, heldItem, "tac:hold:");
@@ -240,7 +230,8 @@ public class SWarfareCompatInner {
             double aimProgress = ClientEventHandler.zoomTime;
             boolean isClimbing = !livingEntity.isSwimming() && livingEntity.getPose() == Pose.SWIMMING && Math.abs(event.getLimbSwingAmount()) <= 0.05;
 
-            if (isClimbing) {
+            // 滑铲时开火必须留在滑铲姿态：tac:climbing:fire:* 是整身趴地动作，会把滑铲顶掉。
+            if (isClimbing && !(livingEntity instanceof Player sliding && ParCoolCompat.isSliding(sliding))) {
                 return getGunTypeAnimation(event, heldItem, "tac:climbing:fire:", LoopType.PLAY_ONCE);
             }
             if (aimProgress > 0.3) {

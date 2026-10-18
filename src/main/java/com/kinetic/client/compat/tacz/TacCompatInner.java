@@ -2,7 +2,6 @@ package com.kinetic.client.compat.tacz;
 
 import com.kinetic.client.animation.condition.ConditionTAC;
 import com.kinetic.client.compat.parcool.ParCoolCompat;
-import com.kinetic.config.AnimationPriorityConfig;
 import com.kinetic.client.entity.CustomHumanoidEntity;
 import com.kinetic.client.model.locator.PlayerLocator;
 import com.kinetic.init.ModItemTags;
@@ -185,10 +184,6 @@ class TacCompatInner {
      * tac:hold_shoot:pistol
      * tac:run:pistol
      */
-    /** 未配置时的兜底优先级，与服务端 serverconfig/kinetic_animation_priority.toml 的默认值一致。 */
-    private static final int FALLBACK_PARCOOL_PRIORITY = 1200;
-    private static final int FALLBACK_TACZ_CRAWL_PRIORITY = 700;
-
     static PlayState playGunHoldAnimation(AnimationEvent<? extends CustomHumanoidEntity<?>> event, ItemStack heldItem) {
         // 近战武器按原版剑处理（hold_mainhand:sword），返回 null 表示"本联动不接管"。
         if (isMeleeWeapon(heldItem)) {
@@ -221,12 +216,7 @@ class TacCompatInner {
             // 这里对应 “爬行” 姿态：Minecraft 的 Pose.SWIMMING 同时被游泳与爬行/滑铲复用。
             // Parcool 滑铲也把玩家置为这个姿态，如果直接返回 tac:climb:*，持枪滑铲时会错误地
             // 显示 TACZ 爬行动作。因此按服务端动画优先级裁决：跑酷滑铲优先时不接管该姿态。
-            if (livingEntity instanceof Player player
-                    && ParCoolCompat.hasAnimation(player)
-                    && AnimationPriorityConfig.priorityFor("parcool:sliding",
-                            FALLBACK_PARCOOL_PRIORITY)
-                    > AnimationPriorityConfig.priorityFor("tac:climb:",
-                            FALLBACK_TACZ_CRAWL_PRIORITY)) {
+            if (livingEntity instanceof Player player && ParCoolCompat.isSliding(player)) {
                 // 跑酷滑铲优先：腿部交给跑酷滑铲动画，上半身继续持枪，形成自然的滑铲持枪。
                 // tac:hold:* / tac:run:* 只写上半身，因此不会覆盖滑铲的下肢动作。
                 return Math.abs(event.getLimbSwingAmount()) > 0.05
@@ -297,7 +287,10 @@ class TacCompatInner {
             float aimProgress = operator.getSynAimingProgress();
             boolean isClimbing = !livingEntity.isSwimming() && livingEntity.getPose() == Pose.SWIMMING && Math.abs(event.getLimbSwingAmount()) <= 0.05;
 
-            if (isClimbing) {
+            // 滑铲时开火必须留在滑铲姿态：tac:climbing:fire:* 是整身趴地动作（含 Root 与双腿），
+            // 会把跑酷滑铲顶掉、露出半身埋进地里的爬行姿势。这里与 hold 频道用同一个判断，
+            // 让下肢继续由滑铲负责，开火只驱动上半身。
+            if (isClimbing && !(livingEntity instanceof Player sliding && ParCoolCompat.isSliding(sliding))) {
                 return getGunTypeAnimation(event, weaponType, "tac:climbing:fire:", LoopType.PLAY_ONCE);
             }
             if (aimProgress > 0) {

@@ -48,6 +48,10 @@ import net.minecraft.resources.ResourceLocation;
  * <b>只落盘、不读回原生模型</b>。所以预热 1000 把枪的常驻原生占用是零——否则每把约
  * 200~300 KB，1000 把就是约 250 MB。常驻内存仍然只由 {@link GunLodRegistry} 的 16 条上限决定。
  *
+ * <p><b>峰值</b>不等于常驻：单把枪的冷路径（解析 JSON + 减面 + proto + 解码贴图）峰值是几十 MB，
+ * 而"未进入世界"那一档会并发提交。并发度因此限制到 {@link #IDLE_CONCURRENCY}（最多 4），
+ * 并且堆使用率超过 {@link #HEAP_PRESSURE_RATIO} 时暂停提交，回落后自动继续。
+ *
  * <h2>取消</h2>
  *
  * <p>用代次号（generation）而不是中断：资源重载时把代次加一，已经排进 worker 池的任务在开始执行时
@@ -57,9 +61,6 @@ import net.minecraft.resources.ResourceLocation;
  * 可以安全加载。
  */
 public final class GunLodPrewarm {
-    /** 未进入世界时的并发度：直接吃满 {@code ThreadTools} 池的大小。 */
-    static final int IDLE_CONCURRENCY = Math.max(2, Runtime.getRuntime().availableProcessors() / 2);
-
     /**
      * 已进入世界时两把枪之间至少隔多少 tick。
      *
@@ -67,6 +68,24 @@ public final class GunLodPrewarm {
      * 隔 20 tick（1 秒）约等于单核 5%，1000 把枪约 17 分钟补完；主菜单那一轮通常已经跑完大半。
      */
     static final int THROTTLED_INTERVAL_TICKS = 20;
+
+    /**
+     * 未进入世界时的并发度。
+     *
+     * <p>刻意压得低：单把枪的冷路径会同时持有解析后的 Bedrock JSON、减面中间态、proto 与一张
+     * 解码后的贴图，峰值是几十 MB 量级。按核数开满（这里曾经是 {@code 核数/2}，32 线程机上是
+     * 16）等于把这几十 MB 乘以 16，堆很容易被顶满——表现就是"预热吃满内存"。这里限到最多 4 路，
+     * 再配合下面的堆余量闸门，把峰值钉在可预期范围内。
+     */
+    static final int IDLE_CONCURRENCY = Math.max(1,
+            Math.min(4, Runtime.getRuntime().availableProcessors() / 2));
+
+    /**
+     * 堆使用率超过这个比例就暂停提交新的预热任务，等 GC 回落后自动继续。
+     *
+     * <p>预热是纯优化：宁可这一轮少算几把，也不能把堆占满、把游戏挤成 GC 卡顿。
+     */
+    static final double HEAP_PRESSURE_RATIO = 0.75;
 
     private static final AtomicInteger GENERATION = new AtomicInteger();
     private static final AtomicInteger CURSOR = new AtomicInteger();
@@ -318,7 +337,27 @@ public final class GunLodPrewarm {
      *
      * @return 是否真的发出去了（队列已空时返回 false）
      */
+    /**
+     * 堆还有没有余量再解析下一把枪。
+     *
+     * <p>{@code maxMemory} 为 {@link Long#MAX_VALUE} 表示这个 JVM 没设上限（单元测试等），此时不拦。
+     * 这个判断只看"整体堆"，不做逐任务计量——预热是尽力而为的优化，粗粒度够了。
+     */
+    static boolean hasHeapHeadroom() {
+        var runtime = Runtime.getRuntime();
+        var max = runtime.maxMemory();
+        if (max <= 0 || max == Long.MAX_VALUE) {
+            return true;
+        }
+        var used = runtime.totalMemory() - runtime.freeMemory();
+        return used < (long) (max * HEAP_PRESSURE_RATIO);
+    }
+
     private static boolean submitOne() {
+        // 堆吃紧就先不提交：游标不动，等下一轮余量回来再继续同一把枪。
+        if (!hasHeapHeadroom()) {
+            return false;
+        }
         var index = CURSOR.getAndIncrement();
         var current = queue;
         if (index >= current.size()) {

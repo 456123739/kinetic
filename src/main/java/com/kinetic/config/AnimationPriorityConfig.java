@@ -47,6 +47,13 @@ public final class AnimationPriorityConfig {
             "parcool_slide", new String[]{"parcool:sliding"},
             "tacz_crawl", new String[]{"tac:climb:", "tac:climbing:"});
 
+    /**
+     * 未配置时 {@code parcool:sliding} 与 {@code tac:climb:} 的内置优先级，
+     * 与随模组发布的 {@code kinetic_animation_priority.toml} 默认值一致。
+     */
+    public static final int DEFAULT_SLIDE_PRIORITY = 1200;
+    public static final int DEFAULT_CRAWL_PRIORITY = 700;
+
     private static volatile Lookup lookup = Lookup.EMPTY;
     private static volatile List<String> defaultEntries = List.of();
     private static volatile boolean refreshed;
@@ -119,6 +126,19 @@ public final class AnimationPriorityConfig {
         }
         lookup = new Lookup(table, List.copyOf(prefixes));
         Kinetic.LOGGER.info("Animation priority overrides loaded: {}", table.size());
+    }
+
+    /**
+     * 跑酷滑铲是否优先于 TACZ 爬行。
+     *
+     * <p>Minecraft 的 {@code Pose.SWIMMING} 同时被游泳、爬行和跑酷滑铲复用。持枪与开火两条
+     * 频道都在这个姿态上做分叉，只有本条成立时才能把姿态让给跑酷滑铲，否则会播成 TACZ
+     * 爬行——玩家会摆出趴地姿势、下半身陷进地面。判断集中在优先级表里，两个频道共用同一
+     * 结论，避免一边改了一边没改。
+     */
+    public static boolean slideOutranksCrawl() {
+        return priorityFor("parcool:sliding", DEFAULT_SLIDE_PRIORITY)
+                > priorityFor("tac:climb:", DEFAULT_CRAWL_PRIORITY);
     }
 
     /**

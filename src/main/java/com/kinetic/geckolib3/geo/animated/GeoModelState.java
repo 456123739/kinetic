@@ -160,10 +160,20 @@ public final class GeoModelState implements Closeable {
     }
 
     public int locatorGroupSize(GeoLocator locator) {
+        if (model == null) {
+            // 模型还没烘焙好（原生 extract 失败）时，渲染层不应该把整帧带崩。
+            return 0;
+        }
         if (model.locatorType() != locator.type()) {
             throw new IllegalArgumentException("locator type mismatch");
         }
-        return activeLocatorMap.get(Byte.toUnsignedInt(locator.seq())).size();
+        // 与 extract(:73)/visitLocatorGroup(:139) 一致：seq 是 1 基，表是 0 基。
+        var index = Byte.toUnsignedInt(locator.seq()) - 1;
+        var groups = activeLocatorMap;
+        if (index < 0 || index >= groups.size()) {
+            return 0;
+        }
+        return groups.get(index).size();
     }
 
     private void invalidate() {

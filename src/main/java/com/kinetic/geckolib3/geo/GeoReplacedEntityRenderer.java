@@ -78,7 +78,7 @@ public abstract class GeoReplacedEntityRenderer<TEntity extends LivingEntity, T 
                 if (renderType != null) {
                     preRender(data, animatableEntity, poseStack, bufferSource,
                             packedLight, packedOverlay, Color.WHITE);
-                    if (renderLayersFirst && !entity.isSpectator()) {
+                    if (renderLayersFirst && !entity.isSpectator() && data.modelState.isValid()) {
                         renderLayer(poseStack, bufferSource, animatableEntity, data, packedLight, packedOverlay);
                     }
 
@@ -98,7 +98,9 @@ public abstract class GeoReplacedEntityRenderer<TEntity extends LivingEntity, T 
                         }
                     }
 
-                    if (!renderLayersFirst && !entity.isSpectator()) {
+                    if (!renderLayersFirst && !entity.isSpectator() && data.modelState.isValid()) {
+                        // 原生状态无效时本体跳过绘制，渲染层也必须一起跳过：它们会读 locator 表，
+                        // 而那时 GeoModelState.model 还是 null，一条图层就能把整帧带崩。
                         renderLayer(poseStack, bufferSource, animatableEntity, data, packedLight, packedOverlay);
                     }
                     postRender(data, animatableEntity, poseStack, bufferSource,

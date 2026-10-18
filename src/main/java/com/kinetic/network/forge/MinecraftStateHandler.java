@@ -98,7 +98,11 @@ public final class MinecraftStateHandler {
     @SuppressWarnings("DataFlowIssue")
     private static void applyProjectile(Entity entity, Hash256 modelHash, Int2FloatOpenHashMap variables) {
         entity.getCapability(ClientLazyCapabilityProvider.CAP).ifPresent(capability -> {
-            var animatable = capability.getProjectileAnimatableCapabilityProvider().initialize();
+            var provider = capability.getProjectileAnimatableCapabilityProvider();
+            if (provider == null) {
+                return;
+            }
+            var animatable = provider.initialize();
             animatable.init(modelHash);
             animatable.initRoamingVars(variables);
         });
@@ -107,7 +111,11 @@ public final class MinecraftStateHandler {
     @OnlyIn(Dist.CLIENT)
     private static void applyVehicle(Entity entity, Hash256 modelHash, Int2FloatOpenHashMap variables) {
         entity.getCapability(ClientLazyCapabilityProvider.CAP).ifPresent(capability -> {
-            var animatable = capability.getVehicleAnimatableCapabilityProvider().initialize();
+            var provider = capability.getVehicleAnimatableCapabilityProvider();
+            if (provider == null) {
+                return;
+            }
+            var animatable = provider.initialize();
             animatable.init(modelHash);
             animatable.initRoamingVars(variables);
         });

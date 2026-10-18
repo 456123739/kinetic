@@ -27,9 +27,10 @@ public class JadePlugin implements IWailaPlugin {
         public void appendTooltip(ITooltip tooltip, EntityAccessor entityAccessor, IPluginConfig config) {
             if (entityAccessor.getEntity() instanceof Player player) {
                 player.getCapability(PlayerAnimatableCapabilityProvider.CAP).ifPresent(cap -> {
-                    if (cap.isInitializedAndEnabled()) {
+                    var target = cap.isInitializedAndEnabled() ? cap.getModelRenderTarget() : null;
+                    if (target != null) {
                         tooltip.add(Component.translatable("top.kinetic.model_info.id")
-                                .append(cap.getModelRenderTarget().getDisplayName(ModelIdUtil.getFileNameFromPath(cap.getModelId()))));
+                                .append(target.getDisplayName(ModelIdUtil.getFileNameFromPath(cap.getModelId()))));
                     }
                 });
             } else {

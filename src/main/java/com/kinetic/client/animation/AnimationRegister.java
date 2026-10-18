@@ -23,7 +23,7 @@ public class AnimationRegister {
     public static void registerAnimationState() {
         // 死亡：Ragdollified 接管时让出死亡动画（布娃娃构造完成后其 HideDeadEntityMixin 会
         // 取消实体渲染并接管表现），否则维持 KINETIC 原有死亡动画。
-        register("death", LoopType.PLAY_ONCE, Priority.HIGHEST,
+        register("death", LoopType.HOLD_ON_LAST_FRAME, Priority.HIGHEST,
                 (player, event) -> player.isDeadOrDying() && !RagdollifiedCompat.shouldYieldDeathAnimation());
         register("riptide", Priority.HIGHEST, (player, event) -> player.isAutoSpinAttack());
         register("sleep", Priority.HIGHEST, (player, event) -> player.getPose() == Pose.SLEEPING);

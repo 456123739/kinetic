@@ -44,6 +44,27 @@ public final class GunLodRegistry {
     }
 
     /**
+     * 渲染路径连续这么久没有取用某把枪，就认为它已经不在画面上了。
+     *
+     * <p>取 5 秒：正常渲染时每帧都会 {@code get} 一次，5 秒足够覆盖"玩家死亡后尸体还在看"
+     * 与"短暂离开视野又回来"；超过这个时间还留着，就只是白占原生内存。
+     */
+    private static final long IDLE_NANOS = 5_000_000_000L;
+
+    /**
+     * 释放已经不在画面上的枪械 LOD。
+     *
+     * <p>这样常驻占用只跟"此刻画面上有几把枪"相关：玩家死亡、退出视野、换枪之后，
+     * 对应的原生模型会被回收，而不是等到凑满 {@link #CAPACITY} 条才被动淘汰。
+     */
+    public static void sweepIdle() {
+        var current = cache;
+        if (current != null) {
+            current.sweepIdle(IDLE_NANOS);
+        }
+    }
+
+    /**
      * 资源重载时丢弃所有已构建的 LOD（贴图与模型都会换掉）。
      *
      * <p>用 {@link GunLodCache#discard()} 而不是只把引用置空：重载发生时 worker 上通常还有正在

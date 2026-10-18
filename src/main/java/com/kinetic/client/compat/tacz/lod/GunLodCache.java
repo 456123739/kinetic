@@ -1,7 +1,8 @@
 package com.kinetic.client.compat.tacz.lod;
 
 import com.kinetic.util.ThreadTools;
-import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
+import it.unimi.dsi.fastutil.objects.Reference2LongOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,8 +40,8 @@ public final class GunLodCache<T> {
      * 一次快照。三个容器在发布之后都不再修改，所以读方可以安全地无锁访问。
      */
     private record Snapshot<T>(LinkedHashMap<ResourceLocation, T> ready,
-                               ReferenceOpenHashSet<ResourceLocation> pending,
-                               ReferenceOpenHashSet<ResourceLocation> unavailable) {
+                               ObjectOpenHashSet<ResourceLocation> pending,
+                               ObjectOpenHashSet<ResourceLocation> unavailable) {
     }
 
     private final Executor executor;
@@ -50,7 +51,14 @@ public final class GunLodCache<T> {
     /** 淘汰回调：用来释放被淘汰句柄持有的原生资源。 */
     private final Consumer<T> onEvict;
     private volatile Snapshot<T> snapshot = new Snapshot<>(
-            new LinkedHashMap<>(), new ReferenceOpenHashSet<>(), new ReferenceOpenHashSet<>());
+            new LinkedHashMap<>(), new ObjectOpenHashSet<>(), new ObjectOpenHashSet<>());
+
+    /**
+     * 每个已就绪条目最后一次被渲染路径取用的时间戳。
+     *
+     * <p>只在渲染线程读写（{@link #get} 与 {@link #sweepIdle} 都只在渲染线程调用），因此不需要加锁。
+     */
+    private final Reference2LongOpenHashMap<ResourceLocation> lastUse = new Reference2LongOpenHashMap<>();
 
     /** 被 {@link #discard()} 作废后置位；之后完成构建的条目会被立刻释放而不是留在表里。 */
     private volatile boolean discarded;
@@ -95,6 +103,12 @@ public final class GunLodCache<T> {
         }
         var cached = current.ready().get(gunId);
         if (cached != null) {
+            // 记下"这一刻还有人在画它"，空闲回收据此判断这把枪还有没有理由常驻。
+            // fastutil 的 map 不是线程安全的，而渲染线程之外也可能有人（测试、诊断）并发问；
+            // 临界区只有一次写，代价可忽略。
+            synchronized (lastUse) {
+                lastUse.put(gunId, System.nanoTime());
+            }
             return cached;
         }
         if (current.unavailable().contains(gunId) || current.pending().contains(gunId)) {
@@ -143,7 +157,7 @@ public final class GunLodCache<T> {
                 || current.pending().contains(gunId)) {
             return false;
         }
-        var pending = new ReferenceOpenHashSet<>(current.pending());
+        var pending = new ObjectOpenHashSet<>(current.pending());
         pending.add(gunId);
         snapshot = new Snapshot<>(current.ready(), pending, current.unavailable());
         return true;
@@ -154,7 +168,7 @@ public final class GunLodCache<T> {
         if (!current.pending().contains(gunId)) {
             return;
         }
-        var pending = new ReferenceOpenHashSet<>(current.pending());
+        var pending = new ObjectOpenHashSet<>(current.pending());
         pending.remove(gunId);
         snapshot = new Snapshot<>(current.ready(), pending, current.unavailable());
     }
@@ -179,7 +193,7 @@ public final class GunLodCache<T> {
                 discardedValue = built;
             } else {
                 var current = snapshot;
-                var pending = new ReferenceOpenHashSet<>(current.pending());
+                var pending = new ObjectOpenHashSet<>(current.pending());
                 pending.remove(gunId);
                 var ready = current.ready();
                 var unavailable = current.unavailable();
@@ -187,7 +201,7 @@ public final class GunLodCache<T> {
                     ready = new LinkedHashMap<>(current.ready());
                     ready.put(gunId, built);
                 } else {
-                    unavailable = new ReferenceOpenHashSet<>(current.unavailable());
+                    unavailable = new ObjectOpenHashSet<>(current.unavailable());
                     unavailable.add(gunId);
                 }
                 snapshot = new Snapshot<>(ready, pending, unavailable);
@@ -208,8 +222,8 @@ public final class GunLodCache<T> {
         synchronized (this) {
             discarded = true;
             released = new ArrayList<>(snapshot.ready().values());
-            snapshot = new Snapshot<>(new LinkedHashMap<>(), new ReferenceOpenHashSet<>(),
-                    new ReferenceOpenHashSet<>());
+            snapshot = new Snapshot<>(new LinkedHashMap<>(), new ObjectOpenHashSet<>(),
+                    new ObjectOpenHashSet<>());
         }
         for (var value : released) {
             release(value);
@@ -273,6 +287,63 @@ public final class GunLodCache<T> {
                     // 释放失败不影响渲染。
                 }
             }
+        }
+    }
+
+    /**
+     * 释放"已经没人用"的条目。
+     *
+     * <p>渲染路径每帧都会对真正在画面上的枪调用 {@link #get}，所以超过 {@code maxIdleNanos}
+     * 没有被取用过的条目，意味着持有它的玩家已经死亡、离开视野或换了枪——那份原生烘焙模型
+     * 已经没有理由继续常驻。这里把它们连同 {@code onEvict} 一起释放，让常驻占用只跟
+     * "此刻画面上有几把枪"相关，而不是跟"这一局见过几把枪"相关。
+     *
+     * <p>只在渲染线程调用，原因同 {@link #evictOldest}：原生状态不能被正在渲染的句柄并发释放。
+     */
+    public void sweepIdle(long maxIdleNanos) {
+        if (discarded) {
+            return;
+        }
+        List<T> released;
+        var now = System.nanoTime();
+        synchronized (this) {
+            var current = snapshot;
+            var ready = current.ready();
+            if (ready.isEmpty()) {
+                return;
+            }
+            var kept = new LinkedHashMap<ResourceLocation, T>(ready.size());
+            var idleIds = new ArrayList<ResourceLocation>();
+            released = new ArrayList<>(0);
+            for (var entry : ready.entrySet()) {
+                final long seen;
+                synchronized (lastUse) {
+                    seen = lastUse.getLong(entry.getKey());
+                }
+                if (seen == 0L) {
+                    // 刚构建好、还没轮到渲染：给一个完整的宽限期，别刚建好就扔掉。
+                    synchronized (lastUse) {
+                        lastUse.put(entry.getKey(), now);
+                    }
+                } else if (now - seen > maxIdleNanos) {
+                    idleIds.add(entry.getKey());
+                    released.add(entry.getValue());
+                    continue;
+                }
+                kept.put(entry.getKey(), entry.getValue());
+            }
+            if (idleIds.isEmpty()) {
+                return;
+            }
+            synchronized (lastUse) {
+                for (var id : idleIds) {
+                    lastUse.removeLong(id);
+                }
+            }
+            snapshot = new Snapshot<>(kept, current.pending(), current.unavailable());
+        }
+        for (var value : released) {
+            release(value);
         }
     }
 

@@ -10,8 +10,9 @@ public class BetterCombatCompat {
 
     public static void init() {
         if (LoadingModList.get().getModFileById(MOD_ID) != null) {
-            BetterCombatCompatInner.innerInit();
-            INSTALLED = true;
+            // 反射拿不到字段时 innerInit 会放弃，此时不能把自己标成可用：
+            // 否则绑定照样注册，每次动画求值都会在空句柄上抛 NPE。
+            INSTALLED = BetterCombatCompatInner.innerInit();
         }
     }
 

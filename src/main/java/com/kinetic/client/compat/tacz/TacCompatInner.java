@@ -315,13 +315,46 @@ class TacCompatInner {
         ShellRender.isSelf = false;
     }
 
+    /**
+     * 渲染线程上的枪 id 单槽环形记忆。
+     *
+     * <p>{@code IGun.getGunId} 每次调用都要从 NBT 里取一次字符串再 {@code ResourceLocation.tryParse}：
+     * 一条枪的同一帧里会被问 2~3 次（主手 LOD、副手判定、动画频道），而 {@code ResourceLocation}
+     * 每次都是新实例。除了分配压力，新实例还会让任何按身份比较的集合失效。
+     *
+     * <p>只按 {@link ItemStack} <b>实例身份</b>命中：枪的 NBT 一变就是新的 stack，天然失效。
+     * 固定 8 槽、环形覆盖，无分配、无清理时机依赖，只在客户端渲染线程使用。
+     */
+    private static final ItemStack[] GUN_ID_STACKS = new ItemStack[8];
+    private static final ResourceLocation[] GUN_ID_VALUES = new ResourceLocation[8];
+    private static int gunIdCursor;
+
     @Nullable
     static ResourceLocation getGunId(ItemStack itemInHand) {
+        if (itemInHand == null || itemInHand.isEmpty()) {
+            return null;
+        }
+        for (var i = 0; i < GUN_ID_STACKS.length; i++) {
+            if (GUN_ID_STACKS[i] == itemInHand) {
+                return GUN_ID_VALUES[i];
+            }
+        }
         IGun iGun = IGun.getIGunOrNull(itemInHand);
         if (iGun == null) {
             return null;
         }
-        return iGun.getGunId(itemInHand);
+        var gunId = iGun.getGunId(itemInHand);
+        var slot = gunIdCursor++ & (GUN_ID_STACKS.length - 1);
+        GUN_ID_STACKS[slot] = itemInHand;
+        GUN_ID_VALUES[slot] = gunId;
+        return gunId;
+    }
+
+    /** 资源重载时丢掉环形记忆：枪包换了之后旧 id 不再成立。 */
+    static void clearGunIdMemo() {
+        java.util.Arrays.fill(GUN_ID_STACKS, null);
+        java.util.Arrays.fill(GUN_ID_VALUES, null);
+        gunIdCursor = 0;
     }
 
     /**
@@ -342,6 +375,7 @@ class TacCompatInner {
     static void clearGunLodCache() {
         GunLodRegistry.clear();
         GUN_TYPE_CACHE.clear();
+        clearGunIdMemo();
     }
 
     /**

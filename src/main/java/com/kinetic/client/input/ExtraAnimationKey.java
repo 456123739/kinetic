@@ -57,6 +57,10 @@ public class ExtraAnimationKey {
                 && player != null && !PlayerMoveEvent.isMoveKey(player)) {
                 player.getCapability(PlayerAnimatableCapabilityProvider.CAP).ifPresent(cap -> {
                     var model = cap.getModelRenderTarget();
+                    if (model == null) {
+                        // 模型还在加载 / 被禁用 / 刚重生：按键不应该把输入线程带崩。
+                        return;
+                    }
                     int index = EXTRA_ANIMATION_KEYS.indexOf(key);
                     var info = model.info();
                     var animations = info.getExtraAnimations();

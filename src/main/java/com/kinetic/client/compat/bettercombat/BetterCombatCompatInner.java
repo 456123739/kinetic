@@ -17,14 +17,18 @@ import java.util.HashMap;
 public class BetterCombatCompatInner {
     private static VarHandle FIELD_ATTACK_ANIM;
 
-    static void innerInit() {
+    /**
+     * @return 是否真的接上了（反射拿不到字段时为 false，调用方不能把自己标成"已安装"）
+     */
+    static boolean innerInit() {
         ReflectionUtil.getField(AbstractClientPlayer.class, "attackAnimation", AttackAnimationSubStack.class).ifPresent(field -> {
             FIELD_ATTACK_ANIM = field;
         });
         if (FIELD_ATTACK_ANIM == null) {
-            return;
+            return false;
         }
         BetterCombatClientEvents.ATTACK_START.register(new PlayerAttackEvent());
+        return true;
     }
 
     static void addInnerBinding(CtrlBinding binding) {

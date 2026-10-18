@@ -23,6 +23,7 @@ public class ClientConfig {
     public static ForgeConfigSpec.IntValue ANIMATION_EVALUATION_RATE_FAR;
     public static ForgeConfigSpec.IntValue ANIMATION_EVALUATION_RATE_HIDDEN;
     public static ForgeConfigSpec.IntValue OTHER_GUN_ITEM_LOD_DISTANCE;
+    public static ForgeConfigSpec.BooleanValue ENABLE_GUN_LOD_PREWARM;
     public static ForgeConfigSpec.DoubleValue OTHER_GUN_ITEM_LOD_EXTENT;
     public static ForgeConfigSpec.BooleanValue OTHER_GUN_ITEM_LOD_SKIP_ATTACHMENTS;
     public static ForgeConfigSpec.DoubleValue OTHER_GUN_ITEM_LOD_SCALE;
@@ -139,6 +140,14 @@ public class ClientConfig {
         builder.comment("Evaluation rate for entities that were not rendered in the previous frame",
                 "(off-screen, out of range, or removed by EntityCulling).");
         ANIMATION_EVALUATION_RATE_HIDDEN = builder.defineInRange("AnimationEvaluationRateHidden", 10, 1, 360);
+
+        builder.push("gun_lod_prewarm");
+        builder.comment("后台预热枪械 LOD（默认关闭）。",
+                "开启后会在主菜单/游戏内后台烘焙枪包里的每一把枪，把首次遇到的 ~35 ms 卡顿提前花掉。",
+                "代价：会持续占用 CPU 与磁盘，并可能显著抬高内存占用；枪包很多时不建议开。",
+                "关闭时不影响按需构建——别人拿枪时仍会照常生成简化模型，只是第一次会有一点卡顿。");
+        ENABLE_GUN_LOD_PREWARM = builder.define("EnableGunLodPrewarm", false);
+        builder.pop();
 
         builder.push("other_player_gun_lod");
         builder.comment("=== 物品 LOD 与动画 LOD 是两个独立开关 ===");

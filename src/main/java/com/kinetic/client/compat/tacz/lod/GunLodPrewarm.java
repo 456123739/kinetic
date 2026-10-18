@@ -1,5 +1,6 @@
 package com.kinetic.client.compat.tacz.lod;
 
+import com.kinetic.Kinetic;
 import com.kinetic.client.compat.tacz.TACZCompat;
 import com.kinetic.model.resource.client.render.BakedModelCache;
 import com.kinetic.util.ThreadTools;
@@ -87,6 +88,17 @@ public final class GunLodPrewarm {
      */
     static final double HEAP_PRESSURE_RATIO = 0.75;
 
+    /**
+     * 单次会话最多预热多少把——防御性硬上限。
+     *
+     * <p>即使枪包异常庞大（或索引判定失效导致反复重扫），预热也不会无限占用磁盘与 CPU。
+     * 超过之后本次会话直接停手，剩下的枪交给按需构建。512 把已远超"一局里真正会遇到的枪数"。
+     */
+    static final int MAX_GUNS_PER_SESSION = 512;
+
+    /** 堆余量不足时整场会话停手（不是暂停等待）。 */
+    private static volatile boolean aborted;
+
     private static final AtomicInteger GENERATION = new AtomicInteger();
     private static final AtomicInteger CURSOR = new AtomicInteger();
     private static final AtomicInteger IN_FLIGHT = new AtomicInteger();
@@ -156,6 +168,11 @@ public final class GunLodPrewarm {
      * <p>幂等且廉价：枚举只做一次，之后就是几次原子读。
      */
     public static void tick() {
+        // 默认关闭：预热是纯优化，但它会持续吃 CPU/磁盘，并且在枪包很多时显著抬高内存。
+        // 按需构建本来就够用（首次遇到某把枪时异步烘焙一次），所以把这份风险交给用户显式开启。
+        if (!com.kinetic.config.ClientConfig.ENABLE_GUN_LOD_PREWARM.get()) {
+            return;
+        }
         try {
             tickInternal();
         } catch (Throwable ignored) {
@@ -319,6 +336,7 @@ public final class GunLodPrewarm {
         FAILED.set(0);
         TOTAL.set(0);
         TALLIES.clear();
+        aborted = false;
         lastThrottledSubmitTick = 0;
         // IN_FLIGHT 不重置：在途任务完成时自己会减，重置反而会让并发度虚高。
     }
@@ -361,8 +379,20 @@ public final class GunLodPrewarm {
     }
 
     private static boolean submitOne() {
-        // 堆吃紧就先不提交：游标不动，等下一轮余量回来再继续同一把枪。
+        if (aborted) {
+            return false;
+        }
+        if (COMPLETED.get() >= MAX_GUNS_PER_SESSION) {
+            aborted = true;
+            Kinetic.LOGGER.info("Gun LOD prewarm stopped at the per-session cap ({})",
+                    MAX_GUNS_PER_SESSION);
+            return false;
+        }
+        // 堆吃紧时整场停手：继续"暂停-恢复"只会让内存反复顶到阈值，玩家的可玩性比预热重要。
         if (!hasHeapHeadroom()) {
+            aborted = true;
+            Kinetic.LOGGER.warn("Gun LOD prewarm aborted: heap is above {}% of max",
+                    (int) (HEAP_PRESSURE_RATIO * 100));
             return false;
         }
         var index = CURSOR.getAndIncrement();
@@ -421,6 +451,16 @@ public final class GunLodPrewarm {
             tally.failed.incrementAndGet();
         }
         var done = tally.done.incrementAndGet();
+        // 每 50 把打一行进度 + 堆占用：这是判断"预热到底吃了多少内存"的唯一可靠依据。
+        // 出问题时把这几行发出来就能定位，不用猜。
+        var completedNow = COMPLETED.get();
+        if (completedNow % 50 == 0) {
+            var runtime = Runtime.getRuntime();
+            var usedMb = (runtime.totalMemory() - runtime.freeMemory()) >> 20;
+            var maxMb = runtime.maxMemory() >> 20;
+            Kinetic.LOGGER.info("Gun LOD prewarm progress: {}/{}, failed={}, heap={}MB/{}MB",
+                    completedNow, TOTAL.get(), FAILED.get(), usedMb, maxMb);
+        }
         if (Policy.mayRecordPack(done, tally.total.get(), tally.failed.get(), tally.fingerprint)) {
             currentIndex.markComplete(namespace, tally.fingerprint);
         }
@@ -446,9 +486,10 @@ public final class GunLodPrewarm {
         return FAILED.get();
     }
 
-    /** 是否还有枪等着预热——进度显示据此决定要不要出现。 */
+    /** 是否还有枪等着预热——进度显示据此决定要不要出现。关闭预热时永远为 false。 */
     public static boolean isActive() {
-        return enumerated && remaining() > 0;
+        return com.kinetic.config.ClientConfig.ENABLE_GUN_LOD_PREWARM.get()
+                && enumerated && remaining() > 0;
     }
 
     /** 已记录的枪包数——供诊断使用。 */

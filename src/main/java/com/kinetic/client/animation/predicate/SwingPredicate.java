@@ -83,8 +83,12 @@ public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<
         if (name == null) {
             return null;
         }
-        var swordSwing = hand == InteractionHand.MAIN_HAND ? "swing:sword" : "swing_offhand:sword";
-        if (swordSwing.equals(name)) {
+        // 这两类在模型里要么是有问题的连招，要么是空动画（只剩 loop 没有骨骼）：
+        // 选中它们的结果是手臂完全不动。统一回落到只动手臂的通用挥砍。
+        var brokenSwing = hand == InteractionHand.MAIN_HAND
+                ? "swing:sword"
+                : "swing_offhand:sword";
+        if (brokenSwing.equals(name) || "swing:slashblade".equals(name)) {
             return hand == InteractionHand.MAIN_HAND ? "swing_hand" : "swing_offhand";
         }
         return name;

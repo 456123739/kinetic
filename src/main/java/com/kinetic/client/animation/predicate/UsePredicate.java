@@ -36,7 +36,7 @@ public class UsePredicate implements IAnimationPredicate<CustomHumanoidEntity<?>
         boolean bowAnimationWithoutBow = held.getUseAnimation() == UseAnim.BOW
                 && !(held.getItem() instanceof ProjectileWeaponItem);
         if (bowAnimationWithoutBow) {
-            String grenade = mainHand ? "use_mainhand:grenade" : "use_offhand:grenade";
+            String grenade = mainHand ? "tac:mainhand:grenade" : "tac:offhand:grenade";
             if (animatable.getAnimation(grenade) != null) {
                 return grenade;
             }

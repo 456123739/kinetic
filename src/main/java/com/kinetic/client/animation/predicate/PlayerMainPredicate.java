@@ -49,13 +49,16 @@ public class PlayerMainPredicate implements IAnimationPredicate<CustomPlayerEnti
         // 会返回 STOP（什么都不播）。若这里仅凭"跑酷有动画名"就让位，就会出现
         // 「主控制器已停 + 跑酷控制器播不出来」= 玩家完全静止。加上存在性判断后，即使将来跑酷
         // 新增了模型尚未适配的动作，也只会回退到普通动画，而不会静止。
+        // 死亡必须压过载具与跑酷：否则骑马/坐船时死亡会停在骑乘姿势，跑酷动作中死亡会停在
+        // 滑铲/墙跑姿势，尸体永远倒不下去。死亡动画本身仍按注册顺序走主频道。
+        boolean dying = player.isDeadOrDying();
         String parcoolAnimation = ParCoolCompat.getAnimation(player);
-        if (parcoolAnimation != null && event.getAnimatableEntity().getAnimation(parcoolAnimation) != null) {
+        if (!dying && parcoolAnimation != null && event.getAnimatableEntity().getAnimation(parcoolAnimation) != null) {
             return PlayState.STOP;
         }
         // 载具动画单独检查
         Entity vehicle = player.getVehicle();
-        if (vehicle != null && vehicle.isAlive()) {
+        if (!dying && vehicle != null && vehicle.isAlive()) {
             return PlayState.STOP;
         }
         // 机械动力悬链动画

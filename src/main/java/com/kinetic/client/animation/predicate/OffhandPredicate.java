@@ -4,7 +4,9 @@ import com.kinetic.client.animation.condition.ConditionalHold;
 import com.kinetic.client.entity.CustomHumanoidEntity;
 import com.kinetic.client.entity.HumanoidStateTracker;
 import com.kinetic.client.entity.IPreviewEntity;
+import com.kinetic.client.compat.tacz.TACZCompat;
 import com.kinetic.geckolib3.core.PlayState;
+import com.kinetic.geckolib3.core.builder.LoopType;
 import com.kinetic.geckolib3.core.event.predicate.AnimationEvent;
 import com.kinetic.molang.runtime.ExpressionEvaluator;
 import net.minecraft.world.InteractionHand;
@@ -27,6 +29,13 @@ public class OffhandPredicate implements IAnimationPredicate<CustomHumanoidEntit
         // 快照，不让位的话尸体会保持举枪姿势、睡姿也会被持械姿势盖掉。
         if (entity.isSleeping() || entity.isDeadOrDying() || entity.isAutoSpinAttack()) {
             return PlayState.STOP;
+        }
+
+        // 副手手雷蓄力：与主手一致，由模型自带的 tac:offhand:grenade 演拔插销/待投。
+        // 不接的话通用 use 动画会被 UsePredicate 停掉，手臂就停在上一帧的持握姿势。
+        if (entity.isUsingItem() && entity.getUsedItemHand() == InteractionHand.OFF_HAND
+                && TACZCompat.isGrenade(entity.getItemInHand(InteractionHand.OFF_HAND))) {
+            return playAnimation(event, "tac:offhand:grenade", LoopType.HOLD_ON_LAST_FRAME);
         }
 
         if (!checkSwingAndUse(entity, InteractionHand.OFF_HAND)) {

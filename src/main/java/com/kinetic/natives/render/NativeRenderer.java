@@ -65,8 +65,8 @@ public class NativeRenderer {
                     return new VertexBuffer(accessor, VertexFormatType.VANILLA, accessor.kinetic$reserve(vertexCount));
                 } else {
                     var irisType = IrisCompat.determineVertexFormatType(format);
-                    if (irisType.isPresent()) {
-                        return new VertexBuffer(accessor, irisType.get(), accessor.kinetic$reserve(vertexCount));
+                    if (irisType != null) {
+                        return new VertexBuffer(accessor, irisType, accessor.kinetic$reserve(vertexCount));
                     }
                 }
             }

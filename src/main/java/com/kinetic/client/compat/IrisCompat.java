@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import net.irisshaders.iris.api.v0.IrisApi;
+import org.jetbrains.annotations.Nullable;
 import net.irisshaders.iris.texture.pbr.loader.PBRTextureLoader;
 import net.irisshaders.iris.texture.pbr.loader.PBRTextureLoaderRegistry;
 import net.irisshaders.iris.uniforms.CapturedRenderingState;
@@ -58,20 +59,26 @@ public class IrisCompat {
         });
     }
 
-    public static Optional<VertexFormatType> determineVertexFormatType(VertexFormat vertexFormat) {
+    /**
+     * @return 对应的顶点格式类型；不是 Iris 的实体格式时返回 {@code null}。
+     *
+     * <p>刻意不返回 {@link Optional}：这条路径是「每个模型每一帧」调用的，装了 Oculus 时
+     * {@code Optional.of} 每次都要分配一个对象，纯属给 GC 添负担。
+     */
+    public static @Nullable VertexFormatType determineVertexFormatType(VertexFormat vertexFormat) {
         if (INSTALLED && ENTITY_FORMAT == vertexFormat) {
             if (vertexFormat.getVertexSize() == 56) {
-                return Optional.of(ARCompat.isInstalled() ? IRIS_56_AR : IRIS_56);
+                return ARCompat.isInstalled() ? IRIS_56_AR : IRIS_56;
             }
             if (vertexFormat.getVertexSize() == 55) {   // 逆天设计
-                return Optional.of(IRIS_55);
+                return IRIS_55;
             }
             if (vertexFormat.getVertexSize() == 54) {
-                return Optional.of(IRIS_54);
+                return IRIS_54;
             }
             // 低于 1.20 的版本还有 48 字节的格式，暂不做支持
         }
-        return Optional.empty();
+        return null;
     }
 
     public static boolean isInstalled() {

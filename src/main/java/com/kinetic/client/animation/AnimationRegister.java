@@ -28,8 +28,13 @@ public class AnimationRegister {
         register("riptide", Priority.HIGHEST, (player, event) -> player.isAutoSpinAttack());
         register("sleep", Priority.HIGHEST, (player, event) -> player.getPose() == Pose.SLEEPING);
         register("swim", Priority.HIGHEST, (player, event) -> player.isSwimming());
-        register("climb", Priority.HIGHEST, (player, event) -> player.getPose() == Pose.SWIMMING && Math.abs(event.getLimbSwingAmount()) > MIN_SPEED);
-        register("climbing", Priority.HIGHEST, (player, event) -> player.getPose() == Pose.SWIMMING);
+        // 爬行/攀爬通道必须排除"滑铲"：滑铲玩家同样处于 Pose.SWIMMING，但水平速度远高于爬行。
+        // 一旦开火打断疾跑，ParCool 的滑铲动画会停下，而这一条仍然是 HIGHEST——不排除的话
+        // 滑铲中的玩家会被立刻换成趴地爬行姿势。
+        register("climb", Priority.HIGHEST, (player, event) -> player.getPose() == Pose.SWIMMING
+                && Math.abs(event.getLimbSwingAmount()) > MIN_SPEED && !isFastGroundMovement(player));
+        register("climbing", Priority.HIGHEST, (player, event) -> player.getPose() == Pose.SWIMMING
+                && !isFastGroundMovement(player));
 
         register("ladder_up", Priority.HIGHEST, (player, event) -> player.onClimbable() && getVerticalSpeed(player) > 0);
         register("ladder_stillness", Priority.HIGHEST, (player, event) -> player.onClimbable() && getVerticalSpeed(player) == 0);
@@ -61,6 +66,15 @@ public class AnimationRegister {
 
     private static void register(String animationName, int priority, BiPredicate<Player, AnimationEvent<CustomPlayerEntity>> predicate) {
         register(animationName, LoopType.LOOP, priority, predicate);
+    }
+
+    /**
+     * 水平速度是否已经快到只可能是"滑铲"而不是"爬行"。
+     *
+     * <p>爬行速度约 0.03~0.1 格/tick，滑铲起步约 0.4~0.6。取 0.2 作分界，两侧都留足余量。
+     */
+    private static boolean isFastGroundMovement(Player player) {
+        return player.getDeltaMovement().horizontalDistanceSqr() > 0.04;
     }
 
     private static float getVerticalSpeed(Player player) {

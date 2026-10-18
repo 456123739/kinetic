@@ -368,6 +368,15 @@ public final class GunLodPrewarm {
      * <p>{@code maxMemory} 为 {@link Long#MAX_VALUE} 表示这个 JVM 没设上限（单元测试等），此时不拦。
      * 这个判断只看"整体堆"，不做逐任务计量——预热是尽力而为的优化，粗粒度够了。
      */
+    private static long usedHeapMb() {
+        var runtime = Runtime.getRuntime();
+        return (runtime.totalMemory() - runtime.freeMemory()) >> 20;
+    }
+
+    private static long maxHeapMb() {
+        return Runtime.getRuntime().maxMemory() >> 20;
+    }
+
     static boolean hasHeapHeadroom() {
         var runtime = Runtime.getRuntime();
         var max = runtime.maxMemory();
@@ -406,6 +415,8 @@ public final class GunLodPrewarm {
         try {
             ThreadTools.submit(() -> {
                 var warm = false;
+                var startedAt = System.nanoTime();
+                var heapBefore = usedHeapMb();
                 try {
                     if (generation != GENERATION.get()) {
                         // 资源重载/重启后作废：立刻返回，让队列快速排空。
@@ -415,6 +426,11 @@ public final class GunLodPrewarm {
                 } catch (Throwable ignored) {
                     warm = false;
                 } finally {
+                    // 逐枪记录耗时与堆变化。这是唯一能定位"哪把枪把内存吃掉了"的证据来源，
+                    // 一把一行、量很小，出问题直接看日志即可。
+                    Kinetic.LOGGER.info("Gun LOD prewarm: {} warm={} {}ms heap {}MB -> {}MB ({}MB/{})",
+                            slot.gunId(), warm, (System.nanoTime() - startedAt) / 1_000_000,
+                            heapBefore, usedHeapMb(), usedHeapMb(), maxHeapMb());
                     IN_FLIGHT.decrementAndGet();
                     // 过期任务只还并发度，不碰新一代的进度与统计。
                     if (generation == GENERATION.get()) {

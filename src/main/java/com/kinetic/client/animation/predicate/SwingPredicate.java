@@ -83,10 +83,11 @@ public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<
         if (name == null) {
             return null;
         }
-        // 拔刀剑的 swing:slashblade 是空动画（只剩 loop、没有骨骼），选中后手臂完全不动。
-        // 剑类仍然用模型自带的连招挥砍（lrtactical 的劈砍也是它）。
+        // swing:slashblade 是空动画（只剩 loop、没有骨骼）。被归到 slashblade 分类的近战武器
+        // （lrtactical:melee 就在这类里）不能退回 swing_hand，否则劈砍会变成原版的小挥臂；
+        // 统一改用刀剑劈砍 swing:sword。
         if ("swing:slashblade".equals(name)) {
-            return hand == InteractionHand.MAIN_HAND ? "swing_hand" : "swing_offhand";
+            return hand == InteractionHand.MAIN_HAND ? "swing:sword" : "swing_offhand";
         }
         return name;
     }

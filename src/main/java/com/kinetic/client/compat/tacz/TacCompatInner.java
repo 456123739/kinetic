@@ -364,6 +364,10 @@ class TacCompatInner {
      */
     @Nullable
     static GunLodHandle getGunLod(ItemStack itemInHand) {
+        // 总开关：关掉时整条 LOD 链路都不进入（缓存、构建、贴图解码、读盘一律不发生）。
+        if (!ClientConfig.ENABLE_GUN_ITEM_LOD.get()) {
+            return null;
+        }
         var gunId = getGunId(itemInHand);
         if (gunId == null) {
             return null;

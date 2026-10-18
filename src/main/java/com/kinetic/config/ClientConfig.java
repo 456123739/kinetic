@@ -24,6 +24,7 @@ public class ClientConfig {
     public static ForgeConfigSpec.IntValue ANIMATION_EVALUATION_RATE_HIDDEN;
     public static ForgeConfigSpec.IntValue OTHER_GUN_ITEM_LOD_DISTANCE;
     public static ForgeConfigSpec.BooleanValue ENABLE_GUN_LOD_PREWARM;
+    public static ForgeConfigSpec.BooleanValue ENABLE_GUN_ITEM_LOD;
     public static ForgeConfigSpec.DoubleValue OTHER_GUN_ITEM_LOD_EXTENT;
     public static ForgeConfigSpec.BooleanValue OTHER_GUN_ITEM_LOD_SKIP_ATTACHMENTS;
     public static ForgeConfigSpec.DoubleValue OTHER_GUN_ITEM_LOD_SCALE;
@@ -140,6 +141,13 @@ public class ClientConfig {
         builder.comment("Evaluation rate for entities that were not rendered in the previous frame",
                 "(off-screen, out of range, or removed by EntityCulling).");
         ANIMATION_EVALUATION_RATE_HIDDEN = builder.defineInRange("AnimationEvaluationRateHidden", 10, 1, 360);
+
+        builder.push("gun_lod");
+        builder.comment("其他玩家手持枪械的简化模型（物品 LOD）。",
+                "关闭时完全不进入 LOD 代码：不查缓存、不构建、不解码贴图、不读盘。",
+                "枪械本身仍由 TaCZ 正常渲染，只是远处不再换成简化模型。");
+        ENABLE_GUN_ITEM_LOD = builder.define("EnableGunItemLod", false);
+        builder.pop();
 
         builder.push("gun_lod_prewarm");
         builder.comment("后台预热枪械 LOD（默认关闭）。",

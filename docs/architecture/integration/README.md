@@ -15,7 +15,7 @@
 | Entity 替换绘制 | `GeoReplacedEntityRenderer`、`client.renderer` | 消费已准备的 `GeoRenderData`，选择 render state 并交给 renderer |
 | 可选模组适配 | `client.compat` 与 controller collection | 把外部动作、装备、视角和材质条件投影为当前输入或绘制行为 |
 
-模型替换的业务范围与可选联动降级由[联动决策](../../product-decisions/decisions/mod-integration.md)和[联动风险](../../product-decisions/decisions/integration-risk.md)定义；玩家死亡布娃娃的可见身体接管见[布娃娃身体接管](ragdoll.md)，真实相机的相机绑定解算见[真实相机绑定](camera-binding.md)，其他玩家手持枪械的几何/动画按距离降级见[枪械 LOD](gun-lod.md)。现有兼容分支不是统一输入层；其未收敛的部分见[动画问题](../../status/known-issues/animation.md)。
+模型替换的业务范围与可选联动降级由[联动决策](../../product-decisions/decisions/mod-integration.md)和[联动风险](../../product-decisions/decisions/integration-risk.md)定义；玩家死亡布娃娃的可见身体接管见[布娃娃身体接管](ragdoll.md)，真实相机的相机绑定解算见[真实相机绑定](camera-binding.md)，枪械几何按距离降级的 LOD 引擎已移出模组、暂存于 [todo/gun-lod](../../../todo/gun-lod/README.md)，当前入口见[枪械 LOD（已移出）](gun-lod.md)。现有兼容分支不是统一输入层；其未收敛的部分见[动画问题](../../status/known-issues/animation.md)。
 
 ## 已有事件表面
 

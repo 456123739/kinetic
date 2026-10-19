@@ -44,7 +44,6 @@
   "gui.kinetic.sync_hint.syncing": "Syncing",
   "gui.kinetic.sync_hint.clearing": "Clearing Textures: %d",
   "gui.kinetic.sync_hint.loading_models": "Loading Models: %d/%d",
-  "gui.kinetic.gun_lod_prewarm": "Gun LOD prewarm: %d/%d",
   "gui.kinetic.config.disable_self_model": "Prevents rendering of self player's model",
   "gui.kinetic.config.disable_other_model": "Prevents rendering of other player's model",
   "gui.kinetic.config.print_animation_roulette_msg": "Whether to print animation roulette play message",

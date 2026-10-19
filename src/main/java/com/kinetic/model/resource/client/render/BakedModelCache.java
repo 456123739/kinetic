@@ -34,7 +34,7 @@ public final class BakedModelCache {
 
     /**
      * 进程级实例。玩家模型的烘焙缓存由 {@code ClientModelService} 在资源重载时重建，
-     * 而枪械 LOD 的构建跑在 worker 线程、入口在 {@code TaczGunLodBuilder}，拿不到那个对象，
+     * 而后台烘焙（原先的枪械 LOD 构建器）跑在 worker 线程、拿不到那个对象，
      * 所以在这里留一个进程级引用：两边共用同一个根目录、同一套 {@code CACHE_ABI} 与
      * capabilityKey，因此磁盘缓存天然互通。
      *

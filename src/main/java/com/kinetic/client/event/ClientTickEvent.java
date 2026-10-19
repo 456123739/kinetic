@@ -35,14 +35,6 @@ public class ClientTickEvent {
         RagdollifiedDeathWatcher.tick();
         CustomTextureManager.tick();
         ClientModelService.current().ifPresent(ClientModelService::tick);
-        // 枪械 LOD 的后台预热：未进世界时全速，进世界后限速并给按需构建让路。
-        // 未安装 TaCZ 时它只做一次廉价判断。
-        com.kinetic.client.compat.tacz.lod.GunLodPrewarm.tick();
-        // 每秒回收一次"已经不在画面上"的枪械 LOD：玩家死亡 / 离开视野 / 换枪之后，
-        // 那份原生烘焙模型没有理由继续常驻。
-        if (tickCount % 20 == 0) {
-            com.kinetic.client.compat.tacz.lod.GunLodRegistry.sweepIdle();
-        }
         refreshRate = Minecraft.getInstance().getWindow().getRefreshRate();
 
         var player = Minecraft.getInstance().player;

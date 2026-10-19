@@ -20,7 +20,7 @@ import java.util.function.Predicate;
  * 「gunId → 是否手枪」这一段，键就是 API 给出的 gunId。
  *
  * <p><b>失效</b>：枪包索引会在资源重载（F3+T）时重建，因此 {@link #clear()} 挂在
- * {@code ClientSetupEvent} 里那个 ResourceManagerReloadListener 上（与 {@code GunLodRegistry} 同一个钩子）。
+ * {@code ClientSetupEvent} 里那个 ResourceManagerReloadListener 上（与枪 id 环形记忆一起清）。
  *
  * <p>纯逻辑、不引用 TaCZ 类型，可单独测试。
  */

@@ -1,7 +1,6 @@
 package com.kinetic.client.compat.tacz;
 
 import com.kinetic.client.animation.molang.CtrlBinding;
-import com.kinetic.client.compat.tacz.lod.GunLodHandle;
 import com.kinetic.client.entity.CustomHumanoidEntity;
 import com.kinetic.geckolib3.core.PlayState;
 import com.kinetic.geckolib3.core.builder.LoopType;
@@ -122,57 +121,14 @@ public class TACZCompat {
     }
 
     /**
-     * 取这把枪自建的 LOD 句柄（简化几何 + 贴图 + 缩放）。
+     * 资源重载时清掉按枪 id 的缓存（手枪判定、枪 id 环形记忆）。
      *
-     * <p>首次调用只会触发一次异步构建并返回 {@code null}，调用方本帧应照常渲染完整模型；
-     * 构建失败（枪包缺模型/贴图）之后恒为 {@code null}，调用方永远回退到原路径。
-     * 未安装 TaCZ 时恒为 {@code null}。
+     * <p>枪包换过之后旧 id 与旧类型判定都不再成立。
      */
-    @Nullable
-    public static GunLodHandle getGunLod(ItemStack stack) {
-        if (isInstalled() && TacCompatInner.isGun(stack)) {
-            return TacCompatInner.getGunLod(stack);
-        }
-        return null;
-    }
-
-    /**
-     * 资源重载时丢弃已构建的 LOD（贴图与模型都会换掉），并重启后台预热。
-     *
-     * <p>未安装 TaCZ 时前者是空操作，后者仍然执行（它自己会重新枚举，枚举为空就不做事）。
-     */
-    public static void clearGunLodCache() {
+    public static void clearGunCaches() {
         if (isInstalled()) {
-            TacCompatInner.clearGunLodCache();
+            TacCompatInner.clearCaches();
         }
-        com.kinetic.client.compat.tacz.lod.GunLodPrewarm.restart();
-    }
-
-    /**
-     * 全部已加载的枪械 id；未安装 TaCZ 或索引还没建立时返回空表。
-     *
-     * <p>给后台预热器枚举用。TaCZ 类型只出现在 {@code TacCompatInner} 里，本方法保持类加载隔离。
-     */
-    public static java.util.List<ResourceLocation> allGunIds() {
-        if (isInstalled()) {
-            return TacCompatInner.allGunIds();
-        }
-        return java.util.List.of();
-    }
-
-    /**
-     * 后台预热一把枪的 LOD：把烘焙产物写进磁盘缓存，<b>不读回原生模型</b>，因此预热多少把
-     * 都不会增加常驻原生内存。未安装 TaCZ 时恒为 false。
-     *
-     * @return 这把枪现在是否已经预热好（含本来就热）
-     */
-    public static boolean prewarmGunLod(ResourceLocation gunId) {
-        return isInstalled() && TacCompatInner.prewarmGunLod(gunId);
-    }
-
-    /** 是否有玩家手里的枪正在等按需构建——后台预热据此让路。未安装 TaCZ 时恒为 false。 */
-    public static boolean hasPendingGunLod() {
-        return isInstalled() && TacCompatInner.hasPendingGunLod();
     }
 
     /** 该物品是否是 TaCZ 枪械；未安装 TaCZ 时返回 false。 */

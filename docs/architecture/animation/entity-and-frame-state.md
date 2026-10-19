@@ -92,7 +92,7 @@ Molang 求值的 observation/action 门禁与失败规则见[Molang runtime](mol
 |---|---|---|
 | `CapabilityOptionalCache` | 每个 capability provider 的实例 | provider 构造时安装，随 provider 生命周期结束；Forge 惯例的 `getCapability` 每次新建 `LazyOptional`（自身、锁、监听者集合与 supplier 约 4 个对象），缓存后查询语义不变。40 玩家 / 144 fps 下约减少 46k 次分配/秒 |
 | `ModelDisplayPathCache` | `(modelHash, catalog 快照引用)` | 模型哈希变化或目录快照整体替换时失配；`getModelId()` 原本每玩家每帧 `find()` 出条目与 1–2 个 `Optional` |
-| `GunTypeCache` | `IGun.getGunId(...)` 的结果 | 客户端资源重载时清空，上限 512；刻意不按 `Item` 或 NBT 缓存，因为 `getGunId` 可被枪包覆盖。见[枪械 LOD](../integration/gun-lod.md#缓存与提前烘焙) |
+| `GunTypeCache` | `IGun.getGunId(...)` 的结果 | 客户端资源重载时清空，上限 512；刻意不按 `Item` 或 NBT 缓存，因为 `getGunId` 可被枪包覆盖。 |
 | `GeoModelState.visitLocatorGroup` 临时矩阵 | 实例级 4 个 scratch 矩阵 | 用 `AtomicReference<Thread>` CAS 取得复用权，重入或跨线程调用退回分配，因此意外嵌套只会更慢、不会写坏；约减少 34.5k 次分配/秒 |
 | `AnimatableEntity` 逐帧判定 | 构造期字段 | 两个 `instanceof` 结果与重复的 `getVehicle()` 调用提升为字段 / 局部变量 |
 | `PlayerAnimatableCapability` 逐帧判定 | 静态与实例字段 | 两个 `isInstalled()` 提升为 `static final`；`instanceof AbstractClientPlayer` 结果按实例缓存 |

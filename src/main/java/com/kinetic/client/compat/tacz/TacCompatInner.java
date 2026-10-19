@@ -5,12 +5,6 @@ import com.kinetic.client.compat.parcool.ParCoolCompat;
 import com.kinetic.client.entity.CustomHumanoidEntity;
 import com.kinetic.client.model.locator.PlayerLocator;
 import com.kinetic.init.ModItemTags;
-import com.kinetic.client.compat.tacz.lod.GunAnimationLod;
-import com.kinetic.client.compat.tacz.lod.GunLodDistance;
-import com.kinetic.client.compat.tacz.lod.GunLodHandle;
-import com.kinetic.client.compat.tacz.lod.GunLodRegistry;
-import com.kinetic.client.compat.tacz.lod.TaczGunLodBuilder;
-import com.kinetic.config.ClientConfig;
 import com.kinetic.geckolib3.core.PlayState;
 import com.kinetic.geckolib3.core.builder.LoopType;
 import com.kinetic.geckolib3.core.event.predicate.AnimationEvent;
@@ -125,36 +119,6 @@ class TacCompatInner {
                 || "run".equals(animationName) || "sneak".equals(animationName)
                 || "sneaking".equals(animationName);
     }
-    /**
-     * 该事件对应的实体是否已超出"枪械动画 LOD"距离。
-     *
-     * <p>只对其他玩家生效：自己（含第三人称下的相机实体）永不降级。距离相对<b>相机</b>计算，
-     * 且只做平方比较、不构造 {@code Vec3}。任何一步拿不到数据都返回 false（即不降级），
-     * 保证判定失败时行为与改动前完全一致。
-     */
-    private static boolean isBeyondAnimationLod(AnimationEvent<? extends AnimatableEntity<? extends LivingEntity>> event) {
-        var configured = ClientConfig.OTHER_GUN_ANIM_LOD_DISTANCE.get();
-        var limit = configured == null ? 0 : configured;
-        if (limit <= 0) {
-            return false;
-        }
-        var entity = event.getAnimatableEntity().getEntity();
-        if (entity == null) {
-            return false;
-        }
-        var mc = Minecraft.getInstance();
-        if (entity == mc.player || entity == mc.getCameraEntity()) {
-            return false;
-        }
-        var camera = mc.gameRenderer.getMainCamera();
-        if (!camera.isInitialized()) {
-            return false;
-        }
-        var cameraPos = camera.getPosition();
-        return GunLodDistance.isBeyond(limit, cameraPos.x, cameraPos.y, cameraPos.z,
-                entity.getX(), entity.getY(), entity.getZ());
-    }
-
     static PlayState playGunMainAnimation(AnimationEvent<? extends AnimatableEntity<? extends LivingEntity>> event, String animationName, LoopType loopType) {
                 // 跑步/行走/待机/潜行由 KINETIC 的运动动画驱动（腿、躯干、头）。武器联动只能把持械姿势
         // 放在 hold 层（上半身），不能在这里整体替换基础动画——否则腿部跑动会被换成静态持械姿势，
@@ -163,12 +127,6 @@ class TacCompatInner {
             return null;
         }
         String tacName = "tac:" + animationName;
-        // 动画 LOD：远处不再接管换弹/拉栓/开火/攀爬/近战这些状态机动作，只保留基本姿态。
-        // 这里返回 STOP 而不是 null 是有意的：hold_mainhand 控制器在本控制器之后注册并覆盖上半身，
-        // 所以主频道停下后，持枪姿态仍由 hold 频道给出（远处玩家看起来依然是"拿着枪"）。
-        if (!GunAnimationLod.isAllowed(tacName, isBeyondAnimationLod(event))) {
-            return PlayState.STOP;
-        }
         if (event.getAnimatableEntity().getAnimation(tacName) != null) {
             return playAnimation(event, tacName, loopType);
         }
@@ -337,7 +295,7 @@ class TacCompatInner {
      * 渲染线程上的枪 id 单槽环形记忆。
      *
      * <p>{@code IGun.getGunId} 每次调用都要从 NBT 里取一次字符串再 {@code ResourceLocation.tryParse}：
-     * 一条枪的同一帧里会被问 2~3 次（主手 LOD、副手判定、动画频道），而 {@code ResourceLocation}
+     * 一条枪的同一帧里会被问 2~3 次（副手判定、动画频道、手枪 locator），而 {@code ResourceLocation}
      * 每次都是新实例。除了分配压力，新实例还会让任何按身份比较的集合失效。
      *
      * <p>只按 {@link ItemStack} <b>实例身份</b>命中：枪的 NBT 一变就是新的 stack，天然失效。
@@ -375,56 +333,10 @@ class TacCompatInner {
         gunIdCursor = 0;
     }
 
-    /**
-     * 这把枪自建的 LOD 句柄。首次调用触发一次异步构建并返回 null，构建失败后恒为 null。
-     *
-     * <p>{@link GunLodRegistry} 是唯一引用 {@link TaczGunLodBuilder} 的地方，且只从这里触达，
-     * 所以未安装 TaCZ 时它的静态初始化不会发生。
-     */
-    @Nullable
-    static GunLodHandle getGunLod(ItemStack itemInHand) {
-        // 总开关：关掉时整条 LOD 链路都不进入（缓存、构建、贴图解码、读盘一律不发生）。
-        if (!ClientConfig.ENABLE_GUN_ITEM_LOD.get()) {
-            return null;
-        }
-        var gunId = getGunId(itemInHand);
-        if (gunId == null) {
-            return null;
-        }
-        return GunLodRegistry.get(gunId);
-    }
-
-    static void clearGunLodCache() {
-        GunLodRegistry.clear();
+    /** 资源重载时清掉按枪 id 的判定缓存与环形记忆：枪包换了之后旧结果不再成立。 */
+    static void clearCaches() {
         GUN_TYPE_CACHE.clear();
         clearGunIdMemo();
-    }
-
-    /**
-     * 全部已加载的枪械 id。给后台预热器枚举用。
-     *
-     * <p>TaCZ 在客户端资源重载后一次性建立这张索引，所以这里只读它，不做任何解析。
-     * 返回的是新列表：调用方会长期持有，不能把 TaCZ 内部集合泄出去。
-     */
-    static java.util.List<ResourceLocation> allGunIds() {
-        var ids = new java.util.ArrayList<ResourceLocation>();
-        for (var entry : TimelessAPI.getAllClientGunIndex()) {
-            var id = entry.getKey();
-            if (id != null) {
-                ids.add(id);
-            }
-        }
-        return ids;
-    }
-
-    /** 后台预热一把枪的 LOD（只落盘，不产生常驻原生占用）。 */
-    static boolean prewarmGunLod(ResourceLocation gunId) {
-        return TaczGunLodBuilder.prewarm(gunId);
-    }
-
-    /** 是否有玩家手里的枪正在等按需构建——后台预热据此让路。 */
-    static boolean hasPendingGunLod() {
-        return GunLodRegistry.hasPending();
     }
 
     /** 该枪是不是手枪（决定副手挂在哪个 locator 上）。判定按 gunId 缓存，见 {@link GunTypeCache}。 */

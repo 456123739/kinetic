@@ -30,7 +30,6 @@ import com.kinetic.client.compat.tacz.TACZCompat;
 import com.kinetic.client.compat.touhoulittlemaid.client.TlmClientCompat;
 import com.kinetic.client.gui.overlay.DebugAnimationScreen;
 import com.kinetic.client.gui.overlay.ExtraPlayerScreen;
-import com.kinetic.client.gui.overlay.GunLodPrewarmScreen;
 import com.kinetic.client.gui.overlay.LoadingStateScreen;
 import com.kinetic.client.input.DebugAnimationKey;
 import com.kinetic.client.input.ExtraPlayerConfigKey;
@@ -151,7 +150,6 @@ public class ClientSetupEvent {
         event.registerAbove(DEBUG_TEXT.id(), "kinetic_debug_info", DebugAnimationScreen.getGuiOverlay());
         event.registerAbove(DEBUG_TEXT.id(), "kinetic_extra_player", new ExtraPlayerScreen());
         event.registerAbove(DEBUG_TEXT.id(), "kinetic_loading_state", new LoadingStateScreen());
-        event.registerAbove(DEBUG_TEXT.id(), "kinetic_gun_lod_prewarm", new GunLodPrewarmScreen());
     }
 
     /**
@@ -164,7 +162,7 @@ public class ClientSetupEvent {
             return;
         }
         event.registerReloadListener(
-                (ResourceManagerReloadListener) resourceManager -> TACZCompat.clearGunLodCache());
+                (ResourceManagerReloadListener) resourceManager -> TACZCompat.clearGunCaches());
     }
 
 }

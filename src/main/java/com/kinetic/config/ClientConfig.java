@@ -22,16 +22,6 @@ public class ClientConfig {
     public static ForgeConfigSpec.IntValue ANIMATION_EVALUATION_DISTANCE_FAR;
     public static ForgeConfigSpec.IntValue ANIMATION_EVALUATION_RATE_FAR;
     public static ForgeConfigSpec.IntValue ANIMATION_EVALUATION_RATE_HIDDEN;
-    public static ForgeConfigSpec.IntValue OTHER_GUN_ITEM_LOD_DISTANCE;
-    public static ForgeConfigSpec.BooleanValue ENABLE_GUN_LOD_PREWARM;
-    public static ForgeConfigSpec.BooleanValue ENABLE_GUN_ITEM_LOD;
-    public static ForgeConfigSpec.DoubleValue OTHER_GUN_ITEM_LOD_EXTENT;
-    public static ForgeConfigSpec.BooleanValue OTHER_GUN_ITEM_LOD_SKIP_ATTACHMENTS;
-    public static ForgeConfigSpec.DoubleValue OTHER_GUN_ITEM_LOD_SCALE;
-    public static ForgeConfigSpec.DoubleValue OTHER_GUN_ITEM_LOD_OFFSET_X;
-    public static ForgeConfigSpec.DoubleValue OTHER_GUN_ITEM_LOD_OFFSET_Y;
-    public static ForgeConfigSpec.DoubleValue OTHER_GUN_ITEM_LOD_OFFSET_Z;
-    public static ForgeConfigSpec.IntValue OTHER_GUN_ANIM_LOD_DISTANCE;
     public static ForgeConfigSpec.DoubleValue SOUND_VOLUME;
     public static ForgeConfigSpec.BooleanValue SHOW_MODEL_ID_FIRST;
     public static ForgeConfigSpec.BooleanValue ENABLE_SOPHISTICATED_BACKPACK_COMPAT;
@@ -53,7 +43,6 @@ public class ClientConfig {
         init(builder);
         ExtraPlayerScreenConfig.init(builder);
         LoadingStateScreenConfig.init(builder);
-        GunLodPrewarmScreenConfig.init(builder);
         return builder.build();
     }
 
@@ -141,66 +130,6 @@ public class ClientConfig {
         builder.comment("Evaluation rate for entities that were not rendered in the previous frame",
                 "(off-screen, out of range, or removed by EntityCulling).");
         ANIMATION_EVALUATION_RATE_HIDDEN = builder.defineInRange("AnimationEvaluationRateHidden", 10, 1, 360);
-
-        builder.push("gun_lod");
-        builder.comment("其他玩家手持枪械的简化模型（物品 LOD）。",
-                "关闭时完全不进入 LOD 代码：不查缓存、不构建、不解码贴图、不读盘。",
-                "枪械本身仍由 TaCZ 正常渲染，只是远处不再换成简化模型。");
-        ENABLE_GUN_ITEM_LOD = builder.define("EnableGunItemLod", false);
-        builder.pop();
-
-        builder.push("gun_lod_prewarm");
-        builder.comment("后台预热枪械 LOD（默认关闭）。",
-                "开启后会在主菜单/游戏内后台烘焙枪包里的每一把枪，把首次遇到的 ~35 ms 卡顿提前花掉。",
-                "代价：会持续占用 CPU 与磁盘，并可能显著抬高内存占用；枪包很多时不建议开。",
-                "关闭时不影响按需构建——别人拿枪时仍会照常生成简化模型，只是第一次会有一点卡顿。");
-        ENABLE_GUN_LOD_PREWARM = builder.define("EnableGunLodPrewarm", false);
-        builder.pop();
-
-        builder.push("other_player_gun_lod");
-        builder.comment("=== 物品 LOD 与动画 LOD 是两个独立开关 ===");
-
-        builder.comment("物品 LOD：其他玩家手持枪械从多少格开始改用 KINETIC 自建的简化模型。",
-                "0 = 始终使用简化模型（默认；别人手里的枪本来就看不清细节）。",
-                "你自己的枪、以及非枪械物品完全不受影响。",
-                "TaCZ 自带的 GunLodRenderDistance 对缺少 lod 字段的第三方枪包无效，这里补上那一块。");
-        OTHER_GUN_ITEM_LOD_DISTANCE = builder.defineInRange("OtherPlayerGunItemLodDistance", 0, 0, 256);
-
-        builder.comment("简化程度：按「零件体量」整体取舍。",
-                "体量 = max(该零件所有方块里最长的一条边, sqrt(该零件表面积)/2)，单位是 1/16 格。",
-                "两个量缺一不可：只看最长边会删掉由许多小方块拼成的零件（例如 hk416d 的握把），",
-                "只看表面积会删掉又细又长的枪管。",
-                "以零件为单位而不是以方块为单位，是为了避免把零件削成碎片——碎片会悬空、也会让枪看起来像一叠散板。",
-                "本值是【绝对下限】：体量小于它的零件一定消失。真正的取舍阈值还会按每个模型自适应",
-                "（相对分位 + 面数预算），这样不同枪包都会落到同一档削减幅度，不需要为某个包单独调参。",
-                "3.0（默认）保留枪管/机匣/枪托/握把/弹匣等可辨识特征，丢掉准星、侧导轨、螺丝等细节；",
-                "调小更保真，调大更省顶点。改完做一次资源重载（F3+T）即可生效。");
-        OTHER_GUN_ITEM_LOD_EXTENT = builder.defineInRange("OtherPlayerGunItemLodExtent", 3.0, 0.0, 16.0);
-
-
-        builder.comment("是否连枪械配件一起不渲染（弹匣、瞄具、护木、枪口装置等可安装配件）。",
-                "打开后远处玩家手里的枪只剩枪身，能再省一大块顶点，但弹匣这类标志性部件也会消失。",
-                "默认关闭：远处仍能靠弹匣/枪管轮廓分辨武器。");
-        OTHER_GUN_ITEM_LOD_SKIP_ATTACHMENTS = builder.define("OtherPlayerGunItemLodSkipAttachments", false);
-
-        builder.comment("物品 LOD 的额外缩放倍率，最终缩放 = 该枪 display 里声明的 thirdperson 缩放 × 本值。",
-                "简化模型用的是枪本身的骨骼坐标，摆放位置与 TaCZ 内部的原点路径变换是近似关系，",
-                "如果觉得远处的枪偏大/偏小，只调这一个值即可（不影响你自己手里的枪）。");
-        OTHER_GUN_ITEM_LOD_SCALE = builder.defineInRange("OtherPlayerGunItemLodScale", 1.0, 0.05, 5.0);
-
-        builder.comment("简化模型相对手部 locator 的额外平移（单位：格），用于在游戏里微调位置。",
-                "默认 0：模型自带的 thirdperson_hand 骨骼会被摆到 locator 原点上，",
-                "所以正常情况下不需要动这三个值。只有当某个枪包的骨骼命名不符合 TaCZ 约定、",
-                "看起来明显偏位时才需要用它补偿。");
-        OTHER_GUN_ITEM_LOD_OFFSET_X = builder.defineInRange("OtherPlayerGunItemLodOffsetX", 0.0, -2.0, 2.0);
-        OTHER_GUN_ITEM_LOD_OFFSET_Y = builder.defineInRange("OtherPlayerGunItemLodOffsetY", 0.0, -2.0, 2.0);
-        OTHER_GUN_ITEM_LOD_OFFSET_Z = builder.defineInRange("OtherPlayerGunItemLodOffsetZ", 0.0, -2.0, 2.0);
-
-        builder.comment("动画 LOD：其他玩家手持枪械超过多少格后不再运行 TaCZ 的换弹/拉栓等状态机动画，",
-                "只保留持枪等基本姿态。0 = 关闭该优化（默认 32 格）。",
-                "枪械动画状态机是逐实体每帧驱动的，远处玩家停掉它能同时省 CPU 与顶点量。");
-        OTHER_GUN_ANIM_LOD_DISTANCE = builder.defineInRange("OtherPlayerGunAnimLodDistance", 32, 0, 256);
-        builder.pop();
 
         builder.comment("The amount of volume when the animation is played.");
         SOUND_VOLUME = builder.defineInRange("SoundVolume", 100.0, 0.0, 100.0);

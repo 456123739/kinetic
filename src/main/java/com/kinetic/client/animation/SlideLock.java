@@ -250,10 +250,12 @@ public final class SlideLock {
 
     /** 单个玩家的锁定状态；包可见是为了让状态机可以脱离 Player 实例单独测试。 */
     static final class State {
-        boolean locked = true;
-        int lastSlideTick;
-        int lastSeenTick;
-        int slowTicks;
-        int airborneTicks;
+        // 动画求值在 worker 线程池上跑，同一实体的相邻帧可能落在不同线程；
+        // 状态字段用 volatile 保证跨帧可见性（同一帧内的读写在同一个线程上，无需更重的同步）。
+        volatile boolean locked = true;
+        volatile int lastSlideTick;
+        volatile int lastSeenTick;
+        volatile int slowTicks;
+        volatile int airborneTicks;
     }
 }

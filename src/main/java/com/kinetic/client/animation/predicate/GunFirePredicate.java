@@ -1,5 +1,6 @@
 package com.kinetic.client.animation.predicate;
 
+import com.kinetic.client.animation.SlideLock;
 import com.kinetic.client.compat.swarfare.SWarfareCompat;
 import com.kinetic.client.compat.tacz.TACZCompat;
 import com.kinetic.client.entity.CustomHumanoidEntity;
@@ -18,6 +19,11 @@ public class GunFirePredicate implements IAnimationPredicate<CustomHumanoidEntit
     public PlayState test(AnimationEvent<CustomHumanoidEntity<?>> event, ExpressionEvaluator<?> evaluator) {
         LivingEntity entity = event.getAnimatableEntity().getEntity();
         if (entity == null || event.getAnimatableEntity() instanceof IPreviewEntity) {
+            return PlayState.STOP;
+        }
+        // 滑铲锁定：开火/换弹/近战这些一次性动画一律不播，手臂保持静止持枪。
+        // 枪口火光、抛壳、弹道都不走这里，射击本身不受影响。
+        if (SlideLock.suppressesOneShot(entity)) {
             return PlayState.STOP;
         }
         if (!entity.swinging && !entity.isUsingItem()) {

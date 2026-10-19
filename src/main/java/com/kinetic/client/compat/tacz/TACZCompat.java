@@ -77,6 +77,22 @@ public class TACZCompat {
         return null;
     }
 
+    /**
+     * 滑铲锁定期间的静止持枪姿势：只取 {@code tac:hold:<type>}，不跟瞄准进度、跑动、开火走。
+     *
+     * <p>{@code tac:hold:rifle} 里有一条 {@code AllBody} 轨道，会把整个人从滑铲姿态拧过去；
+     * 锁定层会在所有频道跑完之后把躯干/下肢写回滑铲，所以这里可以放心用它，手臂仍然自然。
+     *
+     * @return 未安装 TaCZ 或主手不是枪时返回 {@code null}
+     */
+    @Nullable
+    public static PlayState playGunStaticHoldAnimation(ItemStack mainHandItem, AnimationEvent<? extends CustomHumanoidEntity<?>> event) {
+        if (isInstalled() && TacCompatInner.isGun(mainHandItem)) {
+            return TacCompatInner.playGunStaticHoldAnimation(event, mainHandItem);
+        }
+        return null;
+    }
+
     @Nullable
     public static PlayState playGunOnceAnimation(ItemStack mainHandItem, AnimationEvent<? extends CustomHumanoidEntity<?>> event) {
         if (isInstalled() && TacCompatInner.isGun(mainHandItem)) {
@@ -157,6 +173,11 @@ public class TACZCompat {
     /** 是否有玩家手里的枪正在等按需构建——后台预热据此让路。未安装 TaCZ 时恒为 false。 */
     public static boolean hasPendingGunLod() {
         return isInstalled() && TacCompatInner.hasPendingGunLod();
+    }
+
+    /** 该物品是否是 TaCZ 枪械；未安装 TaCZ 时返回 false。 */
+    public static boolean isGun(ItemStack stack) {
+        return isInstalled() && TacCompatInner.isGun(stack);
     }
 
     /** 该物品是不是 TaCZ 手枪；未安装 TaCZ 或不是枪时返回 false。 */

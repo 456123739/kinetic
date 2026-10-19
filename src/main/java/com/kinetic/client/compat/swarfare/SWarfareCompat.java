@@ -79,6 +79,16 @@ public class SWarfareCompat {
         return null;
     }
 
+    /** 滑铲锁定期间的静止持枪姿势（卓越前线与 TaCZ 共用同一套 tac:* 动画名）。 */
+    @Nullable
+    public static PlayState playGunStaticHoldAnimation(ItemStack mainHandItem,
+                                                       AnimationEvent<? extends CustomHumanoidEntity<? extends LivingEntity>> event) {
+        if (INSTALLED && SWarfareCompatInner.isGun(mainHandItem)) {
+            return SWarfareCompatInner.playGunStaticHoldAnimation(event, mainHandItem);
+        }
+        return null;
+    }
+
     @Nullable
     public static PlayState playGunOnceAnimation(ItemStack mainHandItem, AnimationEvent<? extends CustomHumanoidEntity<? extends LivingEntity>> event) {
         if (INSTALLED && SWarfareCompatInner.isGun(mainHandItem)) {

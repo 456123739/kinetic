@@ -241,6 +241,25 @@ class TacCompatInner {
     }
 
     /**
+     * 滑铲锁定期间的静止持枪姿势：固定取 {@code tac:hold:<type>}，不看瞄准/跑动/开火。
+     *
+     * <p>只负责手臂和头；躯干/下肢由 {@code AnimationProcessor} 的滑铲回写覆盖，所以
+     * {@code tac:hold:rifle} 里的 {@code AllBody} 轨道不会把滑铲姿势拧掉。
+     */
+    @NotNull
+    static PlayState playGunStaticHoldAnimation(AnimationEvent<? extends CustomHumanoidEntity<?>> event, ItemStack heldItem) {
+        IGun gun = IGun.getIGunOrNull(heldItem);
+        if (gun == null) {
+            return PlayState.STOP;
+        }
+        Optional<CommonGunIndex> indexOptional = TimelessAPI.getCommonGunIndex(gun.getGunId(heldItem));
+        if (indexOptional.isEmpty()) {
+            return PlayState.STOP;
+        }
+        return getGunTypeAnimation(event, indexOptional.get().getType(), "tac:hold:");
+    }
+
+    /**
      * 这些动画可能是带有后摇的动画，故需要单独分一个频道来播放，从而才能超过时长进行播放
      */
     static PlayState playGunOnceAnimation(AnimationEvent<? extends CustomHumanoidEntity<?>> event, ItemStack heldItem) {

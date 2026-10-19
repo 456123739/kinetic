@@ -1,6 +1,7 @@
 package com.kinetic.client.animation.predicate;
 
 import com.kinetic.client.animation.EntityTickStates;
+import com.kinetic.client.animation.SlideLock;
 import com.kinetic.client.animation.condition.ConditionalUse;
 import com.kinetic.client.compat.tacz.TACZCompat;
 import com.kinetic.client.entity.CustomHumanoidEntity;
@@ -48,6 +49,11 @@ public class UsePredicate implements IAnimationPredicate<CustomHumanoidEntity<?>
     public PlayState test(AnimationEvent<CustomHumanoidEntity<?>> event, ExpressionEvaluator<?> evaluator) {
         LivingEntity entity = event.getAnimatableEntity().getEntity();
         if (entity == null || event.getAnimatableEntity() instanceof IPreviewEntity) {
+            return PlayState.STOP;
+        }
+
+        // 滑铲锁定：瞄准/换弹/吃喝等"使用中"动画不许改手臂，持枪姿势固定在 hold 频道。
+        if (SlideLock.suppressesOneShot(entity)) {
             return PlayState.STOP;
         }
 

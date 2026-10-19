@@ -1,5 +1,6 @@
 package com.kinetic.geckolib3.core.processor;
 
+import com.kinetic.client.animation.SlideLock;
 import com.kinetic.client.sound.instance.SoundInstanceManager;
 import com.kinetic.geckolib3.core.controller.IAnimationController;
 import com.kinetic.geckolib3.core.controller.IBoneAnimationQueue;
@@ -36,6 +37,13 @@ import java.util.function.Consumer;
 
 public class AnimationProcessor<TEntity extends Entity> {
     private static final int ROAMING_STRUCT_NAME = StringPool.computeIfAbsent("roaming");
+    /**
+     * 跑酷控制器在 {@code PlayerControllerCollection} 里的名字。
+     *
+     * <p>滑铲锁定的骨骼快照必须在这个控制器处理完之后抄、在所有控制器跑完之后写回，
+     * 所以这里按名字定位它。控制器名是注册时写死的常量，不会随模型变化。
+     */
+    private static final String PARCOOL_CONTROLLER = "player.parcool";
 
     private final AnimatableEntity<TEntity> animatable;
     private final ReferenceArrayList<BoneTopLevelSnapshot> modelBones = new ReferenceArrayList<>();
@@ -59,6 +67,13 @@ public class AnimationProcessor<TEntity extends Entity> {
     private float currentRenderTicks;
     private boolean currentBlendRotation;
 
+    // 滑铲锁定：锁定骨骼在跑酷控制器之后的快照，以及逐帧复用的回写缓冲。
+    private final ReferenceArrayList<BoneTopLevelSnapshot> slideLockedBones = new ReferenceArrayList<>();
+    private float[] slideLockedTransform = EMPTY_TRANSFORM;
+    private boolean[] slideLockedCaptured = EMPTY_CAPTURED;
+    private static final float[] EMPTY_TRANSFORM = new float[0];
+    private static final boolean[] EMPTY_CAPTURED = new boolean[0];
+
     public AnimationProcessor(AnimatableEntity<TEntity> animatable) {
         this.animatable = animatable;
     }
@@ -81,6 +96,7 @@ public class AnimationProcessor<TEntity extends Entity> {
         preProcess(evaluator);
 
         AnimationData manager = this.animatable.getAnimationData();
+        boolean slideLocked = false;
         for (IAnimationController<AnimatableEntity<TEntity>> controller : manager.getAnimationControllers()) {
             if (this.modelDirty) {
                 controller.updateModel(this.modelBones, eventHandlers);
@@ -97,6 +113,18 @@ public class AnimationProcessor<TEntity extends Entity> {
             this.currentRenderTicks = renderTicks;
             this.currentBlendRotation = blendRotation;
             controller.visitBoneAnimationQueues(this.boneQueueVisitor);
+            // 跑酷控制器刚把滑铲姿态写进快照：此时抄下来，等所有频道跑完再写回。
+            // 必须在 controller.process 之后读状态——滑动锁定就是在本帧的谓词里刷新的。
+            if (PARCOOL_CONTROLLER.equals(controller.getName())) {
+                slideLocked = SlideLock.isLocked(this.animatable.getEntity());
+                if (slideLocked) {
+                    slideLocked = captureSlideLock();
+                }
+            }
+        }
+
+        if (slideLocked) {
+            restoreSlideLock();
         }
 
         this.modelDirty = false;
@@ -222,6 +250,65 @@ public class AnimationProcessor<TEntity extends Entity> {
         }
     }
 
+    /**
+     * 抄下锁定骨骼此刻的旋转/位移/缩放。
+     *
+     * <p>只在跑酷控制器处理完之后调用，因此拿到的一定是滑铲动画的数值；随后 TaCZ 的
+     * hold/fire、原版的 swing/use 无论怎么写这些骨骼，都会在 {@link #restoreSlideLock()} 里被覆盖。
+     *
+     * @return 是否抄到了至少一根骨骼（没有就跑酷控制器这帧没产出滑铲姿态）
+     */
+    private boolean captureSlideLock() {
+        int boneCount = slideLockedBones.size();
+        if (boneCount == 0) {
+            return false;
+        }
+        float[] dst = this.slideLockedTransform;
+        boolean[] mask = this.slideLockedCaptured;
+        boolean any = false;
+        for (int i = 0; i < boneCount; i++) {
+            BoneTopLevelSnapshot snapshot = slideLockedBones.get(i);
+            boolean captured = snapshot.hasAnimation;
+            mask[i] = captured;
+            if (!captured) {
+                continue;
+            }
+            any = true;
+            int base = i * 9;
+            dst[base] = snapshot.rotation.x;
+            dst[base + 1] = snapshot.rotation.y;
+            dst[base + 2] = snapshot.rotation.z;
+            dst[base + 3] = snapshot.position.x;
+            dst[base + 4] = snapshot.position.y;
+            dst[base + 5] = snapshot.position.z;
+            dst[base + 6] = snapshot.scale.x;
+            dst[base + 7] = snapshot.scale.y;
+            dst[base + 8] = snapshot.scale.z;
+        }
+        return any;
+    }
+
+    /** 把 {@link #captureSlideLock()} 抄下来的数值写回去，并阻止尾过渡把它们淡出。 */
+    private void restoreSlideLock() {
+        int boneCount = slideLockedBones.size();
+        float[] src = this.slideLockedTransform;
+        boolean[] mask = this.slideLockedCaptured;
+        for (int i = 0; i < boneCount; i++) {
+            if (!mask[i]) {
+                continue;
+            }
+            BoneTopLevelSnapshot snapshot = slideLockedBones.get(i);
+            int base = i * 9;
+            snapshot.rotation.set(src[base], src[base + 1], src[base + 2]);
+            snapshot.position.set(src[base + 3], src[base + 4], src[base + 5]);
+            snapshot.scale.set(src[base + 6], src[base + 7], src[base + 8]);
+            // 标记"这一帧有动画"，尾过渡就不会把这些骨骼往初始姿势拉。
+            snapshot.isCurrentlyRunningRotationAnimation = true;
+            snapshot.isCurrentlyRunningPositionAnimation = true;
+            snapshot.isCurrentlyRunningScaleAnimation = true;
+        }
+    }
+
     @Nullable
     public BoneView getBone(int boneName) {
         BoneTopLevelSnapshot bone = modelBonesMap.get(boneName);
@@ -254,8 +341,22 @@ public class AnimationProcessor<TEntity extends Entity> {
                 }
             });
         }
+        rebuildSlideLockedBones();
         this.modelDirty = true;
         this.eventHandlers = eventHandlers;
+    }
+
+    /** 模型换掉之后重新挑出滑铲锁定的骨骼，并重整回写缓冲。 */
+    private void rebuildSlideLockedBones() {
+        this.slideLockedBones.clear();
+        for (BoneTopLevelSnapshot snapshot : this.modelBones) {
+            if (snapshot != null && SlideLock.isLockedBone(snapshot.name)) {
+                this.slideLockedBones.add(snapshot);
+            }
+        }
+        int size = this.slideLockedBones.size();
+        this.slideLockedTransform = size == 0 ? EMPTY_TRANSFORM : new float[size * 9];
+        this.slideLockedCaptured = size == 0 ? EMPTY_CAPTURED : new boolean[size];
     }
 
     public void putRemoteStruct(@Nullable Struct remoteStruct) {

@@ -1,6 +1,7 @@
 package com.kinetic.client.animation.predicate;
 
 import com.kinetic.client.animation.EntityTickStates;
+import com.kinetic.client.animation.SlideLock;
 import com.kinetic.client.animation.condition.ConditionManager;
 import com.kinetic.client.animation.condition.ConditionalSwing;
 import com.kinetic.client.compat.ironsspellbooks.IronsSpellBooksCompat;
@@ -21,6 +22,10 @@ public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<
     public PlayState test(AnimationEvent<CustomHumanoidEntity<?>> event, ExpressionEvaluator<?> evaluator) {
         LivingEntity entity = event.getAnimatableEntity().getEntity();
         if (entity == null || event.getAnimatableEntity() instanceof IPreviewEntity) {
+            return PlayState.STOP;
+        }
+        // 滑铲锁定：持枪时左键触发的挥动不允许改手臂姿势（滑铲的下身由锁定层负责）。
+        if (SlideLock.suppressesOneShot(entity)) {
             return PlayState.STOP;
         }
 

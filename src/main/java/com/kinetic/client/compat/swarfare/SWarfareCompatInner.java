@@ -129,6 +129,16 @@ public class SWarfareCompatInner {
         return playAnimation(event, animationName, loopType);
     }
 
+    /** 滑铲锁定期间的静止持枪姿势：固定取 {@code tac:hold:<type>}。 */
+    @NotNull
+    static PlayState playGunStaticHoldAnimation(AnimationEvent<? extends CustomHumanoidEntity<? extends LivingEntity>> event,
+                                                ItemStack heldItem) {
+        if (!(heldItem.getItem() instanceof GunItem)) {
+            return PlayState.STOP;
+        }
+        return getGunTypeAnimation(event, heldItem, "tac:hold:", LoopType.LOOP);
+    }
+
     @NotNull
     private static PlayState getGunTypeAnimation(AnimationEvent<? extends CustomHumanoidEntity<? extends LivingEntity>> event, ItemStack gun, String prefix) {
         return getGunTypeAnimation(event, gun, prefix, LoopType.LOOP);

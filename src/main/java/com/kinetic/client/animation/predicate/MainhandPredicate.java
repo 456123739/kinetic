@@ -1,5 +1,6 @@
 package com.kinetic.client.animation.predicate;
 
+import com.kinetic.client.animation.SlideLock;
 import com.kinetic.client.animation.condition.ConditionalHold;
 import com.kinetic.client.compat.swarfare.SWarfareCompat;
 import com.kinetic.client.compat.tacz.TACZCompat;
@@ -38,6 +39,19 @@ public class MainhandPredicate implements IAnimationPredicate<CustomHumanoidEnti
         // 快照，不让位的话尸体会保持举枪姿势、睡姿也会被持械姿势盖掉。
         if (entity.isSleeping() || entity.isDeadOrDying() || entity.isAutoSpinAttack()) {
             return PlayState.STOP;
+        }
+
+        // 滑铲锁定：上半身只允许静止持枪姿势。必须在"挥动/使用就暂停"之前处理，
+        // 否则开火那一 tick 的 swinging / aiming 会把 hold 频道按停，手臂被 fire/use 频道接走。
+        if (SlideLock.wantsStaticHold(entity)) {
+            ItemStack lockedItem = entity.getItemInHand(InteractionHand.MAIN_HAND);
+            PlayState staticHold = TACZCompat.playGunStaticHoldAnimation(lockedItem, event);
+            if (staticHold == null) {
+                staticHold = SWarfareCompat.playGunStaticHoldAnimation(lockedItem, event);
+            }
+            if (staticHold != null) {
+                return staticHold;
+            }
         }
 
         if (!checkSwingAndUse(entity, InteractionHand.MAIN_HAND)) {

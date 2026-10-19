@@ -33,7 +33,6 @@ import com.kinetic.client.gui.overlay.ExtraPlayerScreen;
 import com.kinetic.client.gui.overlay.GunLodPrewarmScreen;
 import com.kinetic.client.gui.overlay.LoadingStateScreen;
 import com.kinetic.client.input.DebugAnimationKey;
-import com.kinetic.client.input.ExtraAnimationKey;
 import com.kinetic.client.input.ExtraPlayerConfigKey;
 import com.kinetic.client.model.locator.FirstPersonLocator;
 import com.kinetic.client.model.locator.PlayerLocator;
@@ -142,7 +141,6 @@ public class ClientSetupEvent {
 
         event.register(DebugAnimationKey.DEBUG_ANIMATION_KEY);
         event.register(ExtraPlayerConfigKey.EXTRA_PLAYER_RENDER_KEY);
-        ExtraAnimationKey.registerKeyBinding(event);
     }
 
     @SubscribeEvent

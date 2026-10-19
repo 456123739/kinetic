@@ -106,6 +106,5 @@
   "error.kinetic.missing_file": "Kayıp dosya %s",
   "error.kinetic.missing_texture": "Doku Dosyası Kayıp",
   "error.kinetic.read_file": "%s dosyası okunamadı",
-  "error.kinetic.write_file": "%s dosyasını yazılamadı",
-  "key.kinetic.extra_animation.none": "Hiç"
+  "error.kinetic.write_file": "%s dosyasını yazılamadı"
 }

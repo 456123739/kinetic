@@ -344,15 +344,6 @@
   "commands.kinetic.export.not_exist": "§6§l[§aKINETIC§6§l] §r'%s' 不存在",
   "key.kinetic.player_model.desc": "打開玩家模型介面",
   "key.kinetic.animation_roulette.desc": "打開輪盤動畫",
-  "key.kinetic.extra_animation.none": "無",
-  "key.kinetic.extra_animation.0.desc": "播放額外動畫 0",
-  "key.kinetic.extra_animation.1.desc": "播放額外動畫 1",
-  "key.kinetic.extra_animation.2.desc": "播放額外動畫 2",
-  "key.kinetic.extra_animation.3.desc": "播放額外動畫 3",
-  "key.kinetic.extra_animation.4.desc": "播放額外動畫 4",
-  "key.kinetic.extra_animation.5.desc": "播放額外動畫 5",
-  "key.kinetic.extra_animation.6.desc": "播放額外動畫 6",
-  "key.kinetic.extra_animation.7.desc": "播放額外動畫 7",
   "key.kinetic.debug_animation.desc": "打開動畫除錯",
   "key.kinetic.open_extra_player_render.desc": "打開額外玩家渲染配置"
 }

@@ -359,15 +359,6 @@
   "commands.kinetic.export.not_exist": "§6§l[§aKINETIC§6§l] §r'%s' は存在しません",
   "key.kinetic.player_model.desc": "プレイヤーモデルGUIを開く",
   "key.kinetic.animation_roulette.desc": "アニメーションルーレットを開く",
-  "key.kinetic.extra_animation.none": "なし",
-  "key.kinetic.extra_animation.0.desc": "エクストラアニメーション0を再生",
-  "key.kinetic.extra_animation.1.desc": "エクストラアニメーション1を再生",
-  "key.kinetic.extra_animation.2.desc": "エクストラアニメーション2を再生",
-  "key.kinetic.extra_animation.3.desc": "エクストラアニメーション3を再生",
-  "key.kinetic.extra_animation.4.desc": "エクストラアニメーション4を再生",
-  "key.kinetic.extra_animation.5.desc": "エクストラアニメーション5を再生",
-  "key.kinetic.extra_animation.6.desc": "エクストラアニメーション6を再生",
-  "key.kinetic.extra_animation.7.desc": "エクストラアニメーション7を再生",
   "key.kinetic.debug_animation.desc": "アニメーションデバッグを開く",
   "key.kinetic.open_extra_player_render.desc": "追加のプレイヤーモデルの描画設定"
 }

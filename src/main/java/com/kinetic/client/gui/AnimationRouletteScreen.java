@@ -6,7 +6,6 @@ import com.kinetic.client.animation.molang.CustomMolangParser;
 import com.kinetic.client.event.PlayerMoveEvent;
 import com.kinetic.client.gui.button.*;
 import com.kinetic.client.input.AnimationRouletteKey;
-import com.kinetic.client.input.ExtraAnimationKey;
 import com.kinetic.client.lang.LanguageManager;
 import com.kinetic.model.resource.client.ModelRenderTarget;
 import com.kinetic.config.ClientConfig;
@@ -17,7 +16,6 @@ import com.kinetic.molang.parser.ParseException;
 import com.kinetic.network.NetworkHandler;
 import com.kinetic.network.forge.ClientProtocolGateway;
 import com.google.common.collect.Lists;
-import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import it.unimi.dsi.fastutil.objects.ObjectList;
@@ -26,7 +24,6 @@ import com.kinetic.proto.mixel.manifest.info.ConfigForms;
 import com.kinetic.proto.mixel.manifest.info.ExtraAnimationButton;
 import com.kinetic.proto.mixel.manifest.info.ExtraAnimationClassify;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.Tooltip;
@@ -748,25 +745,8 @@ public class AnimationRouletteScreen extends Screen {
                 MutableComponent name = Component.literal(key);
                 graphics.drawCenteredString(font, name, xPos, yPos - 8, 0xF3EFE0);
             }
-            // 只有第 0 页显示按键绑定
-            // 如果当前是分类菜单，也不显示按键绑定
-            if (current.getRight() == 0 && CACHE.size() == 1) {
-                this.drawKeyMappingName(graphics, index, xPos, yPos);
-            }
             startDeg = startDeg + 2 * Mth.PI / MAX_ROULETTE_COUNT;
         }
-    }
-
-    private void drawKeyMappingName(GuiGraphics graphics, int index, int xPos, int yPos) {
-        MutableComponent keyText = Component.literal("[ ").withStyle(ChatFormatting.YELLOW);
-        KeyMapping keyMapping = ExtraAnimationKey.EXTRA_ANIMATION_KEYS.get(index);
-        if (keyMapping.getKey() == InputConstants.UNKNOWN) {
-            keyText.append(Component.translatable("key.kinetic.extra_animation.none"));
-        } else {
-            keyText.append(keyMapping.getTranslatedKeyMessage());
-        }
-        keyText.append(" ]");
-        graphics.drawCenteredString(font, keyText, xPos, yPos + 4, 0xF3EFE0);
     }
 
     private void drawAnimationName(GuiGraphics graphics, MutableComponent name, int xPos, int yPos, boolean isClassify) {

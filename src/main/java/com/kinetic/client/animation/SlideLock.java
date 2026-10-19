@@ -17,12 +17,15 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * 滑铲期间的动画状态锁定。
  *
- * <p>TaCZ 开火会在自己的 {@code LivingEntityAim#tickSprint} 里取消疾跑；ParCool 的滑铲随之结束，
- * 并把动画换成 {@code CrawlAnimator}（它没有 KINETIC 动画名）。这时玩家的 {@code Pose.SWIMMING}
- * 还在，主频道会切到 {@code climb}/{@code climbing}，开火频道再叠一层 {@code tac:climbing:fire:*}
- * ——整身趴地的动作。更隐蔽的一层是 {@code tac:hold:rifle} 自带的 {@code AllBody} 轨道：
- * 滑铲时 {@code AllBody} 是"人向后躺、脚在前"的大角度旋转，持枪姿势把它改写成头朝前，
- * 于是出现"头在前、脚在后、身体向下拱"的那一帧。
+ * <p>ParCool 在滑铲期间本来就会每 tick 把疾跑置为 false（{@code Slide#onWorkingTick}），
+ * 所以"开火取消疾跑"并不是滑铲被打断的原因。真正把画面变成"头在前、脚在后、身体下拱"的是
+ * 持枪姿势本身：{@code tac:hold:rifle} 里有一条 {@code AllBody} 轨道，而滑铲的 {@code AllBody}
+ * 是"人向后躺、脚朝前"的大角度旋转，被持枪姿势一改写，整个人就翻过来了。
+ *
+ * <p>滑铲动作结束后（持续时间到、松开蹲键等）ParCool 会把动画换成 {@code CrawlAnimator}
+ * （它没有 KINETIC 动画名），玩家的 {@code Pose.SWIMMING} 还在；主频道于是切到
+ * {@code climb}/{@code climbing}，开火频道再叠一层 {@code tac:climbing:fire:*}——整身趴地。
+ * 这两条路径都必须由骨骼级的锁定拦掉。
  *
  * <p>本类只维护"这一刻该不该锁"这一个状态，真正的两份工作分别落在：
  * <ul>

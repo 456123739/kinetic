@@ -32,8 +32,6 @@
     "AbstractArrowEntityMixin",
     "ConnectionMixin",
     "ProjectileEntityMixin",
-    "ServerPlayerMixin",
-    "LivingEntitySprintMixin",
-    "TaczSprintMixin"
+    "ServerPlayerMixin"
   ]
 }

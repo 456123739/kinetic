@@ -29,7 +29,7 @@ public class ParCoolPredicate implements IAnimationPredicate<CustomPlayerEntity>
             }
         }
         if (locked) {
-            // TaCZ 开火取消了疾跑，ParCool 已经把滑铲换成 CrawlAnimator——这里继续把滑铲喂给
+            // ParCool 已经停报滑铲（动作结束、换成了 CrawlAnimator）——锁定期间继续把滑铲喂给
             // 同一个控制器。动画名和循环类型都没变，播放头不会重播，只是继续往下走。
             return playAnimation(event, SlideLock.SLIDE_ANIMATION);
         }

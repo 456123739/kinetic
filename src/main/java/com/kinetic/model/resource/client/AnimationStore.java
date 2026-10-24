@@ -6,8 +6,8 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSet;
 import it.unimi.dsi.fastutil.objects.ObjectSets;
 import java.io.FileNotFoundException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -18,8 +18,9 @@ public final class AnimationStore extends Object2ReferenceOpenHashMap<String, An
     private final AnimationBinder binder;
     private final AnimationStore fallback;
     private final Function<String, ModelResourceFailureGate> failureGates;
-    private final Map<String, Slot> slots = new HashMap<>();
-    private boolean closed;
+    // 惰性加载会在运行期写入，读路径（每帧每控制器一次）必须无锁；写只在 synchronized 的 load 里。
+    private final Map<String, Slot> slots = new ConcurrentHashMap<>();
+    private volatile boolean closed;
 
     public AnimationStore() {
         this(null, null, null, ignored -> ModelResourceFailureGate.none());
@@ -79,40 +80,56 @@ public final class AnimationStore extends Object2ReferenceOpenHashMap<String, An
     }
 
     @Override
-    public synchronized Animation get(Object key) {
+    public Animation get(Object key) {
         requireOpen();
-        if (key instanceof String name && containsLocal(name)) {
-            var slot = slots.get(name);
-            if (slot == null || slot.state() == State.READY || source == null) {
-                return slot == null ? super.get(name) : slot.animation();
-            }
-            if (slot.state() == State.FAILED) {
-                return fallback == null ? null : fallback.get(name);
-            }
-            var failureGate = Objects.requireNonNull(failureGates.apply(name), "failure gate");
-            if (failureGate.failure().isPresent()) {
-                slots.put(name, new Slot(State.FAILED, null));
-                return fallback == null ? null : fallback.get(name);
-            }
-            try {
-                var proto = source.load(name);
-                if (proto == null) {
-                    failureGate.fail(new FileNotFoundException(
-                            "Baked animation payload is missing: " + name));
-                    slots.put(name, new Slot(State.FAILED, null));
-                    return fallback == null ? null : fallback.get(name);
-                }
-                var value = Objects.requireNonNull(binder.bind(proto), "bound animation");
-                super.put(name, value);
-                slots.put(name, new Slot(State.READY, value));
-                return value;
-            } catch (Exception error) {
-                failureGate.fail(error);
-                slots.put(name, new Slot(State.FAILED, null));
-                return fallback == null ? null : fallback.get(name);
-            }
+        if (!(key instanceof String name)) {
+            return fallback == null ? null : fallback.get(key);
         }
-        return fallback == null ? null : fallback.get(key);
+        var slot = slots.get(name);
+        if (slot == null) {
+            return fallback == null ? null : fallback.get(key);
+        }
+        // 已就绪（或本来就没有加载源）时完全无锁，避免所有玩家共享默认动画集时
+        // 每帧每控制器都在同一个监视器上排队。
+        if (slot.state() == State.READY || source == null) {
+            return slot.animation();
+        }
+        return load(name);
+    }
+
+    private synchronized Animation load(String name) {
+        var slot = slots.get(name);
+        if (slot == null) {
+            return fallback == null ? null : fallback.get(name);
+        }
+        if (slot.state() == State.READY || source == null) {
+            return slot.animation();
+        }
+        if (slot.state() == State.FAILED) {
+            return fallback == null ? null : fallback.get(name);
+        }
+        var failureGate = Objects.requireNonNull(failureGates.apply(name), "failure gate");
+        if (failureGate.failure().isPresent()) {
+            slots.put(name, new Slot(State.FAILED, null));
+            return fallback == null ? null : fallback.get(name);
+        }
+        try {
+            var proto = source.load(name);
+            if (proto == null) {
+                failureGate.fail(new FileNotFoundException(
+                        "Baked animation payload is missing: " + name));
+                slots.put(name, new Slot(State.FAILED, null));
+                return fallback == null ? null : fallback.get(name);
+            }
+            var value = Objects.requireNonNull(binder.bind(proto), "bound animation");
+            super.put(name, value);
+            slots.put(name, new Slot(State.READY, value));
+            return value;
+        } catch (Exception error) {
+            failureGate.fail(error);
+            slots.put(name, new Slot(State.FAILED, null));
+            return fallback == null ? null : fallback.get(name);
+        }
     }
 
     @Override
@@ -128,7 +145,7 @@ public final class AnimationStore extends Object2ReferenceOpenHashMap<String, An
     }
 
     private boolean containsLocal(Object key) {
-        return super.containsKey(key);
+        return slots.containsKey(key);
     }
 
     @Override

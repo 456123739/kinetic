@@ -366,9 +366,11 @@ public final class ClientModelRenderTargetManager implements AutoCloseable {
                     publishRequiredDefault(publication);
                     var elapsed = Duration.ofNanos(
                             System.nanoTime() - startedAt).toMillis();
+                    var runtime = Runtime.getRuntime();
                     Kinetic.LOGGER.info(
-                            "Finished builtin default model initialization targets={} elapsedMs={}",
-                            loaded.size(), elapsed);
+                            "Finished builtin default model initialization targets={} elapsedMs={} heapUsedMb={}",
+                            loaded.size(), elapsed,
+                            (runtime.totalMemory() - runtime.freeMemory()) / (1024 * 1024));
                 });
     }
 

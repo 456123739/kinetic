@@ -66,13 +66,23 @@ public final class BakedAnimationCache {
                 AnimationProtoMapper::animation, fallback, failureGates);
     }
 
+    /**
+     * 内置默认模型的动画集。
+     *
+     * <p>默认模型携带 352 个动画（约 6 MB JSON）。它们只在模型的条件求值真正选中时才会被播放，
+     * 启动时全量绑定（解析 molang + 构建关键帧对象）会制造大量长寿对象，是启动内存的主要来源。
+     * 这里只保留 proto 列表，{@link AnimationStore#lazy} 在第一次取用某个动画时才绑定；
+     * 契约校验（{@code observer}）也推迟到同一次绑定里，保证校验的仍是实际使用的数据。
+     */
     public static AnimationStore bindResident(
-            Iterable<? extends Map.Entry<String,
-                    AnimationFile>> animationFiles,
+            Iterable<? extends Map.Entry<String, AnimationFile>> animationFiles,
             BoundAnimationObserver observer) throws IOException {
-        var bound = new LinkedHashMap<String,
-                com.kinetic.geckolib3.core.builder.Animation>();
+        var protos = new LinkedHashMap<String,
+                com.kinetic.proto.mixel.asset.model.data.Animation>();
         for (var animation : flatten(animationFiles)) {
+            protos.put(animation.name(), animation);
+        }
+        return AnimationStore.lazy(protos.keySet(), protos::get, animation -> {
             final com.kinetic.geckolib3.core.builder.Animation value;
             try {
                 value = AnimationProtoMapper.animation(animation);
@@ -81,9 +91,8 @@ public final class BakedAnimationCache {
                         "Invalid animation: " + animation.name(), error);
             }
             observer.accept(animation, value);
-            bound.put(animation.name(), value);
-        }
-        return AnimationStore.eager(bound);
+            return value;
+        });
     }
 
     @FunctionalInterface

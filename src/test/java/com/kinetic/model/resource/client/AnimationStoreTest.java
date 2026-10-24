@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,6 +51,39 @@ class AnimationStoreTest {
         assertEquals(AnimationStore.State.UNLOADED, store.state("idle"));
         assertSame(walk, store.get("walk"));
         assertEquals(1, loads.get("walk"));
+    }
+
+    @Test
+    void concurrentReadersBindEachAnimationExactlyOnce() throws Exception {
+        var binds = new java.util.concurrent.ConcurrentHashMap<String, AtomicInteger>();
+        var store = AnimationStore.lazy(List.of("walk", "idle", "run", "jump"),
+                name -> com.kinetic.proto.mixel.asset.model.data.Animation.newBuilder()
+                        .setName(name).setLength(0)
+                        .setLoop(com.kinetic.proto.mixel.asset.model.data.LoopType.LOOP_TYPE_LOOP)
+                        .build(),
+                source -> {
+                    binds.computeIfAbsent(source.name(), ignored -> new AtomicInteger())
+                            .incrementAndGet();
+                    return animation(source.name());
+                });
+        var pool = java.util.concurrent.Executors.newFixedThreadPool(8);
+        try {
+            var tasks = new java.util.ArrayList<java.util.concurrent.Callable<Animation>>();
+            for (int i = 0; i < 200; i++) {
+                var name = List.of("walk", "idle", "run", "jump").get(i % 4);
+                tasks.add(() -> store.get(name));
+            }
+            var results = pool.invokeAll(tasks);
+            for (var result : results) {
+                assertNotNull(result.get());
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+        for (var entry : binds.entrySet()) {
+            assertEquals(1, entry.getValue().get(),
+                    entry.getKey() + " 只能绑定一次");
+        }
     }
 
     @Test

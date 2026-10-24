@@ -31,6 +31,7 @@ import org.gradle.process.ExecOperations;
 @CacheableTask
 public abstract class BuiltinModelToolTask extends DefaultTask {
     public static final String GENERATE_DEFAULT_CONTRACT = "generate-default-contract";
+    public static final String GENERATE_DEFAULT_CONTAINER = "generate-default-container";
     public static final String GENERATE_INDEX = "generate-index";
     public static final String VERIFY = "verify";
 
@@ -125,6 +126,11 @@ public abstract class BuiltinModelToolTask extends DefaultTask {
         arguments.add(output.toAbsolutePath().normalize().toString());
         arguments.add(workDirectory.toAbsolutePath().normalize().toString());
         switch (command) {
+            case GENERATE_DEFAULT_CONTAINER -> {
+                requireAbsent(getDefaultContractFile(), "defaultContractFile", command);
+                requireAbsent(getIndexFile(), "indexFile", command);
+                requireAbsent(getAnimationHistoryFile(), "animationHistoryFile", command);
+            }
             case GENERATE_DEFAULT_CONTRACT -> {
                 requireAbsent(getDefaultContractFile(), "defaultContractFile", command);
                 requireAbsent(getIndexFile(), "indexFile", command);

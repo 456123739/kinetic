@@ -44,7 +44,7 @@ public final class BuiltinModelIndexTool {
             throw usage();
         }
         var expectedArguments = switch (args[0]) {
-            case "generate-default-contract" -> 5;
+            case "generate-default-contract", "generate-default-container" -> 5;
             case "generate-index", "verify" -> 7;
             default -> throw new IllegalArgumentException("Unknown command: " + args[0]);
         };
@@ -62,6 +62,8 @@ public final class BuiltinModelIndexTool {
         switch (args[0]) {
             case "generate-default-contract" ->
                     generateDefaultContract(sourceRoot, resultFile, workDirectory);
+            case "generate-default-container" ->
+                    generateDefaultContainer(sourceRoot, resultFile, workDirectory);
             case "generate-index" -> generateIndex(sourceRoot, resultFile,
                     Path.of(args[5]).toAbsolutePath().normalize(),
                     Path.of(args[6]).toAbsolutePath().normalize());
@@ -115,6 +117,32 @@ public final class BuiltinModelIndexTool {
         writeIndexAtomically(contract, contractFile);
         System.out.printf("Generated builtin default contract: modelHash=%s defaultAnimations=%d output=%s%n",
                 scanned, contract.animationEntries().size(), contractFile);
+    }
+
+    /**
+     * 把内置默认模型预先转换成一个容器文件。
+     *
+     * <p>运行期原本每次启动都要把 {@code misc/2_steve} 下的 6 MB 动画 JSON 重新解析成
+     * POJO/proto 再写容器——这份临时对象是启动内存的大头。容器本身只有几百 KB，
+     * 构建期生成一次、随 jar 发布，运行期直接打开即可。
+     */
+    private static void generateDefaultContainer(Path defaultRoot, Path containerFile,
+                                                 Path workDirectory) throws IOException {
+        Files.deleteIfExists(containerFile);
+        if (!Files.isDirectory(defaultRoot)) {
+            throw new IOException("Builtin default model root is unavailable: " + defaultRoot);
+        }
+        Files.createDirectories(workDirectory);
+        var outputDirectory = workDirectory.resolve("container");
+        Files.createDirectories(outputDirectory);
+        final Path converted;
+        try (var vfs = new Directory(defaultRoot)) {
+            converted = ModelParser.parseBuiltinDefault(vfs, outputDirectory);
+        }
+        Files.createDirectories(containerFile.getParent());
+        Files.copy(converted, containerFile, StandardCopyOption.REPLACE_EXISTING);
+        System.out.printf("Generated builtin default container: %s bytes=%d%n",
+                containerFile, Files.size(containerFile));
     }
 
     private static void generateIndex(Path builtinRoot, Path indexFile,

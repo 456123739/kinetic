@@ -53,7 +53,7 @@
 | 键 | 选择 / 原因与证据 |
 |---|---|
 | A-ONE-ARTIFACT | [统一运行制品](../../architecture/asset-pipeline/conversion-and-export.md#统一运行制品)：转换后统一当前容器 |
-| A-DEFAULT-MEM | [默认资产构建设计](../../architecture/model-management/design-rationale.md#默认内容不建立磁盘缓存)：默认构建不建立无收益磁盘中间表示 |
+| A-DEFAULT-MEM | [默认资产构建设计](../../architecture/model-management/design-rationale.md#默认容器在构建期物化)：默认容器在构建期物化，运行期只校验身份并驻留 |
 | A-NATIVE | Java 领域/宿主 owner、native 计算与顶点 bytes，经 JNI 交接；[迁移理由](../../migration-overview.md#迁移方向)减少 native 业务 authority。为何 CPU renderer 必须采用当前策略没有独立性能比较。 |
 | A-CAPTURE | Scan 与 compile 分阶段消费可变来源；AP-01 用冻结 VFS 及同一 parser 解决来源漂移与双解析器风险；[capture 理由](../../architecture/model-management/design-rationale.md#capture-复用同一解析路径)。 |
 | A-IMAGE | 转换按用途处理图片：raw 与 legacy 都复用合法既有压缩表示，只对 PNG 或 RGBA32 进入重编码；成功结果不以体积比较回退，raw 的可处理 codec I/O 失败保留原图，legacy 的编码/round-trip 失败终止该 source；[转换](../../architecture/asset-pipeline/conversion-and-export.md#图像处理的位置)。 |

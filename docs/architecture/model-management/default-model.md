@@ -1,6 +1,6 @@
 # Intrinsic default
 
-Intrinsic default 按[分类降级与启动基线](../../product-decisions/decisions/model-fallback.md#dddefault-model-is-reliability-baseline)承担启动硬依赖。构建期 contract 固定它的 `ModelId` 和默认动画集合；运行时从 builtin raw source 生成容器并再次校验身份。
+Intrinsic default 按[分类降级与启动基线](../../product-decisions/decisions/model-fallback.md#dddefault-model-is-reliability-baseline)承担启动硬依赖。构建期 contract 固定它的 `ModelId` 和默认动画集合；构建期同时把它转换成容器随 jar 发布，运行时校验身份后直接驻留，失配或缺失才回退到从 builtin raw source 全量物化。
 
 ## 内置模型库与皮肤映射
 
@@ -19,7 +19,14 @@ Intrinsic default 按[分类降级与启动基线](../../product-decisions/decis
 
 Client 在 private service candidate 内完成 intrinsic default 的 parse、bake、default render target、animation 与 residency 验证，随后才发布唯一可达的 model service。任一步失败都关闭尚未发布且 ownership 固定的 candidate resources，并传播原始 cause；系统不暴露 partial service、readiness enum、startup failure cache 或 timeout recovery。Optional builtin work 只在 service publication 之后沿普通 catalog owner 启动，不能回滚 required publication。
 
-当前构造由 builtin raw source 直接生成内存中的容器 bytes，再通过 `ManagedContainer.openResidentDefault` 完成 descriptor、lazy chunks 与驻留表示。Client 在 private candidate 中完成 default render 初始化并持有 required lease；dedicated server 只保留本侧只读内容。路径不创建临时容器、delegate handoff 或清理目录，缓存命中也不能跳过每次启动物化。设计理由见[默认内容不建立磁盘缓存](design-rationale.md#默认内容不建立磁盘缓存)。
+构造分两条路径，优先级固定：
+
+1. **预构建容器（正常路径）**：`generateBuiltinDefaultContainer` 在构建期把 `misc/2_steve` 转成 `assets/kinetic/builtin-default.kinetic`（约 280 KB），随 jar 发布。运行时读取该资源、校验 `ModelId` 与 contract 一致后，通过 `ManagedContainer.openResidentDefault` 直接完成 descriptor、lazy chunks 与驻留表示。启动不再解析 6 MB 动画 JSON。
+2. **回退（开发环境或产物异常）**：资源缺失、打开失败或哈希不一致时，记录一条警告并从 builtin raw source 全量物化，行为与旧实现一致。
+
+两条路径都不创建临时目录、不写磁盘缓存，也不会把未经验证的内容当作默认模型：预构建容器同样要过 contract 的 `ModelId` 校验。区别只在"物化发生在构建期还是运行期"。
+
+Client 在 private candidate 中完成 default render 初始化并持有 required lease；dedicated server 只保留本侧只读内容。设计理由见[默认容器在构建期物化](design-rationale.md#默认容器在构建期物化)。
 
 Default 的独立生命周期与启动失败边界见[默认基线契约](../../product-decisions/decisions/model-fallback.md#bcdefault-startup-is-required)；会话失败降级见[session-failure](../../product-decisions/decisions/session-failure.md)。Selection 由 ID 17 `PlayerStateUpdate.model` / `ModelSelectionState` 表达，独立于 model-session collection publication。
 
@@ -27,4 +34,4 @@ Default 的独立生命周期与启动失败边界见[默认基线契约](../../
 
 ## 默认资产构建设计
 
-默认来源、两侧物化职责和驻留范围由[model-fallback](../../product-decisions/decisions/model-fallback.md)定义；无磁盘中间表示的设计与工程理由统一见[默认内容不建立磁盘缓存](design-rationale.md#默认内容不建立磁盘缓存)。
+默认来源、两侧物化职责和驻留范围由[model-fallback](../../product-decisions/decisions/model-fallback.md)定义；无磁盘中间表示的设计与工程理由统一见[默认容器在构建期物化](design-rationale.md#默认容器在构建期物化)。

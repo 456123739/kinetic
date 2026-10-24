@@ -48,9 +48,17 @@ Metadata 不再拥有专用的 32 MiB admission 和预复制路径；完整容�
 
 连接退出只让 exact session 的查询、请求、assembly 和迟到效果终态，不等待或清空进程 Catalog、runtime worker、Ready cache 与 host resource。[所有权边界](ownership-and-lifecycle.md)以精确 connection/request 和不可变 terminal 隔离新旧 session，避免 global epoch、cross-side coordinator、elapsed timeout 或共享 drain barrier；进程 owner 只在进程关闭时终结自己的 worker。
 
-## 默认内容不建立磁盘缓存
+## 默认容器在构建期物化
 
-在[默认基线契约](../../product-decisions/decisions/model-fallback.md#bcdefault-startup-is-required)要求每次全量物化、最终只读驻留的前提下，运行容器直接从 jar 输入生成内存 backing：临时容器不能节省物化，反而增加目录清理与 delegate 移交，并容易诱发跳过物化的错误优化。Baked 派生物仍按自身精确 profile 和 cache 规则处理，不因容器驻留方式获得例外。当前构造见[Intrinsic default](default-model.md)。
+[默认基线契约](../../product-decisions/decisions/model-fallback.md#bcdefault-startup-is-required)要求默认内容每次启动都被验证、最终只读驻留。旧实现把"验证"绑在"运行期从 raw JSON 重新物化"上：每次启动解析约 6 MB 动画 JSON，产生的 POJO/proto 临时对象是启动内存的主要来源（实测可让堆扩张到 GB 级）。
+
+现在把**物化**前移到构建期：`generateBuiltinDefaultContainer` 生成约 280 KB 的 `assets/kinetic/builtin-default.kinetic`，运行时只做**身份校验**（`ModelId` 必须等于构建期 contract）后直接驻留；资源缺失、打开失败或哈希不一致时回退到 raw source 全量物化。约束没有放松：
+
+- 默认内容仍然每次启动都验证，而且验证对象是构建期冻结的确定产物，不存在"可变磁盘缓存变旧"的问题；
+- 运行期不写任何缓存/临时容器，回退路径与旧实现逐字节一致；
+- 校验失败不会静默使用，而是回退重算并记录警告。
+
+Baked 派生物仍按自身精确 profile 和 cache 规则处理，不因容器驻留方式获得例外。当前构造见[Intrinsic default](default-model.md)。
 
 ## 容器身份不逸出模型管理与网络
 

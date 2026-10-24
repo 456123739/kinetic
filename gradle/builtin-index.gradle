@@ -24,6 +24,8 @@ def builtinDefaultContract = layout.buildDirectory.file(
         'intermediates/builtinIndex/default-contract.json')
 def builtinIndexFile = layout.buildDirectory.file(
         'generated/resources/builtinIndex/assets/kinetic/builtin-index.json')
+def builtinContainerFile = layout.buildDirectory.file(
+        'generated/resources/builtinIndex/assets/kinetic/builtin-default.kinetic')
 def builtinVerificationReceipt = layout.buildDirectory.file(
         'verification/builtinIndex/full-materialization.json')
 def builtinToolLauncher = javaToolchains.launcherFor {
@@ -58,6 +60,17 @@ tasks.register('generateBuiltinDefaultContract', BuiltinModelToolTask) {
     workDirectory.set(layout.buildDirectory.dir('tmp/generateBuiltinDefaultContract'))
 }
 
+tasks.register('generateBuiltinDefaultContainer', BuiltinModelToolTask) {
+    group = 'build'
+    description = 'Converts the builtin intrinsic default model at build time so startup does not re-parse 6 MB of animation JSON.'
+    dependsOn tasks.named('compileJava'), tasks.named('compileBuiltinIndexToolJava')
+    configureBuiltinToolTask(delegate, BuiltinModelToolTask.GENERATE_DEFAULT_CONTAINER)
+    sourceRoot.set(builtinDefaultRoot)
+    sourceFiles.from(builtinDefaultRoot.asFileTree)
+    resultFile.set(builtinContainerFile)
+    workDirectory.set(layout.buildDirectory.dir('tmp/generateBuiltinDefaultContainer'))
+}
+
 tasks.register('generateBuiltinModelIndex', BuiltinModelToolTask) {
     group = 'build'
     description = 'Scans builtin raw models and generates the production builtin index.'
@@ -88,7 +101,11 @@ tasks.register('verifyBuiltinModelIndex', BuiltinModelToolTask) {
 
 tasks.named('processResources') {
     dependsOn tasks.named('generateBuiltinModelIndex')
+    dependsOn tasks.named('generateBuiltinDefaultContainer')
     from(builtinIndexFile) {
+        into 'assets/kinetic'
+    }
+    from(builtinContainerFile) {
         into 'assets/kinetic'
     }
 }

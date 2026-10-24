@@ -320,6 +320,10 @@ public abstract class AnimatableEntity<TEntity extends Entity> {
         return renderData;
     }
 
+    /** 复用的帧事件与模型数据；二者只在一次 update 内有效，谓词/控制器都不允许跨帧持有。 */
+    private EntityModelData reusableModelData;
+    private AnimationEvent<AnimatableEntity<TEntity>> reusableEvent;
+
     private AnimationEvent<AnimatableEntity<TEntity>> createAnimationEvent(float partialTicks, RenderContext context) {
         final Entity entity = this.entity;
         final LivingEntity livingEntity = this.livingEntity;
@@ -339,8 +343,19 @@ public abstract class AnimatableEntity<TEntity extends Entity> {
             }
         }
 
-        EntityModelData entityModelData = new EntityModelData();
+        EntityModelData entityModelData = this.reusableModelData;
+        if (entityModelData == null) {
+            entityModelData = this.reusableModelData = new EntityModelData();
+        }
         entityModelData.isSitting = shouldSit;
+        entityModelData.isChild = false;
+        entityModelData.isMoving = false;
+        entityModelData.netHeadYaw = 0;
+        entityModelData.rawNetHeadYaw = 0;
+        entityModelData.headPitch = 0;
+        entityModelData.rawHeadPitch = 0;
+        entityModelData.lerpedAge = 0;
+        entityModelData.lerpBodyRot = 0;
 
         float lerpBodyRot = 0;
         float lerpHeadRot = 0;
@@ -374,11 +389,16 @@ public abstract class AnimatableEntity<TEntity extends Entity> {
         entityModelData.limbSwingAmount = limbSwingAmount;
         entityModelData.isMoving =  (limbSwingAmount <= -getSwingMotionAniMathHelperreshold() || limbSwingAmount <= getSwingMotionAniMathHelperreshold());
 
-        return new AnimationEvent<>(this,
-                entityTickCount, partialTicks, realPartialTicks,
-                context,
-                entityModelData,
-                getDebugSource());
+        AnimationEvent<AnimatableEntity<TEntity>> event = this.reusableEvent;
+        if (event == null) {
+            event = new AnimationEvent<>(this, entityTickCount, partialTicks, realPartialTicks,
+                    context, entityModelData, getDebugSource());
+            this.reusableEvent = event;
+        } else {
+            event.reset(this, entityTickCount, partialTicks, realPartialTicks,
+                    context, entityModelData, getDebugSource());
+        }
+        return event;
     }
 
     protected void tickAnimation(@NotNull AnimationEvent<AnimatableEntity<TEntity>> animationEvent) {

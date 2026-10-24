@@ -62,9 +62,6 @@ public final class SlideLock {
     /** 离地超过这么多 tick 就松开（滑铲贴地，起跳/被炸飞都与滑铲无关）。 */
     static final int MAX_AIRBORNE_TICKS = 3;
 
-    /** 同时跟踪的玩家上限；超过就清理已经松开的条目，避免遗留。 */
-    private static final int MAX_TRACKED = 256;
-
     /**
      * 滑铲锁定的骨骼：根、整体身体、躯干与整条腿。
      *
@@ -84,9 +81,17 @@ public final class SlideLock {
             StringPool.computeIfAbsent("RightLeg"),
             StringPool.computeIfAbsent("RightLowerLeg"),
             StringPool.computeIfAbsent("RightFoot"),
+            // 头也必须锁定：持枪姿势的 Head/AllHead 是按"站直的身体"写的，叠到滑铲（AllBody 约 -174°）
+            // 上之后，头部朝向会被算成"低头朝后下方"——实机就是趴在地上往地面开枪。
+            // 滑铲动画自己的头部（X=30，相对躺姿）指向正前方，锁住它才是"往前射击"。
+            StringPool.computeIfAbsent("AllHead"),
+            StringPool.computeIfAbsent("MHead"),
+            StringPool.computeIfAbsent("Head"),
     });
 
     private static final ConcurrentHashMap<Player, State> STATES = new ConcurrentHashMap<>();
+    /** 观测计数，用来把清理摊到 256 帧一次（避免每帧遍历）。 */
+    private static int observeCounter;
 
     private SlideLock() {
     }
@@ -109,6 +114,10 @@ public final class SlideLock {
         if (player == null) {
             return false;
         }
+        if (player.isRemoved()) {
+            STATES.remove(player);
+            return false;
+        }
         boolean slidingNow = parcoolAnimation != null && parcoolAnimation.startsWith(SLIDE_PREFIX);
         State state = STATES.get(player);
         if (!slidingNow && state == null) {
@@ -125,7 +134,8 @@ public final class SlideLock {
                 player.getDeltaMovement().horizontalDistanceSqr());
         if (!locked) {
             STATES.remove(player);
-        } else {
+        } else if ((++observeCounter & 0xFF) == 0) {
+            // 定期清理，而不是等表超过 256 条：断线/切维度时条目不会一直留着。
             prune(player.tickCount);
         }
         return locked;
@@ -236,13 +246,10 @@ public final class SlideLock {
     }
 
     private static void prune(int now) {
-        if (STATES.size() <= MAX_TRACKED) {
-            return;
-        }
         Iterator<Map.Entry<Player, State>> iterator = STATES.entrySet().iterator();
         while (iterator.hasNext()) {
-            State state = iterator.next().getValue();
-            if (!state.locked || now - state.lastSeenTick > 200) {
+            var entry = iterator.next();
+            if (entry.getKey().isRemoved() || now - entry.getValue().lastSeenTick > 200) {
                 iterator.remove();
             }
         }

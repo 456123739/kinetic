@@ -28,9 +28,13 @@ pistol / rpg 的 hold 动画没有 `AllBody`，所以这个问题只在长枪上
    `parcool:sliding` 喂给同一个控制器。动画名与循环类型不变，`AnimationPlayer#setAnimation`
    会直接返回，播放头原地继续，不会重播入场的翻转。
 3. **骨骼级回写**（`AnimationProcessor`）：`player.parcool` 控制器处理完之后，抄下
-   `Root, MAllBody, AllBody, UpBody, UpperBody, DownBody, 双腿/脚` 的旋转、位移、缩放；
+   `Root, MAllBody, AllBody, UpBody, UpperBody, DownBody, 双腿/脚, AllHead/MHead/Head` 的旋转、位移、缩放；
    等 `main / hold / fire / swing / use` 全部跑完再把它们写回，并标记为"本帧有动画"以跳过尾过渡。
    **任何**频道（包括将来新增的）都改不动这些骨骼。
+
+头也必须一起锁：持枪姿势的 Head/AllHead 是按站直的身体写的，叠到滑铲（AllBody 约 -174°）上
+之后朝向会变成"低头朝后下方"；实机表现就是趴在地上往地面开枪。锁住滑铲自己的头部后，
+头部前向量是 (0.21, 0.13, -0.97)（正前方），验证脚本会断言这一条。
 
 上半身由 hold 频道的静止持枪姿势负责：`MainhandPredicate` 在锁定期间直接返回
 `tac:hold:<type>`，并且绕过"挥动/使用就暂停"；`GunFirePredicate`、`SwingPredicate`、`UsePredicate`

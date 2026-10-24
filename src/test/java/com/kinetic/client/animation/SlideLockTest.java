@@ -124,17 +124,19 @@ class SlideLockTest {
     }
 
     /**
-     * 锁定骨骼集合必须覆盖"整身/躯干/腿"，并且不能包含手臂与头——
-     * 手臂归 TaCZ 的静止持枪，头要能跟随视线。
+     * 锁定骨骼集合必须覆盖"整身/躯干/腿/头"，并且不能包含手臂——
+     * 手臂归 TaCZ 的静止持枪；头必须锁在滑铲姿态上，否则持枪的头部旋转叠在躺姿上
+     * 会指向后下方（实机就是"趴在地上往地面开枪"）。
      */
     @Test
     void lockedBonesCoverTheBodyButNotTheArms() {
         for (String bone : new String[]{"Root", "AllBody", "UpBody", "UpperBody", "DownBody",
-                "LeftLeg", "LeftLowerLeg", "LeftFoot", "RightLeg", "RightLowerLeg", "RightFoot"}) {
+                "LeftLeg", "LeftLowerLeg", "LeftFoot", "RightLeg", "RightLowerLeg", "RightFoot",
+                "AllHead", "MHead", "Head"}) {
             assertTrue(SlideLock.isLockedBone(StringPool.computeIfAbsent(bone)), bone + " 必须被锁定");
         }
         for (String bone : new String[]{"RightArm", "RightForeArm", "RightHand", "LeftArm",
-                "LeftForeArm", "LeftHand", "Head", "AllHead", "RightHandLocator"}) {
+                "LeftForeArm", "LeftHand", "RightHandLocator"}) {
             assertFalse(SlideLock.isLockedBone(StringPool.computeIfAbsent(bone)), bone + " 必须交给持枪姿势");
         }
         // AllBody 是 tac:hold:rifle 里会把整个人拧过去的那条轨道，必须在锁定集合里。

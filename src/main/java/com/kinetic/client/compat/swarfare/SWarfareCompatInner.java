@@ -238,7 +238,9 @@ public class SWarfareCompatInner {
         double fireTick = ClientEventHandler.fireRotTimer;
         if (0 < fireTick && fireTick < 1) {
             double aimProgress = ClientEventHandler.zoomTime;
-            boolean isClimbing = !livingEntity.isSwimming() && livingEntity.getPose() == Pose.SWIMMING && Math.abs(event.getLimbSwingAmount()) <= 0.05;
+            // 只要处于趴/爬姿态就必须用匍匐开火动作：之前额外要求 limbSwing <= 0.05，
+            // 于是"爬行中开火"会落到站姿的 tac:hold:fire，头被拧向后下方（往地上打）。
+            boolean isClimbing = !livingEntity.isSwimming() && livingEntity.getPose() == Pose.SWIMMING;
 
             // 滑铲时开火必须留在滑铲姿态：tac:climbing:fire:* 是整身趴地动作，会把滑铲顶掉。
             if (isClimbing && !(livingEntity instanceof Player sliding && ParCoolCompat.isSliding(sliding))) {

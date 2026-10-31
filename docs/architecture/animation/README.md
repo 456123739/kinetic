@@ -36,6 +36,7 @@ Target 资源可跨 entity 共享；instance、播放进度和 `BoneAttribute` �
 - [Controller 与播放](controllers-and-playback.md)：coded、Bedrock、hybrid、状态机、override 与动作提交。
 - [Processor 与骨骼输出](processor-and-bone-output.md)：通道合成、复位、`BoneAttribute` 和 native 交接。
 - [滑铲锁定](slide-lock.md)：持枪滑铲时下肢/躯干的骨骼级独占、频道让位与释放条件。
+- [匍匐专用动作](prone-actions.md)：趴下时打药/换弹/手雷蓄力的侧躺过渡、匍匐挥刀、开火不再冻住腿部。
 - [Molang 运行时](molang-runtime.md)：源解析、binding、事件分发、roaming 与 failure。
 - [状态输入与同步](state-inputs-and-sync.md)：输入权威、PlayerState、Roaming、config action 与 `kinetic.sync`。
 - [模组动画联动](../../future/mod-animation-integration.md)：尚未收敛的适配边界与验收条件。

@@ -49,6 +49,15 @@ public final class ProneAction {
      * 没有这点容忍，身体会在换弹中途滚回趴姿再滚出来。
      */
     static final float DETACH_GRACE_SECONDS = 0.12f;
+    /**
+     * "动作早就开始了、玩家途中才趴下"时，侧躺的起始进度。
+     *
+     * <p>这一帧本身就是一次离散的姿态切换（站 → 趴），所以不必再从 0 慢慢滚：直接给到 0.7，
+     * 剩下的 0.07s 收尾。否则会有 0.2 秒"站姿的手臂压在躺姿身体上、整个人陷进地里"的过渡帧，
+     * 看起来就是"先卡进地里再爬出来"。动作**在趴下状态里**开始时不走这条路径，仍从 0 平滑滚入。
+     */
+    static final float CATCH_UP_PROGRESS = 0.70f;
+
     /** 单帧允许推进的最大 tick 数：掉帧/暂停后不要一次跳过整段动画。 */
     static final float MAX_STEP_TICKS = 2.0f;
     /** renderTicks 是 tick，一秒 20 个。 */
@@ -140,10 +149,20 @@ public final class ProneAction {
 
         if (active && kind != Kind.NONE && prone) {
             // 只记"趴着时"的动作：站着做动作不该留下任何状态。
+            if (state.armedCatchUp) {
+                // 动作在站着的时候就开始了：直接落到侧躺，不从"站姿叠躺姿"的坏姿势慢慢滚。
+                state.progress = Math.max(state.progress, CATCH_UP_PROGRESS);
+                state.armedCatchUp = false;
+            }
             state.kind = kind;
             state.detach = DETACH_GRACE_SECONDS;
-        } else if (state.detach > 0.0f) {
-            state.detach = Math.max(0.0f, state.detach - dt);
+        } else if (active && kind != Kind.NONE) {
+            // 站着做动作：记下"动作已经在进行"，等趴下那一刻用上。
+            state.armedCatchUp = true;
+        } else {
+            state.armedCatchUp = false;
+            // 容忍只对"趴着"有意义：站着的时候不该留下一条会凭空触发侧躺的尾巴。
+            state.detach = !prone ? 0.0f : Math.max(0.0f, state.detach - dt);
         }
 
         // 只有趴着才允许侧躺；动作短暂中断时（detach）仍然保持，避免一帧抖动就回位。
@@ -213,6 +232,7 @@ public final class ProneAction {
         volatile float progress;
         volatile float lastRenderTicks = -1.0f;
         volatile float detach;
+        volatile boolean armedCatchUp;
         volatile Kind kind = Kind.NONE;
     }
 }

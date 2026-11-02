@@ -153,6 +153,33 @@ class ProneActionTest {
     }
 
     @Test
+    void goingProneMidActionStartsNearTheSideLyingPose() {
+        ProneAction.State s = state();
+        float t = 0.0f;
+        for (int i = 0; i < 60; i++) {
+            t += 1.0f / 3.0f;
+            ProneAction.advance(s, t, true, false, ProneAction.Kind.RELOAD);
+        }
+        t += 1.0f / 3.0f;
+        float first = ProneAction.advance(s, t, true, true, ProneAction.Kind.RELOAD);
+        assertTrue(first >= 0.7f,
+                "动作早就开始时，趴下那一刻应当已经接近侧躺（不能从陷进地里的站姿慢慢滚），实际 " + first);
+    }
+
+    @Test
+    void actionStartedWhileProneStillRampsFromZero() {
+        ProneAction.State s = state();
+        s.lastRenderTicks = 0.0f;
+        float t = 0.0f;
+        float first = 0.0f;
+        for (int i = 0; i < 3; i++) {
+            t += 1.0f / 3.0f;
+            first = ProneAction.advance(s, t, true, true, ProneAction.Kind.MEDICAL);
+        }
+        assertTrue(first < 0.3f, "在趴姿下开始的动作必须平滑滚入，实际 " + first);
+    }
+
+    @Test
     void standingUpMidActionSnapsOutFasterThanTheNormalExit() {
         // 还趴着：按 EXIT 慢慢回位
         ProneAction.State stay = state();

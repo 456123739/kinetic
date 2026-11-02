@@ -8,6 +8,7 @@ import com.kinetic.geckolib3.core.snapshot.BoneTopLevelSnapshot;
 import com.kinetic.geckolib3.model.AnimatableEntity;
 import com.kinetic.molang.runtime.ExpressionEvaluator;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceMap;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -46,6 +47,12 @@ public class HybridAnimationController<T extends AnimatableEntity<?>> implements
         } else {
             return this.codedAnimationController.getStateName();
         }
+    }
+
+    @Override
+    @Nullable
+    public String getCurrentAnimationName() {
+        return this.activeController.getCurrentAnimationName();
     }
 
     @Override

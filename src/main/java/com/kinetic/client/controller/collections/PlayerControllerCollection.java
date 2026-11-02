@@ -56,6 +56,10 @@ public class PlayerControllerCollection {
         simple("use", (name, entity) -> new HybridAnimationController(entity, name, 0.1f, new UsePredicate()));
         multi("post_use", (name, entity) -> new HybridAnimationController(entity, name, 0, new EmptyPredicate()));
 
+        // 匍匐侧躺：必须排在 use/swing 之后——它在同一帧里最后写躯干/头/手臂，
+        // 才能把"站姿动画 + 躺姿身体"顶成侧躺姿态（见 ProneAction / PronePredicate）。
+        simple("prone", (name, entity) -> new HybridAnimationController(entity, name, 0.1f, new PronePredicate()));
+
         simple("passenger", (name, entity) -> new HybridAnimationController(entity, name, 0.1f, new PassengerPredicate()));
         CarryOnCompat.animationPredicate().ifPresent(func ->
                 simple("carry_on", func));

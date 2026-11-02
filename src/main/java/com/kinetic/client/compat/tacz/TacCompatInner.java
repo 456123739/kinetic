@@ -217,6 +217,15 @@ class TacCompatInner {
         return getGunTypeAnimation(event, indexOptional.get().getType(), "tac:hold:");
     }
 
+    /** 主手枪械是否正在换弹（与 {@code playGunOnceAnimation} 用同一个信号）。 */
+    static boolean isReloading(LivingEntity entity) {
+        IGun gun = IGun.getIGunOrNull(entity.getMainHandItem());
+        if (gun == null) {
+            return false;
+        }
+        return IGunOperator.fromLivingEntity(entity).getSynReloadState().getCountDown() > 0;
+    }
+
     /**
      * 这些动画可能是带有后摇的动画，故需要单独分一个频道来播放，从而才能超过时长进行播放
      */

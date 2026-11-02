@@ -141,6 +141,16 @@ public class TACZCompat {
         return isInstalled() && TacCompatInner.isGun(stack) && TacCompatInner.isPistol(stack);
     }
 
+    /**
+     * 主手枪械此刻是否正在换弹；未安装 TaCZ 或没在换弹时返回 false。
+     *
+     * <p>匍匐侧躺要靠它把"换弹"这个动作维持住：换弹动画是一次性的，播完之后
+     * {@code player.fire} 频道就回到 IDLE，只看动画名会让身体在换弹中途滚回趴姿。
+     */
+    public static boolean isReloading(net.minecraft.world.entity.LivingEntity entity) {
+        return isInstalled() && TacCompatInner.isReloading(entity);
+    }
+
     /** 该物品是否属于手雷标签（与模组是否安装无关，只看标签）。 */
     public static boolean isGrenade(ItemStack stack) {
         return TacCompatInner.isGrenade(stack);

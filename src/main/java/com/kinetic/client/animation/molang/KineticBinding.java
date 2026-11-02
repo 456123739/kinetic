@@ -86,6 +86,10 @@ public class KineticBinding extends ContextBinding {
 
         var("head_yaw", ctx -> ctx.data().netHeadYaw);
         var("head_pitch", ctx -> ctx.data().headPitch);
+        // 匍匐侧躺的进度（0=趴姿，1=侧躺）。动画里所有被改写的通道都用它做
+        // "bone_rot(...)*(1-roll) + 目标*roll" 的混合，保证 roll=0 时逐位等于底层动画。
+        var("prone_roll", ctx -> com.kinetic.client.animation.ProneAction.roll(
+                ctx.entity() instanceof Entity entity ? entity : null));
         var("weather", ctx -> getWeather(ctx.level()));
         var("dimension_name", ctx -> ctx.level().dimension().location().toString());
         var("fps", ctx -> Minecraft.getInstance().getFps());

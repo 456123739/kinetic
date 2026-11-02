@@ -204,6 +204,16 @@ public class SWarfareCompatInner {
         }
     }
 
+    /** 主手枪械是否正在换弹（与 {@code playGunOnceAnimation} 用同一个信号）。 */
+    static boolean isReloading(LivingEntity entity) {
+        ItemStack stack = entity.getMainHandItem();
+        if (!(stack.getItem() instanceof GunItem)) {
+            return false;
+        }
+        GunData gunData = GunData.from(stack);
+        return gunData.reloading() && gunData.reload.time() > 40;
+    }
+
     /**
      * 这些动画可能是带有后摇的动画，故需要单独分一个频道来播放，从而才能超过时长进行播放
      */

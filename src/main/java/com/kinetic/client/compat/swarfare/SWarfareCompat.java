@@ -105,6 +105,23 @@ public class SWarfareCompat {
         return null;
     }
 
+    /**
+     * 主手枪械此刻是否正在换弹；未安装或没在换弹时返回 false。
+     *
+     * <p>与 {@code SWarfareCompatInner.playGunOnceAnimation} 用同一个信号
+     * （{@code gunData.reloading() && reload.time() > 40}），供匍匐侧躺维持换弹姿态。
+     */
+    public static boolean isReloading(net.minecraft.world.entity.LivingEntity entity) {
+        if (!INSTALLED || entity == null) {
+            return false;
+        }
+        try {
+            return SWarfareCompatInner.isReloading(entity);
+        } catch (RuntimeException | LinkageError ignored) {
+            return false;
+        }
+    }
+
     public static boolean isInstalled() {
         return INSTALLED;
     }

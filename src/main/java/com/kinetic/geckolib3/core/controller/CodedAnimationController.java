@@ -150,6 +150,13 @@ public class CodedAnimationController<T extends AnimatableEntity<?>> implements 
         }
     }
 
+    @Override
+    @Nullable
+    public String getCurrentAnimationName() {
+        var animation = this.animationPlayer.getCurrentAnim();
+        return animation == null ? null : animation.name;
+    }
+
     public void setAnimation(String animationName) {
         this.animationPlayer.setAnimation(animationName, null);
     }

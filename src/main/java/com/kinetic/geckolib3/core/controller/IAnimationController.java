@@ -7,6 +7,7 @@ import com.kinetic.geckolib3.core.snapshot.BoneTopLevelSnapshot;
 import com.kinetic.geckolib3.model.AnimatableEntity;
 import com.kinetic.molang.runtime.ExpressionEvaluator;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceMap;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -21,6 +22,19 @@ public interface IAnimationController<T extends AnimatableEntity<?>> {
      * 获取控制器当时所处状态
      */
     String getStateName();
+
+    /**
+     * 本帧正在播放的动画名；没有在播任何动画时为 {@code null}。
+     *
+     * <p>匍匐侧躺频道靠它判断"其他频道此刻在演什么动作"（打药 / 换弹 / 手雷蓄力），
+     * 因此这里返回的必须是<b>正在生效</b>的动画，而不是曾经请求过的动画名：
+     * 一次性动画播完之后必须回到 {@code null}。默认实现不知道，返回 {@code null}，
+     * 于是这类控制器不参与推断——行为与改动前一致。
+     */
+    @Nullable
+    default String getCurrentAnimationName() {
+        return null;
+    }
 
     /**
      * 更新模型

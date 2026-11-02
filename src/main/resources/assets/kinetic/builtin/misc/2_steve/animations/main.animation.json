@@ -1,6 +1,129 @@
 {
   "format_version": "1.8.0",
   "animations": {
+    "prone:action:medical": {
+      "loop": "LOOP",
+      "bones": {
+        "MAllBody": {
+          "rotation": [
+            0.0,
+            "45.0000*kinetic.prone_roll",
+            0.0
+          ],
+          "position": [
+            0.0,
+            0.0,
+            "(1.6455)*kinetic.prone_roll"
+          ]
+        },
+        "LeftLeg": {
+          "rotation": [
+            "kinetic.bone_rot('LeftLeg').x*(1-kinetic.prone_roll)+(-8.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftLeg').y*(1-kinetic.prone_roll)+(-14.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftLeg').z*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll"
+          ]
+        },
+        "LeftLowerLeg": {
+          "rotation": [
+            "kinetic.bone_rot('LeftLowerLeg').x*(1-kinetic.prone_roll)+(16.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftLowerLeg').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftLowerLeg').z*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll"
+          ]
+        },
+        "LeftFoot": {
+          "rotation": [
+            "kinetic.bone_rot('LeftFoot').x*(1-kinetic.prone_roll)+(18.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftFoot').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftFoot').z*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll"
+          ]
+        },
+        "RightLeg": {
+          "rotation": [
+            "kinetic.bone_rot('RightLeg').x*(1-kinetic.prone_roll)+(-2.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('RightLeg').y*(1-kinetic.prone_roll)+(8.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('RightLeg').z*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll"
+          ]
+        },
+        "RightLowerLeg": {
+          "rotation": [
+            "kinetic.bone_rot('RightLowerLeg').x*(1-kinetic.prone_roll)+(26.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('RightLowerLeg').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('RightLowerLeg').z*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll"
+          ]
+        },
+        "RightFoot": {
+          "rotation": [
+            "kinetic.bone_rot('RightFoot').x*(1-kinetic.prone_roll)+(14.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('RightFoot').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('RightFoot').z*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll"
+          ]
+        },
+        "UpBody": {
+          "rotation": [
+            "kinetic.bone_rot('UpBody').x*(1-kinetic.prone_roll)+(3.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('UpBody').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('UpBody').z*(1-kinetic.prone_roll)+(-6.0000)*kinetic.prone_roll"
+          ]
+        },
+        "UpperBody": {
+          "rotation": [
+            "kinetic.bone_rot('UpperBody').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('UpperBody').y*(1-kinetic.prone_roll)+(6.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('UpperBody').z*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll"
+          ]
+        },
+        "LeftArm": {
+          "rotation": [
+            "kinetic.bone_rot('LeftArm').x*(1-kinetic.prone_roll)+(17.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftArm').y*(1-kinetic.prone_roll)+(-9.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftArm').z*(1-kinetic.prone_roll)+(-42.0000)*kinetic.prone_roll"
+          ]
+        },
+        "LeftForeArm": {
+          "rotation": [
+            "kinetic.bone_rot('LeftForeArm').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftForeArm').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftForeArm').z*(1-kinetic.prone_roll)+(204.0000)*kinetic.prone_roll"
+          ]
+        },
+        "RightArm": {
+          "rotation": [
+            "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-31.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-40.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(-19.0000)*kinetic.prone_roll"
+          ]
+        },
+        "RightForeArm": {
+          "rotation": [
+            "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(-40.0000)*kinetic.prone_roll"
+          ]
+        },
+        "Head": {
+          "rotation": [
+            "kinetic.bone_rot('Head').x*(1-math.min(1,kinetic.prone_roll*1.8))+(-86.00)*math.min(1,kinetic.prone_roll*1.8)",
+            "kinetic.bone_rot('Head').y*(1-math.min(1,kinetic.prone_roll*1.8))+(-50.40+kinetic.head_yaw)*math.min(1,kinetic.prone_roll*1.8)",
+            "kinetic.bone_rot('Head').z*(1-math.min(1,kinetic.prone_roll*1.8))+(0)*math.min(1,kinetic.prone_roll*1.8)"
+          ]
+        },
+        "AllHead": {
+          "rotation": [
+            "kinetic.bone_rot('AllHead').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('AllHead').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('AllHead').z*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll"
+          ]
+        },
+        "AllBody": {
+          "rotation": [
+            "kinetic.bone_rot('AllBody').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('AllBody').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('AllBody').z*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll"
+          ]
+        }
+      },
+      "animation_length": 1.55
+    },
     "prone:swing": {
       "loop": "PLAY_ONCE",
       "bones": {

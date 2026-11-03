@@ -13,12 +13,12 @@
           "position": [
             0.0,
             0.0,
-            "(1.8251)*kinetic.prone_roll"
+            "(0.9783)*kinetic.prone_roll"
           ]
         },
         "LeftLeg": {
           "rotation": [
-            "kinetic.bone_rot('LeftLeg').x*(1-kinetic.prone_roll)+(-8.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftLeg').x*(1-kinetic.prone_roll)+(-20.0000)*kinetic.prone_roll",
             "kinetic.bone_rot('LeftLeg').y*(1-kinetic.prone_roll)+(-14.0000)*kinetic.prone_roll",
             "kinetic.bone_rot('LeftLeg').z*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll"
           ]
@@ -74,16 +74,16 @@
         },
         "LeftArm": {
           "rotation": [
-            "kinetic.bone_rot('LeftArm').x*(1-kinetic.prone_roll)+(45.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('LeftArm').y*(1-kinetic.prone_roll)+(-39.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('LeftArm').z*(1-kinetic.prone_roll)+(-45.0000)*kinetic.prone_roll"
+            "kinetic.bone_rot('LeftArm').x*(1-kinetic.prone_roll)+(63.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftArm').y*(1-kinetic.prone_roll)+(-24.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftArm').z*(1-kinetic.prone_roll)+(-71.0000)*kinetic.prone_roll"
           ]
         },
         "LeftForeArm": {
           "rotation": [
             "kinetic.bone_rot('LeftForeArm').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
             "kinetic.bone_rot('LeftForeArm').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('LeftForeArm').z*(1-kinetic.prone_roll)+(-136.0000)*kinetic.prone_roll"
+            "kinetic.bone_rot('LeftForeArm').z*(1-kinetic.prone_roll)+(-124.0000)*kinetic.prone_roll"
           ]
         },
         "RightArm": {
@@ -136,12 +136,12 @@
           "position": [
             0.0,
             0.0,
-            "(1.8251)*kinetic.prone_roll"
+            "(0.9783)*kinetic.prone_roll"
           ]
         },
         "LeftLeg": {
           "rotation": [
-            "kinetic.bone_rot('LeftLeg').x*(1-kinetic.prone_roll)+(-8.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftLeg').x*(1-kinetic.prone_roll)+(-20.0000)*kinetic.prone_roll",
             "kinetic.bone_rot('LeftLeg').y*(1-kinetic.prone_roll)+(-14.0000)*kinetic.prone_roll",
             "kinetic.bone_rot('LeftLeg').z*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll"
           ]
@@ -197,16 +197,16 @@
         },
         "LeftArm": {
           "rotation": [
-            "kinetic.bone_rot('LeftArm').x*(1-kinetic.prone_roll)+(45.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('LeftArm').y*(1-kinetic.prone_roll)+(-39.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('LeftArm').z*(1-kinetic.prone_roll)+(-45.0000)*kinetic.prone_roll"
+            "kinetic.bone_rot('LeftArm').x*(1-kinetic.prone_roll)+(63.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftArm').y*(1-kinetic.prone_roll)+(-24.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftArm').z*(1-kinetic.prone_roll)+(-71.0000)*kinetic.prone_roll"
           ]
         },
         "LeftForeArm": {
           "rotation": [
             "kinetic.bone_rot('LeftForeArm').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
             "kinetic.bone_rot('LeftForeArm').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('LeftForeArm').z*(1-kinetic.prone_roll)+(-136.0000)*kinetic.prone_roll"
+            "kinetic.bone_rot('LeftForeArm').z*(1-kinetic.prone_roll)+(-124.0000)*kinetic.prone_roll"
           ]
         },
         "RightArm": {
@@ -259,12 +259,12 @@
           "position": [
             0.0,
             0.0,
-            "(1.8251)*kinetic.prone_roll"
+            "(0.9783)*kinetic.prone_roll"
           ]
         },
         "LeftLeg": {
           "rotation": [
-            "kinetic.bone_rot('LeftLeg').x*(1-kinetic.prone_roll)+(-8.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftLeg').x*(1-kinetic.prone_roll)+(-20.0000)*kinetic.prone_roll",
             "kinetic.bone_rot('LeftLeg').y*(1-kinetic.prone_roll)+(-14.0000)*kinetic.prone_roll",
             "kinetic.bone_rot('LeftLeg').z*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll"
           ]
@@ -320,16 +320,16 @@
         },
         "LeftArm": {
           "rotation": [
-            "kinetic.bone_rot('LeftArm').x*(1-kinetic.prone_roll)+(45.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('LeftArm').y*(1-kinetic.prone_roll)+(-39.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('LeftArm').z*(1-kinetic.prone_roll)+(-45.0000)*kinetic.prone_roll"
+            "kinetic.bone_rot('LeftArm').x*(1-kinetic.prone_roll)+(63.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftArm').y*(1-kinetic.prone_roll)+(-24.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftArm').z*(1-kinetic.prone_roll)+(-71.0000)*kinetic.prone_roll"
           ]
         },
         "LeftForeArm": {
           "rotation": [
             "kinetic.bone_rot('LeftForeArm').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
             "kinetic.bone_rot('LeftForeArm').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('LeftForeArm').z*(1-kinetic.prone_roll)+(-136.0000)*kinetic.prone_roll"
+            "kinetic.bone_rot('LeftForeArm').z*(1-kinetic.prone_roll)+(-124.0000)*kinetic.prone_roll"
           ]
         },
         "RightArm": {
@@ -1381,12 +1381,12 @@
           "position": [
             0.0,
             0.0,
-            "(1.8251)*kinetic.prone_roll"
+            "(0.9783)*kinetic.prone_roll"
           ]
         },
         "LeftLeg": {
           "rotation": [
-            "kinetic.bone_rot('LeftLeg').x*(1-kinetic.prone_roll)+(-8.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftLeg').x*(1-kinetic.prone_roll)+(-20.0000)*kinetic.prone_roll",
             "kinetic.bone_rot('LeftLeg').y*(1-kinetic.prone_roll)+(-14.0000)*kinetic.prone_roll",
             "kinetic.bone_rot('LeftLeg').z*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll"
           ]
@@ -1442,16 +1442,16 @@
         },
         "LeftArm": {
           "rotation": [
-            "kinetic.bone_rot('LeftArm').x*(1-kinetic.prone_roll)+(-280.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('LeftArm').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('LeftArm').z*(1-kinetic.prone_roll)+(180.0000)*kinetic.prone_roll"
+            "kinetic.bone_rot('LeftArm').x*(1-kinetic.prone_roll)+(-297.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftArm').y*(1-kinetic.prone_roll)+(-24.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftArm').z*(1-kinetic.prone_roll)+(-71.0000)*kinetic.prone_roll"
           ]
         },
         "LeftForeArm": {
           "rotation": [
             "kinetic.bone_rot('LeftForeArm').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
             "kinetic.bone_rot('LeftForeArm').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('LeftForeArm').z*(1-kinetic.prone_roll)+(200.0000)*kinetic.prone_roll"
+            "kinetic.bone_rot('LeftForeArm').z*(1-kinetic.prone_roll)+(-124.0000)*kinetic.prone_roll"
           ]
         },
         "Head": {

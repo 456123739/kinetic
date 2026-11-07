@@ -168,17 +168,39 @@ class PronePoseDataTest {
     }
 
     @Test
-    void proneSwingKeepsTheLegsFree() throws Exception {
+    void proneMeleeAndThrowKeepTheLegsFree() throws Exception {
         for (String model : MODELS) {
-            JsonObject swing = animations(model, "main.animation.json").getAsJsonObject("prone:swing");
-            assertNotNull(swing, model + ": 缺少 prone:swing");
-            JsonObject bones = swing.getAsJsonObject("bones");
-            for (String leg : List.of("LeftLeg", "LeftLowerLeg", "LeftFoot", "RightLeg",
-                    "RightLowerLeg", "RightFoot", "DownBody", "Root", "AllBody")) {
-                assertFalse(bones.has(leg), model + "/prone:swing: 挥砍不能写 " + leg + "（腿要继续爬行）");
+            for (String name : List.of("prone:swing", "prone:throw")) {
+                JsonObject anim = animations(model, "main.animation.json").getAsJsonObject(name);
+                assertNotNull(anim, model + ": 缺少 " + name);
+                JsonObject bones = anim.getAsJsonObject("bones");
+                for (String leg : List.of("LeftLeg", "LeftLowerLeg", "LeftFoot", "RightLeg",
+                        "RightLowerLeg", "RightFoot", "DownBody", "Root", "AllBody")) {
+                    assertFalse(bones.has(leg), model + "/" + name + ": 不能写 " + leg + "（腿要继续爬行）");
+                }
+                assertTrue(bones.has("Head"), model + "/" + name + ": 必须自己写头（否则沿用站姿的头，会朝地）");
+                assertTrue(bones.has("RightArm"), model + "/" + name + ": 必须写持械手");
+                // 手臂通道必须连续：相邻关键帧的任何分量都不允许跳超过 180 度
+                for (var bone : bones.entrySet()) {
+                    JsonObject rotation = bone.getValue().getAsJsonObject().getAsJsonObject("rotation");
+                    if (rotation == null || rotation.isJsonArray()) {
+                        continue;
+                    }
+                    List<String> times = new ArrayList<>(rotation.keySet());
+                    times.sort((a, b) -> Double.compare(Double.parseDouble(a), Double.parseDouble(b)));
+                    for (int i = 1; i < times.size(); i++) {
+                        JsonArray prev = rotation.getAsJsonObject(times.get(i - 1)).getAsJsonArray("post");
+                        JsonArray cur = rotation.getAsJsonObject(times.get(i)).getAsJsonArray("post");
+                        for (int axis = 0; axis < 3; axis++) {
+                            double delta = Math.abs(cur.get(axis).getAsDouble() - prev.get(axis).getAsDouble());
+                            assertTrue(delta <= 180.0,
+                                    model + "/" + name + "/" + bone.getKey() + ": " + times.get(i - 1)
+                                            + "->" + times.get(i) + " 轴 " + axis + " 跳了 " + delta
+                                            + " 度（会让手臂瞬移/抽搐）");
+                        }
+                    }
+                }
             }
-            assertTrue(bones.has("Head"), model + "/prone:swing: 必须自己写头（否则沿用站姿的头，会朝地）");
-            assertTrue(bones.has("RightArm"), model + "/prone:swing: 必须写持刀手");
         }
     }
 

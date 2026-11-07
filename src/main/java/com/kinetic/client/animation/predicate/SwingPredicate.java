@@ -21,6 +21,8 @@ import static com.kinetic.client.animation.predicate.IAnimationPredicate.playAni
 public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<?>> {
     /** 匍匐挥砍动画名（模型自带才会接管；没有就保持原行为）。 */
     static final String PRONE_SWING = "prone:swing";
+    /** 匍匐投掷动画名（手雷/药水等 throwable 的挥动）。 */
+    static final String PRONE_THROW = "prone:throw";
 
     @Override
     public PlayState test(AnimationEvent<CustomHumanoidEntity<?>> event, ExpressionEvaluator<?> evaluator) {
@@ -55,41 +57,30 @@ public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<
             }
         }
 
-        // 匍匐挥砍：站姿挥砍的弧线是从"站着的人"出发的，叠到趴姿上就变成往地里砍。
-        // 模型自带 prone:swing 时整段换掉（只写躯干、头与持刀手，腿留给主频道的爬行）。
-        //
-        // 只在**挥砍起始帧**（swingTime == 0）决定用哪一段：否则挥到一半趴下/站起来会让
-        // 频道换动画名、整段重播，看起来就是"抽一下"。已经在这段里就继续播完。
-        boolean alreadyProneSwing = PRONE_SWING.equals(event.getCodedController() == null
-                ? null : event.getCodedController().getCurrentAnimationName());
-        boolean useProneSwing = alreadyProneSwing || (entity.swingTime == 0 && ProneAction.isProne(entity));
-        if (entity.swinging && !entity.isSleeping()
-                && entity.swingingArm == InteractionHand.MAIN_HAND
-                && event.getAnimatableEntity().getAnimation(PRONE_SWING) != null
-                && useProneSwing) {
-            if (entity.swingTime == 0 && event.getAnimatableEntity().getStateTracker().setEntityTickState(EntityTickStates.SWING)) {
-                event.getCodedController().indicateReload();
-            }
-            return playAnimation(event, PRONE_SWING);
-        }
-
-        // 其他情况
         if (entity.swinging && !entity.isSleeping()) {
             if (entity.swingTime == 0 && event.getAnimatableEntity().getStateTracker().setEntityTickState(EntityTickStates.SWING)) {
                 // swing 开始时重置动画
                 event.getCodedController().indicateReload();
             }
             ConditionManager conditionManager = event.getAnimatableEntity().getConditionManager();
-            ConditionalSwing conditionalSwing = entity.swingingArm == InteractionHand.MAIN_HAND ? conditionManager.getSwingMainhand() : conditionManager.getSwingOffhand();
+            ConditionalSwing conditionalSwing = entity.swingingArm == InteractionHand.MAIN_HAND
+                    ? conditionManager.getSwingMainhand() : conditionManager.getSwingOffhand();
+            String name = null;
             if (conditionalSwing != null) {
-                String name = genericSwingFor(conditionalSwing.doTest(entity, entity.swingingArm),
-                        entity.swingingArm);
-                if (StringUtils.isNoneBlank(name)) {
-                    return playAnimation(event, name);
+                name = genericSwingFor(conditionalSwing.doTest(entity, entity.swingingArm), entity.swingingArm);
+            }
+            if (StringUtils.isBlank(name)) {
+                name = (entity.swingingArm == InteractionHand.MAIN_HAND) ? "swing_hand" : "swing_offhand";
+            }
+            // 趴下时换成匍匐专用的弧线：站姿弧线（尤其投掷）叠到躺姿上会往地里砍/往地上扔。
+            // 每帧按趴姿重新判定——站起来的那一帧立刻回到站姿弧线，不会继续演"抬着头挥刀"。
+            if (entity.swingingArm == InteractionHand.MAIN_HAND && ProneAction.isProne(entity)) {
+                String variant = name.contains("throwable_potion") ? PRONE_THROW : PRONE_SWING;
+                if (event.getAnimatableEntity().getAnimation(variant) != null) {
+                    return playAnimation(event, variant);
                 }
             }
-            String defaultSwing = (entity.swingingArm == InteractionHand.MAIN_HAND) ? "swing_hand" : "swing_offhand";
-            return playAnimation(event, defaultSwing);
+            return playAnimation(event, name);
         }
         return PlayState.CONTINUE;
     }

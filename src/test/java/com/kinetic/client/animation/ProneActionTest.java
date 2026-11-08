@@ -210,6 +210,30 @@ class ProneActionTest {
     }
 
     @Test
+    void standingUpMidActionRestoresWithinAFewFrames() {
+        ProneAction.State s = state();
+        float t = 0.0f;
+        for (int i = 0; i < 40; i++) {
+            t += 1.0f / 3.0f;
+            ProneAction.advance(s, t, true, true, ProneAction.Kind.MEDICAL);
+        }
+        assertEquals(1.0f, ProneAction.ease(s.progress), 1e-3);
+        // 站起来（动作仍在进行）：必须在 ~0.06s 内收回到 0，不能站着了还保持着侧躺的姿势
+        float seconds = 0.0f;
+        float roll = 1.0f;
+        while (seconds < 0.5f) {
+            t += 1.0f / 3.0f;
+            seconds += 1.0f / 60.0f;
+            roll = ProneAction.advance(s, t, true, false, ProneAction.Kind.MEDICAL);
+            if (roll <= 0.0f) {
+                break;
+            }
+        }
+        assertTrue(roll <= 0.0f, "站起来后必须回到 0，实际 " + roll);
+        assertTrue(seconds <= 0.10f, "恢复应在一两帧内完成，实际 " + seconds + "s");
+    }
+
+    @Test
     void actionRestartDuringRollOutDoesNotDropToZero() {
         ProneAction.State s = state();
         float t = 0.0f;

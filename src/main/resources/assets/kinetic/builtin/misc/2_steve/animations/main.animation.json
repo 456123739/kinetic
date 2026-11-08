@@ -491,30 +491,30 @@
         },
         "RightArm": {
           "rotation": [
-            "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-53.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(21.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(-20.0000)*kinetic.prone_roll"
+            "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(4.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(2.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(-94.0000)*kinetic.prone_roll"
           ]
         },
         "RightForeArm": {
           "rotation": [
             "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
             "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(-80.0000)*kinetic.prone_roll"
+            "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(-46.0000)*kinetic.prone_roll"
           ]
         },
         "LeftArm": {
           "rotation": [
-            "kinetic.bone_rot('LeftArm').x*(1-kinetic.prone_roll)+(60.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('LeftArm').y*(1-kinetic.prone_roll)+(-60.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('LeftArm').z*(1-kinetic.prone_roll)+(-60.0000)*kinetic.prone_roll"
+            "kinetic.bone_rot('LeftArm').x*(1-kinetic.prone_roll)+(51.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftArm').y*(1-kinetic.prone_roll)+(-66.0000)*kinetic.prone_roll",
+            "kinetic.bone_rot('LeftArm').z*(1-kinetic.prone_roll)+(-17.0000)*kinetic.prone_roll"
           ]
         },
         "LeftForeArm": {
           "rotation": [
             "kinetic.bone_rot('LeftForeArm').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
             "kinetic.bone_rot('LeftForeArm').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-            "kinetic.bone_rot('LeftForeArm').z*(1-kinetic.prone_roll)+(-65.0000)*kinetic.prone_roll"
+            "kinetic.bone_rot('LeftForeArm').z*(1-kinetic.prone_roll)+(-106.0000)*kinetic.prone_roll"
           ]
         },
         "Head": {

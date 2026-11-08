@@ -44,10 +44,11 @@ public final class ProneAction {
     /**
      * 已经不在趴姿（站起来 / 死亡 / 睡觉 / 上车 / 开始游泳）时的滚出时长（秒）。
      *
-     * <p>这时底层已经换成站姿（或死亡）动画，若还按 0.34s 慢慢退，会有 0.3 秒"站着却举着一副
-     * 侧躺的胳膊"的违和画面。站起来本身就是一次离散的姿态切换，快速收掉反而更自然。
+     * <p>这时底层已经换成站姿（或死亡）动画。侧躺的混合系数就是 roll，roll→0 时每个通道都等于
+     * 底层动画的值，所以"快速收掉"不会产生跳变，只会有几帧的过渡。0.12s 实测仍能看出"站着
+     * 还在打针"，压到 0.04s（约 2~3 帧）后肉眼就是立刻恢复。
      */
-    static final float SNAP_SECONDS = 0.12f;
+    static final float SNAP_SECONDS = 0.08f;
     /**
      * 动作信号短暂丢失的容忍（秒）。
      *
@@ -123,7 +124,11 @@ public final class ProneAction {
         boolean prone = isProne(player);
         float roll = advance(state, renderTicks, kind != Kind.NONE, prone, kind);
         if (roll <= 0.0f) {
-            STATES.remove(player);
+            // 只有"动作也已经结束"才丢状态：站着做动作时 roll 为 0，但还记着动作种类，
+            // 等再趴下要立刻接上（见 armedCatchUp）。
+            if (state.kind == Kind.NONE && !state.armedCatchUp) {
+                STATES.remove(player);
+            }
         } else if ((++observeCounter & 0xFF) == 0) {
             prune(renderTicks);
         }
@@ -153,29 +158,40 @@ public final class ProneAction {
         float dt = ticks / TICKS_PER_SECOND;
         state.lastRenderTicks = renderTicks;
 
-        if (active && kind != Kind.NONE && prone) {
-            // 只记"趴着时"的动作：站着做动作不该留下任何状态。
+        boolean actionNow = active && kind != Kind.NONE;
+
+        if (!prone) {
+            // 站着（或死亡/上车/游泳）：快速回正。roll 是每个通道的混合系数，收到 0 时通道值
+            // 就等于底层动画，所以这段收尾本身是连续的；0.08s 约 5 帧，看着是"立刻直起来"，
+            // 但没有硬切的生硬感。
+            state.detach = 0.0f;
+            // 动作仍在进行就记下来：再趴下时直接接上侧躺姿势（CATCH_UP_PROGRESS）。
+            state.armedCatchUp = actionNow;
+            state.progress = Math.max(0.0f, state.progress - dt / SNAP_SECONDS);
+            if (state.progress <= 0.0f) {
+                state.kind = Kind.NONE;
+                return 0.0f;
+            }
+            return ease(state.progress);
+        }
+
+        if (actionNow) {
             if (state.armedCatchUp) {
-                // 动作在站着的时候就开始了：直接落到侧躺，不从"站姿叠躺姿"的坏姿势慢慢滚。
+                // 动作是站着时开始的：趴下这一刻直接落到侧躺，不从"站姿手臂叠躺姿"的坏姿势慢慢滚。
                 state.progress = Math.max(state.progress, CATCH_UP_PROGRESS);
                 state.armedCatchUp = false;
             }
             state.kind = kind;
             state.detach = DETACH_GRACE_SECONDS;
-        } else if (active && kind != Kind.NONE) {
-            // 站着做动作：记下"动作已经在进行"，等趴下那一刻用上。
-            state.armedCatchUp = true;
-        } else {
-            state.armedCatchUp = false;
-            // 容忍只对"趴着"有意义：站着的时候不该留下一条会凭空触发侧躺的尾巴。
-            state.detach = !prone ? 0.0f : Math.max(0.0f, state.detach - dt);
+        } else if (state.detach > 0.0f) {
+            // 一次性动画播完的间隙：短暂保持，避免身体抽一下再滚回来
+            state.detach = Math.max(0.0f, state.detach - dt);
         }
 
-        // 只有趴着才允许侧躺；动作短暂中断时（detach）仍然保持，避免一帧抖动就回位。
-        boolean want = prone && (active || state.detach > 0.0f);
-        float seconds = want ? ENTER_SECONDS : (prone ? EXIT_SECONDS : SNAP_SECONDS);
-        float speed = dt / seconds;
-        state.progress = want ? Math.min(1.0f, state.progress + speed) : Math.max(0.0f, state.progress - speed);
+        boolean want = actionNow || state.detach > 0.0f;
+        float speed = dt / (want ? ENTER_SECONDS : EXIT_SECONDS);
+        state.progress = want ? Math.min(1.0f, state.progress + speed)
+                              : Math.max(0.0f, state.progress - speed);
         if (state.progress <= 0.0f) {
             state.kind = Kind.NONE;
             return 0.0f;

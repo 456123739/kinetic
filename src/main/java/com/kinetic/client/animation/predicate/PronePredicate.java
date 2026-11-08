@@ -35,11 +35,14 @@ import static com.kinetic.client.animation.predicate.IAnimationPredicate.playAni
  * 换弹动画是一次性的，播完就离开 RUNNING；TaCZ 的重载计数还在时用它兜底。
  */
 public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<?>> {
+    static final String CONTROLLER_SWING = "player.swing";
     static final String CONTROLLER_USE = "player.use";
     static final String CONTROLLER_FIRE = "player.fire";
     static final String CONTROLLER_HOLD = "player.hold_mainhand";
 
     static final String IDLE_ANIMATION = "prone:action:idle";
+    /** 由 swing 频道播放的匍匐投掷动画；本频道不重复写它。 */
+    static final String THROW_ANIMATION = "prone:throw";
 
     @Override
     public PlayState test(AnimationEvent<CustomHumanoidEntity<?>> event, ExpressionEvaluator<?> evaluator) {
@@ -61,6 +64,11 @@ public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<
 
     /** 本帧的动作种类；{@code NONE} 表示没有正在进行的动作。 */
     static ProneAction.Kind detect(AnimationEvent<? extends CustomHumanoidEntity<?>> event, Player player) {
+        // 投掷：swing 频道正在播匍匐投掷动画。它自己会写侧躺姿势，这里只要把 roll 推上去。
+        String swing = currentAnimation(event, CONTROLLER_SWING);
+        if (swing != null && swing.equals(THROW_ANIMATION)) {
+            return ProneAction.Kind.THROW;
+        }
         String hold = currentAnimation(event, CONTROLLER_HOLD);
         if (hold != null && hold.startsWith("tac:mainhand:grenade")) {
             return ProneAction.Kind.GRENADE;
@@ -106,11 +114,15 @@ public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<
      */
     @Nullable
     public static String animationNameFor(ProneAction.Kind kind, java.util.function.Predicate<String> available) {
+        if (kind == ProneAction.Kind.THROW) {
+            // 投掷姿势完全由 swing 频道的 prone:throw 负责，本频道只管把 roll 推上去。
+            return null;
+        }
         String name = switch (kind) {
             case MEDICAL -> "prone:action:medical";
             case RELOAD -> "prone:action:reload";
             case GRENADE -> "prone:action:grenade";
-            case OTHER, NONE -> IDLE_ANIMATION;
+            case OTHER, NONE, THROW -> IDLE_ANIMATION;
         };
         if (available.test(name)) {
             return name;

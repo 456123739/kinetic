@@ -8,6 +8,7 @@ import me.jellysquid.mods.sodium.client.render.vertex.buffer.SodiumBufferBuilder
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(value = SodiumBufferBuilder.class, remap = false)
@@ -30,6 +31,7 @@ public class SodiumBufferBuilderMixin implements VertexBufferAccessor {
 
     @Unique
     @Override
+    @Nullable
     public NativeBuffer kinetic$reserve(int vertexCount) {
         return ((VertexBufferAccessor) builder).kinetic$reserve(vertexCount);
     }

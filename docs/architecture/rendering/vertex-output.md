@@ -24,6 +24,24 @@ flowchart LR
 
 Java 完成 `entity` 姿态补偿、模型缩放、纹理与 `RenderType` 选择；`NativeRenderer` 再把 draw 矩阵、context、光照、overlay、颜色和 Iris entity data 适配为 `RenderParameters`。纹理像素与 GPU 句柄不传给 native。
 
+### 输出区间预留（`kinetic$reserve`）
+
+native 直接写进 `BufferBuilder` 的 direct buffer，因此要先向它预留 `vertexCount * vertexSize` **字节**。
+`BufferBuilder.ensureCapacity(int)` 的参数是字节（原版 `ensureVertexCapacity()` 传的就是
+`format.getVertexSize()`），早期这里误传了**顶点数**，缓冲不扩容，随后
+`ByteBuffer.slice(nextElementByte, ...)` 直接越界：
+
+```
+IndexOutOfBoundsException: Range [0, 0 + 20304) out of bounds for length 1536
+  at BufferBuilder.kinetic$reserve
+  at NativeRenderer.probeVertexConsumer
+```
+
+现在换算与边界判断收敛到 `BufferReservation`（纯函数，`BufferReservationTest` 钉住）：
+`bytesFor(顶点数, 步长)` 顺带拒绝溢出，`fits(下一写入位置, 需求, 容量)` 再核对一次扩容是否真的生效
+（缓冲区可能被其它 mixin 换成固定大小）。任一环节不成立就返回 `null`，上层改用
+`FallbackVertexWriter` 走原版逐顶点写入——**宁可慢一点，也不在渲染线程抛异常**。
+
 ## 变换与面语义
 
 每个可见骨骼先形成一份 `RenderBoneState`：最终 position 变换、normal 变换、投影后面朝向系数、opaque/translucent RGBA、light，以及透明面需要的 depth 变换。Position、normal 与 clip-space 变换必须分别从上层提供的正确矩阵组合，不能从单一 4×4 matrix 猜测全部语义。

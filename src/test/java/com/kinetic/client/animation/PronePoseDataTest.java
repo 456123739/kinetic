@@ -97,6 +97,24 @@ class PronePoseDataTest {
         return out;
     }
 
+    /**
+     * 取一个关键帧分量的"目标角度"。
+     *
+     * <p>绝对动画里是数字字面量；侧躺动画里是
+     * {@code bone_rot('X').x*(1-kinetic.prone_roll)+(-86.0000)*kinetic.prone_roll}，
+     * 取其中括号里的常量即可比较连续性。
+     */
+    private static double number(JsonElement element) {
+        if (element.getAsJsonPrimitive().isNumber()) {
+            return element.getAsDouble();
+        }
+        String text = element.getAsString();
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("\\+\\((-?[0-9.]+)\\)\\*kinetic\\.prone_roll").matcher(text);
+        assertTrue(matcher.find(), "无法从通道表达式里取出目标角度: " + text);
+        return Double.parseDouble(matcher.group(1));
+    }
+
     private static void collectStrings(JsonArray array, List<String> out) {
         for (JsonElement e : array) {
             if (e.isJsonPrimitive() && e.getAsJsonPrimitive().isString()) {
@@ -167,6 +185,33 @@ class PronePoseDataTest {
         }
     }
 
+    /**
+     * 挥砍与投掷都必须先侧躺。
+     *
+     * <p>趴平时肩膀只有 4 单位高、躯干就在旁边：站姿的弧线叠上去，手臂只能贴着身体小幅摆动
+     * （"不够舒展"），投掷更是整段穿过躯干（实测右臂∩头 5.1）。侧躺 70° 才腾出挥动空间。
+     */
+    @Test
+    void proneMeleeAndThrowRollTheBody() throws Exception {
+        for (String model : MODELS) {
+          for (String name : List.of("prone:swing", "prone:throw")) {
+            JsonObject anim = animations(model, "main.animation.json").getAsJsonObject(name);
+            assertNotNull(anim, model + ": 缺少 " + name);
+            JsonObject bones = anim.getAsJsonObject("bones");
+            // 站姿投掷是把手甩到身体前下方，趴着时就是往地里扔、并且胳膊穿过躯干。
+            // 所以匍匐投掷必须像打药/换弹那样先侧躺（MAllBody 承载侧滚），手臂才有空间。
+            assertTrue(bones.has("MAllBody"), model + "/" + name + ": 必须自带 MAllBody 侧滚");
+            assertTrue(bones.has("AllBody"), model + "/" + name + ": 必须压平 AllBody");
+            for (var bone : bones.entrySet()) {
+                assertFalse(FORBIDDEN.contains(bone.getKey()),
+                        model + "/" + name + ": 不允许写 " + bone.getKey());
+                assertTrue(bone.getValue().toString().contains("kinetic.prone_roll"),
+                        model + "/" + name + "/" + bone.getKey() + ": 必须用 kinetic.prone_roll 混合");
+            }
+          }
+        }
+    }
+
     @Test
     void proneMeleeAndThrowKeepTheLegsFree() throws Exception {
         for (String model : MODELS) {
@@ -174,25 +219,32 @@ class PronePoseDataTest {
                 JsonObject anim = animations(model, "main.animation.json").getAsJsonObject(name);
                 assertNotNull(anim, model + ": 缺少 " + name);
                 JsonObject bones = anim.getAsJsonObject("bones");
-                for (String leg : List.of("LeftLeg", "LeftLowerLeg", "LeftFoot", "RightLeg",
-                        "RightLowerLeg", "RightFoot", "DownBody", "Root", "AllBody")) {
-                    assertFalse(bones.has(leg), model + "/" + name + ": 不能写 " + leg + "（腿要继续爬行）");
+                // 腿必须留给主频道的爬行循环：它跟着 MAllBody 一起侧转，不需要本动画再写一遍。
+                List<String> mustNotWrite = List.of("LeftLeg", "LeftLowerLeg", "LeftFoot",
+                        "RightLeg", "RightLowerLeg", "RightFoot", "DownBody", "Root");
+                for (String leg : mustNotWrite) {
+                    assertFalse(bones.has(leg), model + "/" + name + ": 不能写 " + leg
+                            + (leg.contains("Leg") || leg.contains("Foot") || leg.equals("DownBody")
+                            ? "（腿要继续爬行）" : ""));
                 }
                 assertTrue(bones.has("Head"), model + "/" + name + ": 必须自己写头（否则沿用站姿的头，会朝地）");
                 assertTrue(bones.has("RightArm"), model + "/" + name + ": 必须写持械手");
-                // 手臂通道必须连续：相邻关键帧的任何分量都不允许跳超过 180 度
+                // 关键帧必须连续：相邻关键帧的任何分量都不允许跳超过 180 度。
+                // 侧躺动画的通道是 molang 字符串（bone_rot(...)*(1-roll)+(目标)*roll），
+                // 所以先把"目标常量"抽出来再比较——这正是曾经让手臂走 281 度长弧的那类 bug。
                 for (var bone : bones.entrySet()) {
-                    JsonObject rotation = bone.getValue().getAsJsonObject().getAsJsonObject("rotation");
-                    if (rotation == null || rotation.isJsonArray()) {
-                        continue;
+                    JsonElement rotationElement = bone.getValue().getAsJsonObject().get("rotation");
+                    if (rotationElement == null || !rotationElement.isJsonObject()) {
+                        continue;   // 静态通道（三元数组）没有关键帧可比较
                     }
+                    JsonObject rotation = rotationElement.getAsJsonObject();
                     List<String> times = new ArrayList<>(rotation.keySet());
                     times.sort((a, b) -> Double.compare(Double.parseDouble(a), Double.parseDouble(b)));
                     for (int i = 1; i < times.size(); i++) {
                         JsonArray prev = rotation.getAsJsonObject(times.get(i - 1)).getAsJsonArray("post");
                         JsonArray cur = rotation.getAsJsonObject(times.get(i)).getAsJsonArray("post");
                         for (int axis = 0; axis < 3; axis++) {
-                            double delta = Math.abs(cur.get(axis).getAsDouble() - prev.get(axis).getAsDouble());
+                            double delta = Math.abs(number(cur.get(axis)) - number(prev.get(axis)));
                             assertTrue(delta <= 180.0,
                                     model + "/" + name + "/" + bone.getKey() + ": " + times.get(i - 1)
                                             + "->" + times.get(i) + " 轴 " + axis + " 跳了 " + delta

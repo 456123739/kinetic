@@ -28,7 +28,13 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ProneAction {
     /** 动作种类。{@code OTHER} 覆盖吃喝这类"只需要把头和腿摆正"的动作。 */
     public enum Kind {
-        NONE, MEDICAL, RELOAD, GRENADE, OTHER
+        NONE,
+        MEDICAL,
+        RELOAD,
+        GRENADE,
+        /** 趴下挥动（投掷）：动画由 swing 频道播 {@code prone:throw}，本频道只负责把它滚进侧躺。 */
+        THROW,
+        OTHER
     }
 
     /** 滚入时长（秒）。0.24s 约等于一次自然的翻身；越短，中途"站姿手臂压在躺姿上"的帧越少。 */

@@ -70,7 +70,8 @@ public class NativeRenderer {
                     }
                 }
             }
-            accessor.kinetic$reserve(vertexCount);  // 有必要吗？
+            // 这里原先还有一次"只预留、不使用"的调用：它不推进任何指针，却同样可能越界，
+            // 而且回退写入本来就会让原版自己按顶点扩容。删掉。
         }
         return new VertexBuffer(null, VertexFormatType.FALLBACK, null);
     }

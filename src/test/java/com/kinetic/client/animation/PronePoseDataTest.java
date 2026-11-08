@@ -191,6 +191,49 @@ class PronePoseDataTest {
      * <p>趴平时肩膀只有 4 单位高、躯干就在旁边：站姿的弧线叠上去，手臂只能贴着身体小幅摆动
      * （"不够舒展"），投掷更是整段穿过躯干（实测右臂∩头 5.1）。侧躺 70° 才腾出挥动空间。
      */
+    /**
+     * 肘只能往一个方向弯：任何侧躺/挥动动画的前臂通道都不许穿过 0。
+     *
+     * <p>实战教训：求解器细化时没把前臂角度夹在弯折范围内，挥砍中段得到 +16、投掷中段 +12，
+     * 于是前臂在一段动画里从负翻到正再翻回负——玩家看到的就是"胳膊反折"。
+     */
+    @Test
+    void foreArmsNeverBendBackwards() throws Exception {
+        for (String model : MODELS) {
+            var all = animations(model, "main.animation.json");
+            for (var entry : all.entrySet()) {
+                String name = entry.getKey();
+                if (!name.startsWith("prone:")) {
+                    continue;
+                }
+                JsonObject bones = entry.getValue().getAsJsonObject().getAsJsonObject("bones");
+                for (String bone : List.of("LeftForeArm", "RightForeArm")) {
+                    if (!bones.has(bone)) {
+                        continue;
+                    }
+                    JsonElement rotation = bones.getAsJsonObject(bone).get("rotation");
+                    List<Double> values = new ArrayList<>();
+                    if (rotation.isJsonArray()) {
+                        values.add(number(rotation.getAsJsonArray().get(2)));
+                    } else {
+                        for (var key : rotation.getAsJsonObject().entrySet()) {
+                            values.add(number(key.getValue().getAsJsonObject().getAsJsonArray("post").get(2)));
+                        }
+                    }
+                    boolean hasNegative = values.stream().anyMatch(v -> v < -1.0);
+                    boolean hasPositive = values.stream().anyMatch(v -> v > 1.0);
+                    assertFalse(hasNegative && hasPositive,
+                            model + "/" + name + "/" + bone + ": 前臂在动画中途翻到另一侧（" + values
+                                    + "），肘会看起来反折");
+                    for (double v : values) {
+                        assertTrue(Math.abs(v) <= 165.0,
+                                model + "/" + name + "/" + bone + ": 肘弯 " + v + " 度超出人类活动范围");
+                    }
+                }
+            }
+        }
+    }
+
     @Test
     void proneMeleeAndThrowRollTheBody() throws Exception {
         for (String model : MODELS) {

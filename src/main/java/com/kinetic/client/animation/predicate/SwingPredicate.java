@@ -82,6 +82,15 @@ public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<
             }
             return playAnimation(event, name);
         }
+        // 挥动已经结束（entity.swinging 窗口只有 6 tick，而趴下弧线可能更长）：控制器会继续把
+        // prone:swing / prone:throw 播完，并且一直覆盖右臂。玩家如果在这段里站起来，就会看到
+        // 站着的人还在做趴下挥砍。因此一旦不再趴着，立刻停止趴下变体，让上层姿势接管。
+        if (!ProneAction.isProne(entity)) {
+            String current = event.getCodedController().getCurrentAnimationName();
+            if (PRONE_SWING.equals(current) || PRONE_THROW.equals(current)) {
+                return PlayState.STOP;
+            }
+        }
         return PlayState.CONTINUE;
     }
 

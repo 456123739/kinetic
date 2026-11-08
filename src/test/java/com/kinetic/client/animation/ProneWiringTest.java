@@ -74,6 +74,36 @@ class ProneWiringTest {
         assertTrue(pool.contains(PRONE_ACTION), "SwingPredicate 必须用 ProneAction.isProne 判断趴姿");
     }
 
+    @Test
+    void predicateReadsThePlayersUseStateInsteadOfOnlyChannelNames() throws Exception {
+        String pool = constantPool("com/kinetic/client/animation/predicate/PronePredicate");
+        // 只看"频道当前在播什么"会漏掉一大类情况：趴下按右键掐雷时 hold 频道播的是
+        // tac:hold:grenade（持握/瞄准），打药时 use 频道也可能被条件表接管。玩家状态才是
+        // 唯一稳定的事实来源，缺了它就会出现"趴着按不出来、站起来做一次再趴下才行"。
+        assertTrue(pool.contains("isUsingItem"), "动作识别必须读玩家是否正在使用物品");
+        assertTrue(pool.contains("InnerClassify"),
+                "医疗类消耗品必须复用 InnerClassify 的分类（与 use_mainhand:medical 同源）");
+        assertTrue(pool.contains("net/minecraft/world/item/UseAnim"),
+                "吃喝判定必须按 UseAnim，而不是猜动画名");
+    }
+
+    @Test
+    void swingChannelStopsTheProneVariantOnceThePlayerIsNoLongerProne() throws Exception {
+        File source = new File("src/main/java/com/kinetic/client/animation/predicate/SwingPredicate.java");
+        assertTrue(source.isFile(), "找不到 " + source.getAbsolutePath());
+        String text = Files.readString(source.toPath(), StandardCharsets.UTF_8);
+        // 取最后一处：拔刀剑分支里也有一个 CONTINUE，用它当锚点会截到文件前部。
+        int playState = text.lastIndexOf("return PlayState.CONTINUE;");
+        assertTrue(playState > 0, "SwingPredicate 必须保留挥动结束后的 CONTINUE 分支");
+        String tail = text.substring(0, playState);
+        int proneCheck = tail.lastIndexOf("ProneAction.isProne");
+        assertTrue(proneCheck > 0, "挥动结束分支必须先检查趴姿：否则站起来的人会继续把趴下弧线演完");
+        String block = tail.substring(proneCheck);
+        assertTrue(block.contains("PlayState.STOP"), "不再趴着时必须停止趴下变体");
+        assertTrue(block.contains("PRONE_SWING") || block.contains("PRONE_THROW"),
+                "停止条件必须只针对趴下变体，不能顺手停掉站姿挥砍");
+    }
+
     private static String constantPool(String className) throws Exception {
         var resource = "/" + className + ".class";
         try (var in = ProneWiringTest.class.getResourceAsStream(resource)) {

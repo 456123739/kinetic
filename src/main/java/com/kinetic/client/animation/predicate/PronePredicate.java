@@ -1,6 +1,7 @@
 package com.kinetic.client.animation.predicate;
 
 import com.kinetic.client.animation.ProneAction;
+import com.kinetic.client.animation.condition.InnerClassify;
 import com.kinetic.client.compat.swarfare.SWarfareCompat;
 import com.kinetic.client.compat.tacz.TACZCompat;
 import com.kinetic.client.entity.CustomHumanoidEntity;
@@ -12,6 +13,7 @@ import com.kinetic.molang.runtime.ExpressionEvaluator;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.UseAnim;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -69,6 +71,24 @@ public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<
         if (swing != null && swing.equals(THROW_ANIMATION)) {
             return ProneAction.Kind.THROW;
         }
+        // 正在使用物品：优先读玩家自己的状态，而不是某个频道"恰好"把动画名选成我们认识的样子。
+        // 只看动画名会漏掉一大类情况：趴下按右键掐雷时 hold 频道播的是 tac:hold:grenade（瞄准/持握），
+        // 打药时 use 频道也可能被条件表接管成别的名字——表现就是"趴着按不出来，得先站起来做一次再趴下"。
+        // 这条判定不依赖任何联动模组的分支细节，因此对 TaCZ 之外的枪械/消耗品联动同样成立。
+        if (player.isUsingItem()) {
+            ItemStack using = player.getUseItem();
+            if (isGrenade(using)) {
+                return ProneAction.Kind.GRENADE;
+            }
+            if (MEDICAL_CLASS.equals(InnerClassify.getClassify(using))) {
+                return ProneAction.Kind.MEDICAL;
+            }
+            UseAnim useAnim = using.getUseAnimation();
+            if (useAnim == UseAnim.EAT || useAnim == UseAnim.DRINK) {
+                return ProneAction.Kind.OTHER;
+            }
+        }
+        // 兼容路径：不通过 isUsingItem 表达蓄力的模组，仍按频道动画名识别。
         String hold = currentAnimation(event, CONTROLLER_HOLD);
         if (hold != null && hold.startsWith("tac:mainhand:grenade")) {
             return ProneAction.Kind.GRENADE;
@@ -90,6 +110,13 @@ public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<
             return ProneAction.Kind.RELOAD;
         }
         return ProneAction.Kind.NONE;
+    }
+
+    /** 物品分类表里"医疗/注射类消耗品"的键，与 {@code use_mainhand:medical} 动画名同源。 */
+    private static final String MEDICAL_CLASS = "medical";
+
+    private static boolean isGrenade(ItemStack stack) {
+        return TACZCompat.isGrenade(stack) || SWarfareCompat.isGrenade(stack);
     }
 
     private static boolean isReloading(Player player) {

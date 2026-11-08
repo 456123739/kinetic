@@ -46,6 +46,9 @@ public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<
     /** 由 swing 频道播放的匍匐投掷动画；本频道不重复写它。 */
     static final String THROW_ANIMATION = "prone:throw";
 
+    /** 物品分类表里"医疗/注射类消耗品"的键，与 {@code use_mainhand:medical} 动画名同源。 */
+    private static final String MEDICAL_CLASS = "medical";
+
     @Override
     public PlayState test(AnimationEvent<CustomHumanoidEntity<?>> event, ExpressionEvaluator<?> evaluator) {
         Entity entity = event.getAnimatableEntity().getEntity();
@@ -112,8 +115,6 @@ public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<
         return ProneAction.Kind.NONE;
     }
 
-    /** 物品分类表里"医疗/注射类消耗品"的键，与 {@code use_mainhand:medical} 动画名同源。 */
-    private static final String MEDICAL_CLASS = "medical";
 
     private static boolean isGrenade(ItemStack stack) {
         return TACZCompat.isGrenade(stack) || SWarfareCompat.isGrenade(stack);

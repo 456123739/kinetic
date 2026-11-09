@@ -89,21 +89,13 @@ class ProneWiringTest {
 
     @Test
     void swingChannelStopsTheProneVariantOnceThePlayerIsNoLongerProne() throws Exception {
-        File source = new File("src/main/java/com/kinetic/client/animation/predicate/SwingPredicate.java");
-        assertTrue(source.isFile(), "找不到 " + source.getAbsolutePath());
-        String text = Files.readString(source.toPath(), StandardCharsets.UTF_8);
-        // 取最后一处：拔刀剑分支里也有一个 CONTINUE，用它当锚点会截到文件前部。
-        int playState = text.lastIndexOf("return PlayState.CONTINUE;");
-        assertTrue(playState > 0, "SwingPredicate 必须保留挥动结束后的 CONTINUE 分支");
-        String tail = text.substring(0, playState);
-        int proneCheck = tail.lastIndexOf("ProneAction.isProne");
-        assertTrue(proneCheck > 0, "挥动结束分支必须先检查趴姿：否则站起来的人会继续把趴下弧线演完");
-        String block = tail.substring(proneCheck);
-        assertTrue(block.contains("PlayState.STOP"), "不再趴着时必须停止趴下变体");
-        assertTrue(block.contains("PRONE_SWING") || block.contains("PRONE_THROW"),
-                "停止条件必须只针对趴下变体，不能顺手停掉站姿挥砍");
+        // 规则本身（何时停）由 SwingPredicateStopRuleTest 做行为验证；这里只钉住"渲染路径确实
+        // 走了那条规则"，避免有人把 shouldStopProneVariant 的调用删掉而测试仍然全绿。
+        String pool = constantPool("com/kinetic/client/animation/predicate/SwingPredicate");
+        assertTrue(pool.contains("shouldStopProneVariant"),
+                "挥动结束分支必须调用 shouldStopProneVariant，否则站起来的人会继续把趴下弧线演完");
+        assertTrue(pool.contains("prone:swing"), "停止条件必须认得趴下挥砍");
     }
-
     private static String constantPool(String className) throws Exception {
         var resource = "/" + className + ".class";
         try (var in = ProneWiringTest.class.getResourceAsStream(resource)) {

@@ -15,6 +15,7 @@ import com.kinetic.molang.runtime.ExpressionEvaluator;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 import static com.kinetic.client.animation.predicate.IAnimationPredicate.playAnimation;
 
@@ -85,13 +86,28 @@ public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<
         // 挥动已经结束（entity.swinging 窗口只有 6 tick，而趴下弧线可能更长）：控制器会继续把
         // prone:swing / prone:throw 播完，并且一直覆盖右臂。玩家如果在这段里站起来，就会看到
         // 站着的人还在做趴下挥砍。因此一旦不再趴着，立刻停止趴下变体，让上层姿势接管。
-        if (!ProneAction.isProne(entity)) {
-            String current = event.getCodedController().getCurrentAnimationName();
-            if (PRONE_SWING.equals(current) || PRONE_THROW.equals(current)) {
-                return PlayState.STOP;
-            }
+        if (shouldStopProneVariant(ProneAction.isProne(entity),
+                event.getCodedController().getCurrentAnimationName())) {
+            return PlayState.STOP;
         }
         return PlayState.CONTINUE;
+    }
+
+    /**
+     * 挥动结束后，是否应当立刻停掉正在播的趴下变体。
+     *
+     * <p>控制器在 {@code entity.swinging} 变 false 之后仍会 {@code CONTINUE} 把当前动画播完，
+     * 而趴下弧线比原版 6 tick 的挥动窗口长，所以站起来的瞬间它还在覆盖右臂。规则只有一条：
+     * **不再趴着、且当前播的是趴下变体** → 停。还趴着就让它播完（那正是要的效果）。
+     *
+     * @param prone            此刻是否趴着
+     * @param currentAnimation 控制器当前动画名（可能为 null）
+     */
+    static boolean shouldStopProneVariant(boolean prone, @Nullable String currentAnimation) {
+        if (prone || currentAnimation == null) {
+            return false;
+        }
+        return PRONE_SWING.equals(currentAnimation) || PRONE_THROW.equals(currentAnimation);
     }
 
     /**

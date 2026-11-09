@@ -8,9 +8,9 @@
 | 项 | 值 |
 | --- | --- |
 | jar | `kinetic-3.0-dev-forge+mc1.20.1.jar` |
-| 字节数 | 17,717,523 |
-| sha256 | `a8790cce2c5f1df0c1b4fca64f57991999282074bb8a0e7e0fdb7fc63610a733` |
-| 测试 | 778 tests / 0 failures / 10 skipped |
+| 字节数 | 17,717,682 |
+| sha256 | `964c8c87c946684de8d5962c2ed52f1080bafc618d598cd99be07ca02e6693eb` |
+| 测试 | 781 tests / 0 failures / 10 skipped |
 | 文档自检 | `python3 docs/tools/check_docs.py` → `OK: documentation tree is self-contained` |
 
 复核命令：
@@ -130,7 +130,7 @@ LANG=C.UTF-8 LC_ALL=C.UTF-8 ./gradlew test --offline --tests "*ProneActionThroug
 | --- | --- | --- | --- |
 | 滑铲与趴下互斥 | `ProneAction.isProne` 显式排除 `SlideLock.isLocked`；判定抽成纯函数 | — | `SlideLockTest` / `SlideLockWiringTest` / **`ProneActionPoseGateTest`**（八道门逐条否决 + 滑铲专项） |
 | 近战（趴下挥砍） | 0.30s 手写连续弧线（原来 IK 逐帧解，相邻帧差 232°），手腕沿 −Z 前挥 | `a737504` | `ProneWiringTest`、`PronePoseDataTest` |
-| 近战（站起后残留） | 挥动结束且不再趴着时 `STOP` 趴下变体 | `05c7c14` | `ProneWiringTest` |
+| 近战（站起后残留） | 挥动结束且不再趴着时 `STOP` 趴下变体（判定抽成 `shouldStopProneVariant`） | `05c7c14` | `ProneWiringTest`（结构）+ **`SwingPredicateStopRuleTest`**（行为） |
 | 打药 | 0.72s 节奏、左手贴体侧、腿伸直、最低点 −1.01 | `ed975bc` | `PronePoseDataTest` |
 | 死亡 | 布娃娃捕获死亡瞬间的 KINETIC 骨骼，不退回僵直站姿 | — | `KineticRagdollMathTest`（映射/零跳变/关节范围） |
 | 侧躺过渡 | 站姿动作途中趴下**当帧即完整侧躺**（`CATCH_UP_PROGRESS=1.0` + 频道过渡 0），进入 0.15s / 退出 0.24s | `ed975bc`、`0d49ab6` | `ProneActionTest` |

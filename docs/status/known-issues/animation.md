@@ -25,7 +25,7 @@
 - Forge world 中 controller、instruction、defer、config 与多 `RenderContext` 的实际 once-only 行为尚未端到端验证。`AnimatableEntity.executeMolangExp` 只把任务排入 `AnimationProcessor` 的待执行队列，队列的排空时机与同一次逻辑推进内的执行次数没有实机证据，也没有对应自动化覆盖。
 - Canonical pose 可以跨兼容 pass 复用，但当前逐次 draw metadata 可能随输出一起复用；例如同帧 shadow pass 可能观察到上一 `RenderContext`。
 - 同一 render target 内热替换会保留动画状态并依赖烘焙兼容；兼容性门禁和第一人称独立运行时尚缺完整闭环。
-- `AnimationProcessor` 原地修改共享 snapshot 与 attribute，没有事务 staging、异常回滚或模型 revision 二次校验，失败可能留下部分更新。
+- `AnimationProcessor` 原地修改共享 snapshot 与 attribute，没有事务 staging 或模型 revision 二次校验。控制器级已经有故障隔离：`controller.process` 抛出的 `RuntimeException` 会被捕获，只跳过该控制器这一帧（其余控制器继续跑，它的姿势冻结在上一帧），日志按 1200 tick 限流；`Error` 仍然继续冒泡。因此单个谓词的 bug 不会再让整帧渲染崩掉——但被跳过的那一帧仍然是部分更新：同一帧里更早的控制器写进 snapshot 的值不会回滚。
 
 ## Molang 与同步
 

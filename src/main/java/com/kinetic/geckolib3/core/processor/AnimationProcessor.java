@@ -1,5 +1,6 @@
 package com.kinetic.geckolib3.core.processor;
 
+import com.kinetic.Kinetic;
 import com.kinetic.client.animation.SlideLock;
 import com.kinetic.client.sound.instance.SoundInstanceManager;
 import com.kinetic.geckolib3.core.controller.IAnimationController;
@@ -104,7 +105,18 @@ public class AnimationProcessor<TEntity extends Entity> {
             if (shouldTick) {
                 // 将当前控制器设置为动画测试事件
                 // 处理动画并向点队列添加新值
-                controller.process(event, evaluator, allowEmitting);
+                try {
+                    controller.process(event, evaluator, allowEmitting);
+                } catch (RuntimeException failure) {
+                    // 单个控制器的谓词或动画数据出错，不应该让整帧渲染崩掉：跳过这一帧的更新，
+                    // 其余控制器照常跑（该控制器的姿势冻结在上一帧）。日志按 tick 限流；
+                    // 只吞 RuntimeException，Error（OOM/栈溢出）必须继续冒泡。
+                    if (renderTicks - lastControllerErrorTicks > 1200.0f) {
+                        lastControllerErrorTicks = renderTicks;
+                        Kinetic.LOGGER.error("Animation controller '{}' failed; skipping this frame",
+                                controller.getName(), failure);
+                    }
+                }
             }
             // 解决一个历史遗留问题而保留的动画混合
             @Deprecated boolean blendRotation = controller.blendRotation();
@@ -388,6 +400,9 @@ public class AnimationProcessor<TEntity extends Entity> {
             }
         }
     }
+
+    /** 控制器异常日志的上次记录时刻（渲染 tick），避免坏掉的谓词每帧刷屏。 */
+    private float lastControllerErrorTicks = Float.NEGATIVE_INFINITY;
 
     private void executeMolangTask(MolangExecutionTask task, ExpressionEvaluator<MolangContext<?>> evaluator) {
         String result;

@@ -14,6 +14,7 @@
 - [独立格式标准](standards/README.md)
 - [架构总览](architecture/README.md) / [运行模型](architecture/runtime-model.md)：跨语言职责、问题定位、side、线程与生命周期。
 - [当前支持状态](status/support-and-verification.md)
+- [交付验证台账](status/verification-ledger.md)
 - 未来方向：
   - [独立 Backend](future/independent-backend.md)
   - [外部模型源](future/external-model-sources.md)

@@ -1,6 +1,9 @@
 package com.kinetic.client.compat.quickskin;
 
 import net.minecraftforge.fml.ModList;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.UUID;
 
 /**
  * Quick Skin 可选兼容层的门面。
@@ -30,5 +33,29 @@ public final class QuickSkinCompat {
 
     public static boolean isInstalled() {
         return installed;
+    }
+
+    /**
+     * Quick Skin 记录的该玩家模型名（{@code "classic"} / {@code "slim"}）。
+     *
+     * <p>它比 {@code AbstractClientPlayer#getModelName()} 更早可用：后者要等 Quick Skin 在
+     * {@code CLIENT_PLAYER_JOIN} 里把皮肤应用上去才会变成新值，而这里直接读它的外观服务。
+     * 未安装、未绑定或拿到 {@code "auto"} 时返回 {@code null}，调用方应回退到原版取值。
+     */
+    @Nullable
+    public static String playerModelName(@Nullable UUID playerId) {
+        return installed ? QuickSkinCompatInner.playerModelName(playerId) : null;
+    }
+
+    /**
+     * 标题界面选好的皮肤模型名（进世界前就有）。
+     *
+     * <p>给它存在的理由：{@link #playerModelName(UUID)} 依赖 Quick Skin 已经把外观应用到该 uuid，
+     * 而那发生在 {@code CLIENT_PLAYER_JOIN}。玩家在标题界面设成细手臂再进世界时，这一条才是
+     * 第一帧就能读到的值。
+     */
+    @Nullable
+    public static String savedModelName() {
+        return installed ? QuickSkinCompatInner.savedModelName() : null;
     }
 }

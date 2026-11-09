@@ -8,9 +8,9 @@
 | 项 | 值 |
 | --- | --- |
 | jar | `kinetic-3.0-dev-forge+mc1.20.1.jar` |
-| 字节数 | 17,717,682 |
-| sha256 | `964c8c87c946684de8d5962c2ed52f1080bafc618d598cd99be07ca02e6693eb` |
-| 测试 | 781 tests / 0 failures / 10 skipped |
+| 字节数 | 17,719,919 |
+| sha256 | `26a3fc641502286636cd267fd3fb4c30a72e815200f96a67f3248d198e45f2b3` |
+| 测试 | 783 tests / 0 failures / 10 skipped |
 | 文档自检 | `python3 docs/tools/check_docs.py` → `OK: documentation tree is self-contained` |
 
 复核命令：

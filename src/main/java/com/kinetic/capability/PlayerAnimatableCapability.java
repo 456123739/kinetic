@@ -2,6 +2,7 @@ package com.kinetic.capability;
 
 import com.kinetic.Kinetic;
 import com.kinetic.client.compat.FirstPersonCompat;
+import com.kinetic.client.compat.quickskin.QuickSkinCompat;
 import com.kinetic.client.compat.bettercombat.BetterCombatCompat;
 import com.kinetic.client.entity.CustomPlayerEntity;
 import com.kinetic.model.resource.client.ModelRenderTarget;
@@ -94,7 +95,8 @@ public final class PlayerAnimatableCapability extends CustomPlayerEntity {
         if (applied == null) {
             return;
         }
-        var skinModelName = player.getModelName();
+        var skinModelName = preferQuickSkinModelName(
+                quickSkinModelName(player), player.getModelName());
         var service = ClientModelService.current().orElse(null);
         if (service == null) {
             return;
@@ -107,6 +109,36 @@ public final class PlayerAnimatableCapability extends CustomPlayerEntity {
                     "Switched the builtin player model to match skin model '{}' for {}",
                     skinModelName, player.getName().getString());
         }
+    }
+
+    /**
+     * 向 Quick Skin 要"这个玩家该用哪个模型"，按可用性从早到晚依次尝试：
+     * 先问它记着的外观（进世界后），再问标题界面里选好的预设（进世界前）。
+     *
+     * @return 两者都拿不到时返回 {@code null}，由调用方回退到原版皮肤名
+     */
+    @Nullable
+    private static String quickSkinModelName(AbstractClientPlayer player) {
+        var applied = QuickSkinCompat.playerModelName(player.getUUID());
+        return applied != null ? applied : QuickSkinCompat.savedModelName();
+    }
+
+    /**
+     * 选"这一帧该按哪个皮肤模型名判定"。
+     *
+     * <p>Quick Skin 在 {@code CLIENT_PLAYER_JOIN} 里才把保存的皮肤应用上去，而 KINETIC 的变体判定
+     * 可能在那之前就跑过一次——只读 {@code getModelName()} 会拿到原版皮肤（宽手臂），
+     * 等事件回来才纠正，观感就是"进世界后要再切一次"。所以优先用 Quick Skin 服务里记的值。
+     *
+     * <p>{@code "auto"} 表示"还没解析"，交给原版取值（此时 Quick Skin 已经通过 mixin 把
+     * 解析后的模型名写进 {@code getSkin()} 了）。
+     */
+    static String preferQuickSkinModelName(@Nullable String quickSkinModelName, String vanillaModelName) {
+        if (quickSkinModelName == null || quickSkinModelName.isEmpty()
+                || "auto".equalsIgnoreCase(quickSkinModelName)) {
+            return vanillaModelName;
+        }
+        return quickSkinModelName;
     }
 
     public PlayerStateTracker getStateTracker() {

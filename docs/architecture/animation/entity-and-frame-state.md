@@ -40,6 +40,19 @@ Model switch、Molang 求值（含 defer 排空）与 close 在同一 entity own
 
 判定不再逐帧轮询。`SkinVariantInvalidation` 是按玩家 UUID 的并发失效集合（`MAX_TRACKED_PLAYERS = 4096` 兜底，玩家离开时 `forget`），只在三种来源标脏：能力创建、`onModelRenderTargetLoaded`、以及 Quick Skin 报告的皮肤变化；`checkModelUpdate()` 只消费一次标记。未标脏时它只是一次集合 `isEmpty` 检查，不触碰皮肤 API，也不扫描目录。判定逻辑本身由 `BuiltinSkinVariantDecision` 纯化：皮肤模型名与已应用模型都没变时直接返回，不重复扫描目录；切换后把实际生效的模型记入记忆，因为事件驱动不再有"下一帧补记"的机会。之所以没有周期性检查，是因为原版皮肤只能在重启游戏后更换，游戏内唯一会变的路径由皮肤模组通知覆盖。
 
+**皮肤模型名的来源按可用性分三级**（见 `PlayerAnimatableCapability#quickSkinModelName`）：
+
+1. `QuickSkinCompat.playerModelName(uuid)` —— 直接问 Quick Skin 的外观服务"这个 uuid 现在用哪个模型"；
+2. `QuickSkinCompat.savedModelName()` —— 标题界面选好的皮肤与它的粗细偏好（`ClientConfig.activeSkinHash`
+   + `LocalAssetManager.getSkinModelPreference`，`auto` 再解析成元数据里的值）；
+3. 原版 `AbstractClientPlayer#getModelName()`。
+
+第 2 级的必要性：Quick Skin 的外观服务靠 `applyLook` 填充，而 `applyLook` 发生在
+`CLIENT_PLAYER_JOIN`；KINETIC 的变体判定可能早于那一刻。只读第 3 级时，玩家在标题界面设成
+细手臂再进世界，第一帧拿到的是原版皮肤（宽手臂），要等 Quick Skin 的事件回来才纠正——观感就是
+"进世界后还得再切一次粗细"。第 2 级在进世界前就有值，因此把这条路径补齐。
+`"auto"` 表示尚未解析，一律回退到下一级（此时 Quick Skin 已经通过 mixin 把解析结果写进 `getSkin()`）。
+
 Quick Skin 是可选依赖。它文档化的 `SkinApplicationListener` 是单槽回调且已被 Quick Skin 自己占用（二次注册会抛错），所以 KINETIC 改用反射订阅其 `InternalEventBus`。该总线是公开字节码但被对方文档标为 internal，没有稳定性承诺；API 变动时本联动降级为无操作，只损失事件驱动，每个玩家仍会在能力创建与模型就绪时各判定一次。隔离沿用门面 + 反射内层的既有模式，由字节码扫描测试守住。当前没有游戏内验证，反射路径也只在"未安装 Quick Skin"分支被执行过，见[动画已知问题](../../status/known-issues/animation.md#求值频率与逐帧缓存)。
 
 ## 时间与更新频率

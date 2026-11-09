@@ -132,6 +132,12 @@ roll=0 时它就是恒等变换，与改动前逐位一致；不需要去改 `Ro
 
 ### 3. 频道 `player.prone`
 
+频道自身**不做**控制器层面的过渡（`transitionLengthTicks = 0`）。平滑完全由 `kinetic.prone_roll`
+提供：每个通道都写成 `bone_rot*(1-roll) + 目标*roll`，roll=0 时逐位等于底层动画，所以频道
+切入切出都没有跳变。若频道再叠一份淡入，就会与 roll 复合——玩家在站姿里做动作、途中趴下时
+roll 已经是 1，却还要等淡入走完，观感就是"已经趴平了还在慢慢翻"。
+
+
 `PlayerControllerCollection` 在 `use` 之后注册（保证覆盖 use/fire/swing/hold 的写入），
 谓词按 `kind` 选动画：
 

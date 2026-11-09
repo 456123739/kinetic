@@ -58,9 +58,12 @@ public class PlayerControllerCollection {
 
         // 匍匐侧躺：必须排在 use/swing 之后——它在同一帧里最后写躯干/头/手臂，
         // 才能把"站姿动画 + 躺姿身体"顶成侧躺姿态（见 ProneAction / PronePredicate）。
-        // 过渡 2 tick（0.1s）：侧躺本身靠 kinetic.prone_roll 做混合，但频道"开始/停止/换动画名"
-        // 时还需要控制器层面的短过渡，否则 0.1 tick（5ms）等于瞬间切换，会抽一下。
-        simple("prone", (name, entity) -> new HybridAnimationController(entity, name, 2.0f, new PronePredicate()));
+        //
+        // 频道自身**不做**过渡（0）：平滑完全由 kinetic.prone_roll 提供，每个通道都写成
+        // bone_rot*(1-roll) + 目标*roll，所以 roll=0 时这一帧逐位等于底层动画，频道怎么切入切出
+        // 都不会有跳变。反过来，频道再来一份 2 tick 淡入会与 roll 叠加：玩家在站姿里做动作、
+        // 途中趴下时 roll 已经是 1，却还要再等 0.1s 让频道混进来——这就是"趴下了还在慢慢翻"的观感。
+        simple("prone", (name, entity) -> new HybridAnimationController(entity, name, 0f, new PronePredicate()));
 
         simple("passenger", (name, entity) -> new HybridAnimationController(entity, name, 0.1f, new PassengerPredicate()));
         CarryOnCompat.animationPredicate().ifPresent(func ->

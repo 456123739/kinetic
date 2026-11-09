@@ -10,7 +10,7 @@
 | jar | `kinetic-3.0-dev-forge+mc1.20.1.jar` |
 | 字节数 | 17,717,326 |
 | sha256 | `9b48d2a120ac6647cedfd5d67ec02445f8d5629ea5f8ab15508bfb56990ac37b` |
-| 测试 | 773 tests / 0 failures / 10 skipped |
+| 测试 | 775 tests / 0 failures / 10 skipped |
 | 文档自检 | `python3 docs/tools/check_docs.py` → `OK: documentation tree is self-contained` |
 
 复核命令：
@@ -134,6 +134,7 @@ LANG=C.UTF-8 LC_ALL=C.UTF-8 ./gradlew test --offline --tests "*ProneActionThroug
 | 打药 | 0.72s 节奏、左手贴体侧、腿伸直、最低点 −1.01 | `ed975bc` | `PronePoseDataTest` |
 | 死亡 | 布娃娃捕获死亡瞬间的 KINETIC 骨骼，不退回僵直站姿 | — | `KineticRagdollMathTest`（映射/零跳变/关节范围） |
 | 侧躺过渡 | 站姿动作途中趴下**当帧即完整侧躺**（`CATCH_UP_PROGRESS=1.0` + 频道过渡 0），进入 0.15s / 退出 0.24s | `ed975bc`、`0d49ab6` | `ProneActionTest` |
+| 站起 / 死亡时的收尾 | 不再趴着时走 **SNAP 0.08s** 而不是 EXIT 0.24s；`armedCatchUp` 留住"动作是站着开始的"，再趴下当帧到位 | — | `ProneActionTest#standingUpSnapsTheRollBackWithinTheSnapWindow`、`#standingUpKeepsTheActionKindSoLyingDownAgainIsImmediate` |
 | 换弹 / 掐雷 | 左臂保持撑地（改体侧后最低点 −1.09 → −1.81，roll=70 时不划算） | `6af5296` | `PronePoseDataTest` |
 
 ## 5. 已知限制（明确未做）

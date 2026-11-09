@@ -60,6 +60,55 @@ class ProneActionTest {
     }
 
     @Test
+    void standingUpSnapsTheRollBackWithinTheSnapWindow() {
+        ProneAction.State s = state();
+        float t = 0.0f;
+        for (int i = 0; i < 60; i++) {
+            t += 1.0f / 3.0f;
+            ProneAction.advance(s, t, true, true, ProneAction.Kind.MEDICAL);
+        }
+        assertEquals(1.0f, ProneAction.ease(s.progress), 1e-3, "先要真的侧躺下去");
+
+        // 站起来 / 死亡 / 上车：prone 变 false，动作仍在进行。这条路径必须用 SNAP（0.08s），
+        // 而不是动作正常结束时的 EXIT（0.24s）——否则会看到"人已经站直了还在侧着"。
+        float seconds = 0.0f;
+        float roll = 1.0f;
+        while (seconds < 1.0f) {
+            t += 1.0f / 3.0f;
+            seconds += 1.0f / 60.0f;
+            roll = ProneAction.advance(s, t, true, false, ProneAction.Kind.MEDICAL);
+            if (roll <= 0.0f) {
+                break;
+            }
+        }
+        assertEquals(0.0f, roll, 1e-6, "不再趴着时 roll 必须回到 0");
+        assertTrue(seconds < 0.15f,
+                "站起时的收尾必须走 SNAP 窗口（0.08s），实际 " + seconds + "s；"
+                        + "若这里接近 0.24s 说明误用了 EXIT");
+    }
+
+    @Test
+    void standingUpKeepsTheActionKindSoLyingDownAgainIsImmediate() {
+        ProneAction.State s = state();
+        float t = 0.0f;
+        for (int i = 0; i < 60; i++) {
+            t += 1.0f / 3.0f;
+            ProneAction.advance(s, t, true, true, ProneAction.Kind.GRENADE);
+        }
+        // 站起来：roll 归零，但动作还在进行，种类必须留着
+        for (int i = 0; i < 10; i++) {
+            t += 1.0f / 3.0f;
+            ProneAction.advance(s, t, true, false, ProneAction.Kind.GRENADE);
+        }
+        assertEquals(0.0f, ProneAction.ease(s.progress), 1e-3, "站着时 roll 为 0");
+        // kind 在这里归零是**设计**：roll=0 时 prone 频道整帧不参与，没人读它；趴下那一帧
+        // PronePredicate.detect 会重新给出种类。真正必须留住的是 armedCatchUp——
+        // 它决定"再趴下时是当帧到位还是从 0 慢慢滚"。
+        assertEquals(ProneAction.Kind.NONE, s.kind, "roll 归零后种类可以清掉");
+        assertTrue(s.armedCatchUp, "必须记住'动作是站着开始的'，下次趴下才能当帧到位");
+    }
+
+    @Test
     void shortDropoutsDoNotStartTheRollOut() {
         ProneAction.State s = state();
         float t = 0.0f;

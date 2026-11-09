@@ -14,20 +14,20 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class QuickSkinModelNamePreferenceTest {
     @Test
     void quickSkinValueWinsWhenItIsAResolvedModel() {
-        assertEquals("slim", PlayerAnimatableCapability.preferQuickSkinModelName("slim", "default"),
+        assertEquals("slim", SkinModelNames.prefer("slim", "default"),
                 "Quick Skin 记着细手臂时，必须用它，而不是原版皮肤名");
-        assertEquals("classic", PlayerAnimatableCapability.preferQuickSkinModelName("classic", "slim"),
+        assertEquals("classic", SkinModelNames.prefer("classic", "slim"),
                 "Quick Skin 记着宽手臂时同理（Quick Skin 用 classic，原版用 default）");
     }
 
     @Test
     void fallsBackToVanillaWhenQuickSkinIsSilentUnresolvedOrAbsent() {
-        assertEquals("default", PlayerAnimatableCapability.preferQuickSkinModelName(null, "default"),
+        assertEquals("default", SkinModelNames.prefer(null, "default"),
                 "没装 Quick Skin / 还没绑定：用原版皮肤名");
-        assertEquals("default", PlayerAnimatableCapability.preferQuickSkinModelName("", "default"));
-        assertEquals("default", PlayerAnimatableCapability.preferQuickSkinModelName("auto", "default"),
+        assertEquals("default", SkinModelNames.prefer("", "default"));
+        assertEquals("default", SkinModelNames.prefer("auto", "default"),
                 "auto 表示还没解析，必须交给原版（此时 mixin 已把解析结果写进 getSkin）");
-        assertEquals("slim", PlayerAnimatableCapability.preferQuickSkinModelName("AUTO", "slim"),
+        assertEquals("slim", SkinModelNames.prefer("AUTO", "slim"),
                 "大小写不敏感");
     }
 }

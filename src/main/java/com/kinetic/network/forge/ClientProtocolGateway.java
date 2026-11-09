@@ -1,6 +1,7 @@
 package com.kinetic.network.forge;
 
 import com.kinetic.capability.PlayerAnimatableCapability;
+import com.kinetic.capability.SkinModelNames;
 import com.kinetic.client.demand.LocalPlayerDemand;
 import com.kinetic.model.domain.Hash256;
 import com.kinetic.model.resource.client.ResourceLease;
@@ -184,7 +185,9 @@ public final class ClientProtocolGateway {
         if (player == null || service == null) {
             return null;
         }
-        var path = BuiltinModelIndex.playerPathForSkin(player.getModelName());
+        // 必须和本地渲染用同一份答案：否则本地已按 Quick Skin 的预设切成细手臂，
+        // 这里仍读原版皮肤名（宽），匹配不上就不发包，服务端一直存着宽手臂。
+        var path = BuiltinModelIndex.playerPathForSkin(SkinModelNames.resolve(player));
         return service.resolvePath(path.value()).orElse(null);
     }
 

@@ -34,9 +34,9 @@ class ProneActionTest {
             }
         }
         assertEquals(1.0f, last, 1e-3, "持续动作时最终必须是 1");
-        // 0.30s 的滚入：约 18 帧
-        assertTrue(seconds < 0.45f, "滚入不能超过 0.45s，实际 " + seconds);
-        assertTrue(seconds > 0.12f, "滚入不能快于 0.12s，实际 " + seconds);
+        // 滚入 0.15s；首帧的 dt 会被上一帧的初始值放大，实测约 0.10~0.15s。
+        assertTrue(seconds < 0.30f, "滚入不能超过 0.30s，实际 " + seconds);
+        assertTrue(seconds > 0.08f, "滚入不能快于 0.08s（低于 5 帧就是硬切了），实际 " + seconds);
     }
 
     @Test
@@ -54,9 +54,9 @@ class ProneActionTest {
                 break;
             }
         }
-        // 先吃 0.12s 的容忍，再走 0.34s 的滚出
-        assertTrue(seconds > 0.35f, "滚出总时长不应短于 0.35s，实际 " + seconds);
-        assertTrue(seconds < 0.75f, "滚出总时长不应长于 0.75s，实际 " + seconds);
+        // 先吃 0.12s 的容忍，再走 0.24s 的滚出
+        assertTrue(seconds > 0.18f, "滚出总时长不应短于 0.18s，实际 " + seconds);
+        assertTrue(seconds < 0.60f, "滚出总时长不应长于 0.60s，实际 " + seconds);
     }
 
     @Test
@@ -162,8 +162,9 @@ class ProneActionTest {
         }
         t += 1.0f / 3.0f;
         float first = ProneAction.advance(s, t, true, true, ProneAction.Kind.RELOAD);
-        assertTrue(first >= 0.7f,
-                "动作早就开始时，趴下那一刻应当已经接近侧躺（不能从陷进地里的站姿慢慢滚），实际 " + first);
+        assertEquals(1.0f, first, 1e-3,
+                "动作早就在站立时开始时，趴下那一刻必须已经是完整侧躺——玩家要的是'趴下就躺着'，"
+                        + "不是再花几十毫秒翻过去；实际 " + first);
     }
 
     @Test

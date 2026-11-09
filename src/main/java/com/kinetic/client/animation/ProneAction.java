@@ -89,14 +89,41 @@ public final class ProneAction {
         if (player == null) {
             return false;
         }
-        return player.getPose() == Pose.SWIMMING
-                && !player.isSwimming()
-                && player.onGround()
-                && !player.isDeadOrDying()
-                && !player.isSleeping()
-                && !player.isSpectator()
-                && player.getVehicle() == null
-                && !SlideLock.isLocked(player);
+        return isProne(player.getPose() == Pose.SWIMMING,
+                player.isSwimming(),
+                player.onGround(),
+                player.isDeadOrDying(),
+                player.isSleeping(),
+                player.isSpectator(),
+                player.getVehicle() != null,
+                SlideLock.isLocked(player));
+    }
+
+    /**
+     * 趴姿判定本身（纯函数）。
+     *
+     * <p>把 {@link Player} 的取值与判定拆开，是为了让"滑铲中不侧躺""死亡/骑乘/游泳不算趴"
+     * 这些规则能被离线验证——它们每一条都曾经在实机里表现为"身体摆出了不该有的姿势"。
+     *
+     * @param swimmingPose 姿势是否为 {@code Pose.SWIMMING}（Minecraft 把爬行与游泳/滑铲复用它）
+     * @param swimming     真正在水里游
+     * @param onGround     踩在地上
+     * @param dead         死亡中
+     * @param sleeping     睡觉
+     * @param spectator    旁观
+     * @param riding       骑着东西
+     * @param slideLocked  {@link SlideLock} 判定为滑铲锁定中
+     */
+    static boolean isProne(boolean swimmingPose, boolean swimming, boolean onGround, boolean dead,
+                           boolean sleeping, boolean spectator, boolean riding, boolean slideLocked) {
+        return swimmingPose
+                && !swimming
+                && onGround
+                && !dead
+                && !sleeping
+                && !spectator
+                && !riding
+                && !slideLocked;
     }
 
     /** {@link #isProne(Player)} 的实体版：非玩家一律 false。 */

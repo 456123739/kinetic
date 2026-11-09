@@ -8,9 +8,9 @@
 | 项 | 值 |
 | --- | --- |
 | jar | `kinetic-3.0-dev-forge+mc1.20.1.jar` |
-| 字节数 | 17,717,326 |
-| sha256 | `9b48d2a120ac6647cedfd5d67ec02445f8d5629ea5f8ab15508bfb56990ac37b` |
-| 测试 | 775 tests / 0 failures / 10 skipped |
+| 字节数 | 17,717,523 |
+| sha256 | `a8790cce2c5f1df0c1b4fca64f57991999282074bb8a0e7e0fdb7fc63610a733` |
+| 测试 | 778 tests / 0 failures / 10 skipped |
 | 文档自检 | `python3 docs/tools/check_docs.py` → `OK: documentation tree is self-contained` |
 
 复核命令：
@@ -128,7 +128,7 @@ LANG=C.UTF-8 LC_ALL=C.UTF-8 ./gradlew test --offline --tests "*ProneActionThroug
 
 | 场景 | 修复 | 提交 | 守护 |
 | --- | --- | --- | --- |
-| 滑铲与趴下互斥 | `ProneAction.isProne` 显式排除 `SlideLock.isLocked` | — | `SlideLockTest` / `SlideLockWiringTest` |
+| 滑铲与趴下互斥 | `ProneAction.isProne` 显式排除 `SlideLock.isLocked`；判定抽成纯函数 | — | `SlideLockTest` / `SlideLockWiringTest` / **`ProneActionPoseGateTest`**（八道门逐条否决 + 滑铲专项） |
 | 近战（趴下挥砍） | 0.30s 手写连续弧线（原来 IK 逐帧解，相邻帧差 232°），手腕沿 −Z 前挥 | `a737504` | `ProneWiringTest`、`PronePoseDataTest` |
 | 近战（站起后残留） | 挥动结束且不再趴着时 `STOP` 趴下变体 | `05c7c14` | `ProneWiringTest` |
 | 打药 | 0.72s 节奏、左手贴体侧、腿伸直、最低点 −1.01 | `ed975bc` | `PronePoseDataTest` |

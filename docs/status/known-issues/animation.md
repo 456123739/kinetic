@@ -16,6 +16,10 @@
 - 动画求值频率阶梯只有离线与结构判断，没有游戏内 A/B：新旧默认在不同刷新率下的观感差异、"60 Hz 是否足够"都没有实机测量。
 - 求值频率上限不减少 `ModelState::Extract`：native 骨骼姿态变换仍每个渲染帧执行一次，因此该机制省下的是 controller / Molang / 物理 / 前后处理，不是全部逐帧动画成本；这是待闭合项。
 - 头部朝向刻意不纳入求值门禁：`CustomHumanoidEntity.codeAnimation` 每渲染帧重写 locator 旋转，因此高频转头不会被降频影响，但也没有独立的实机验证。
+- Curios 的装备查询（`hasAnyItemEquipped*`）现在只在渲染线程上执行；`CuriosApi` 返回的
+  `ItemStackHandler` 不是线程安全的，非渲染线程直接放弃判定（条件为 false）。动画求值当前走
+  `update -> tickAnimation -> predicate`、与渲染同线程，所以这道门对正常路径没有影响；
+  它防的是意外的跨线程调用，以及将来把求值挪到 worker 之后的情况。worker 路径没有实机验证。
 - 皮肤变体的失效驱动没有游戏内验证；反射订阅 Quick Skin 的 `InternalEventBus` 依赖对方公开字节码、但文档标为 internal 的 API，没有稳定性承诺，API 变动时静默降级为"每玩家判定一次"。当前只在"未安装 Quick Skin"分支执行过该反射路径。
 - 逐帧缓存的分配减少量（capability 查询约 46k 次/秒、locator scratch 约 34.5k 次/秒）来自改动测量，不是游戏内端到端性能验收；被拒绝的配置读取与皮肤解析缓存另有实测成本说明，见[实体与帧状态](../../architecture/animation/entity-and-frame-state.md#逐帧缓存与分配)。
 

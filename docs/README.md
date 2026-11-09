@@ -19,6 +19,7 @@
   - [外部模型源](future/external-model-sources.md)
   - [模组动画联动](future/mod-animation-integration.md)
   - [GPU Compute Renderer](future/gpu-compute-renderer.md)
+  - [枪械 LOD 裁决材料](future/gun-lod-decision.md)
 
 <a id="subsystem-overviews"></a>
 

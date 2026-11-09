@@ -1,11 +1,26 @@
 package com.kinetic.geckolib3.core.processor;
 
+import com.kinetic.geckolib3.core.controller.IAnimationController;
+import com.kinetic.geckolib3.core.controller.IBoneAnimationQueue;
+import com.kinetic.geckolib3.core.event.predicate.AnimationEvent;
+import com.kinetic.geckolib3.core.molang.context.MolangContext;
+import com.kinetic.geckolib3.core.molang.storage.MolangMemory;
+import com.kinetic.geckolib3.model.AnimatableEntity;
+import com.kinetic.molang.runtime.ExpressionEvaluator;
+import it.unimi.dsi.fastutil.objects.Object2ReferenceMap;
+import com.kinetic.geckolib3.core.snapshot.BoneTopLevelSnapshot;
+import com.kinetic.geckolib3.core.molang.value.IValue;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.function.Consumer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -20,21 +35,53 @@ class AnimationProcessorFailureIsolationTest {
     private static final Path SOURCE =
             Path.of("src/main/java/com/kinetic/geckolib3/core/processor/AnimationProcessor.java");
 
+    /** 一个只会抛异常的最小控制器：其余方法都是空实现。 */
+    private static IAnimationController<AnimatableEntity<?>> exploding(Throwable thrown) {
+        return new IAnimationController<>() {
+            @Override public String getName() { return "exploding"; }
+            @Override public String getStateName() { return "exploding"; }
+            @Override public void updateModel(List<BoneTopLevelSnapshot> bones,
+                                              Object2ReferenceMap<String, List<IValue>> handlers) { }
+            @Override public void process(AnimationEvent<AnimatableEntity<?>> event,
+                                          ExpressionEvaluator<MolangContext<?>> evaluator,
+                                          boolean allowEmitting) {
+                if (thrown instanceof RuntimeException runtime) {
+                    throw runtime;
+                }
+                if (thrown instanceof Error error) {
+                    throw error;
+                }
+                throw new IllegalStateException(thrown);
+            }
+            @Override public void visitBoneAnimationQueues(Consumer<IBoneAnimationQueue> visitor) { }
+            @Override public void clear() { }
+        };
+    }
+
     @Test
-    void controllerFailureIsContainedAndLoggedAtMostOncePerInterval() throws Exception {
-        assertTrue(Files.isRegularFile(SOURCE), "找不到 " + SOURCE.toAbsolutePath());
+    void runtimeExceptionIsCapturedAsAReturnValue() {
+        RuntimeException captured = AnimationProcessor.tryProcess(
+                exploding(new IllegalStateException("boom")), null, null, true);
+        assertNotNull(captured, "RuntimeException 必须被收成返回值，否则会冒到渲染帧把游戏打崩");
+        assertEquals("boom", captured.getMessage());
+    }
+
+    @Test
+    void errorsStillPropagate() {
+        assertThrows(OutOfMemoryError.class, () -> AnimationProcessor.tryProcess(
+                        exploding(new OutOfMemoryError("oom")), null, null, true),
+                "Error 不能被吞：OOM/栈溢出必须继续冒泡，否则进程会在不可用状态下继续跑");
+    }
+
+    @Test
+    void theRenderLoopCallsThroughTheGuardedHelperAndRateLimitsTheLog() throws Exception {
         String text = Files.readString(SOURCE, StandardCharsets.UTF_8);
-        int call = text.indexOf("controller.process(event, evaluator, allowEmitting)");
-        assertTrue(call > 0, "必须保留 controller.process 调用");
-
-        String before = text.substring(Math.max(0, call - 400), call);
-        assertTrue(before.contains("try {"), "controller.process 必须包在 try 里，否则谓词异常会崩掉整个渲染帧");
-
-        String after = text.substring(call, Math.min(text.length(), call + 900));
-        assertTrue(after.contains("catch (RuntimeException failure)"),
-                "只能吞 RuntimeException：Error（OOM/栈溢出）继续冒泡才是正确行为");
+        int call = text.indexOf("tryProcess(controller, event, evaluator, allowEmitting)");
+        assertTrue(call > 0, "渲染循环必须通过 tryProcess 跑控制器，而不是直接 controller.process");
+        String after = text.substring(call, Math.min(text.length(), call + 700));
         assertTrue(after.contains("lastControllerErrorTicks"),
-                "异常日志必须限流，否则坏掉的谓词会每帧刷一条日志");
+                "失败日志必须限流，否则坏掉的谓词会每帧刷一条");
         assertTrue(after.contains("skipping this frame"), "日志要说明这一帧被跳过，便于定位");
     }
+
 }

@@ -8,9 +8,9 @@
 | 项 | 值 |
 | --- | --- |
 | jar | `kinetic-3.0-dev-forge+mc1.20.1.jar` |
-| 字节数 | 17,717,131 |
-| sha256 | `bcdddc1c8ed85fe312d7c664d710533ccbf3fb02d60cc705d7859891e223bc02` |
-| 测试 | 771 tests / 0 failures / 10 skipped |
+| 字节数 | 17,717,326 |
+| sha256 | `9b48d2a120ac6647cedfd5d67ec02445f8d5629ea5f8ab15508bfb56990ac37b` |
+| 测试 | 773 tests / 0 failures / 10 skipped |
 | 文档自检 | `python3 docs/tools/check_docs.py` → `OK: documentation tree is self-contained` |
 
 复核命令：
@@ -37,20 +37,46 @@ python3 docs/tools/check_docs.py
 - **症状**：任一谓词抛 `RuntimeException` 会直接冒到渲染帧，整个游戏崩溃。
 - **修复**：`AnimationProcessor.tickAnimation` 里 `controller.process` 包 try-catch，只跳过该控制器这一帧；**只吞 `RuntimeException`**（`Error` 继续冒泡）；日志按 1200 tick 限流。
 - **提交**：`a9b1509`
-- **守护**：`AnimationProcessorFailureIsolationTest`（源码级三点断言）
+- **守护**：`AnimationProcessorFailureIsolationTest`
+  - **行为级**：把 try-catch 抽成 `AnimationProcessor.tryProcess(...)`，用一个"只会抛异常的最小控制器"
+    验证两件事——`RuntimeException` 被收成**返回值**（调用方不会被打崩），`OutOfMemoryError` 继续冒泡。
+  - **结构级**：渲染循环必须走 `tryProcess` 而不是直接 `controller.process`；失败日志必须按 tick 限流。
+- **边界**：`tryProcess` 之外的 `tickAnimation` 完整路径（入参是 `AnimationEvent`、`ExpressionEvaluator`、
+  `ModelBones` 一整套运行期对象）仍然只能实机验证；离线覆盖到的是"异常不会从控制器这一层冒出去"。
 
 ### 1.3 Curios 跨线程访问
 
 - **症状**：`CuriosCompat` 的 FIXME——`CuriosApi` 的 `ItemStackHandler` 非线程安全，而 native extract / 模型烘焙在 worker 上。
 - **修复**：三个 `hasAnyItemEquipped*` 先过 `onRenderThread()`；非渲染线程返回 `false`（不崩）；无 GL 的离线环境探测失败时放行以保持原行为。
 - **提交**：`f0f7195`
-- **守护**：`CuriosCompatThreadGuardTest`
+- **守护**：`CuriosCompatThreadGuardTest`（**源码级**三点断言）
+- **为什么不是行为测试**：`CuriosCompat` 直接 `import top.theillusivec4.curios.api.CuriosApi`，
+  离线类路径上没有 Curios，加载这个类就会 `NoClassDefFoundError`，因此无法在单测里调用
+  `onRenderThread()`。这条同样只能靠源码断言 + 实机日志。
 
 ### 1.4 片段着色前的数值安全
 
 - `kinetic.prone_roll` 经 `ease()` 的 clamp 恒落在 `[0,1]`，所以 `math.sqrt(prone_roll)` 不会产生 NaN。
 - `LinearBlendTransition` 长度 0 时 `get()` 返回 1（源码里已有 `ticks != 0` 判断），不会 0/0。
 - **守护**：`LinearBlendTransitionTest`（提交 `6af5296`）
+
+## 1.5 与本任务相关的提交一览
+
+```bash
+git log --oneline 987d98e..HEAD
+# a737504 挥砍/投掷重做：按世界 -Z 前方向重新求解，手真正往前挥
+# 76157be 整理 PronePredicate 常量位置
+# 05c7c14 趴下动作：识别改读玩家使用状态、挥砍/投掷重做、打药舒展加节奏
+# ed975bc 侧躺节奏加快：站姿动作途中趴下当帧即完全侧躺
+# 0d49ab6 去掉 prone 频道的冗余淡入
+# a9b1509 动画控制器故障隔离
+# f0f7195 Curios 装备查询加渲染线程门
+# 081000a 枪械 LOD 裁决材料 + 文档断链修复
+# 6af5296 换弹/掐雷姿态审查（结论：不改）+ 0 长度过渡护栏
+# 1debe42 性能实测 + 本台账
+```
+
+（`8b48fcf` 的顶点缓冲修复在这段之前，可用 `git show 8b48fcf` 单独查。）
 
 ## 2. 内存 · 枪械 LOD 预热
 

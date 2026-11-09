@@ -105,12 +105,11 @@ public class AnimationProcessor<TEntity extends Entity> {
             if (shouldTick) {
                 // 将当前控制器设置为动画测试事件
                 // 处理动画并向点队列添加新值
-                try {
-                    controller.process(event, evaluator, allowEmitting);
-                } catch (RuntimeException failure) {
+                RuntimeException failure = tryProcess(controller, event, evaluator, allowEmitting);
+                if (failure != null) {
                     // 单个控制器的谓词或动画数据出错，不应该让整帧渲染崩掉：跳过这一帧的更新，
                     // 其余控制器照常跑（该控制器的姿势冻结在上一帧）。日志按 tick 限流；
-                    // 只吞 RuntimeException，Error（OOM/栈溢出）必须继续冒泡。
+                    // 只吞 RuntimeException，Error（OOM/栈溢出）由 tryProcess 放行继续冒泡。
                     if (renderTicks - lastControllerErrorTicks > 1200.0f) {
                         lastControllerErrorTicks = renderTicks;
                         Kinetic.LOGGER.error("Animation controller '{}' failed; skipping this frame",
@@ -403,6 +402,28 @@ public class AnimationProcessor<TEntity extends Entity> {
 
     /** 控制器异常日志的上次记录时刻（渲染 tick），避免坏掉的谓词每帧刷屏。 */
     private float lastControllerErrorTicks = Float.NEGATIVE_INFINITY;
+
+    /**
+     * 跑一个控制器，把 {@code RuntimeException} 收成返回值而不是让它冒到渲染帧。
+     *
+     * <p>抽成静态方法是为了可测：{@code tickAnimation} 的入参是整套运行期对象，离线构造不出来；
+     * 这里只依赖控制器接口，用一个会抛异常的 stub 就能验证"异常被收住、Error 继续冒泡"。
+     *
+     * @return 捕获到的异常；正常执行返回 {@code null}
+     */
+    @Nullable
+    static <T extends AnimatableEntity<?>> RuntimeException tryProcess(
+            IAnimationController<T> controller,
+            @Nullable AnimationEvent<T> event,
+            @Nullable ExpressionEvaluator<MolangContext<?>> evaluator,
+            boolean allowEmitting) {
+        try {
+            controller.process(event, evaluator, allowEmitting);
+            return null;
+        } catch (RuntimeException failure) {
+            return failure;
+        }
+    }
 
     private void executeMolangTask(MolangExecutionTask task, ExpressionEvaluator<MolangContext<?>> evaluator) {
         String result;

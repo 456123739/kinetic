@@ -683,49 +683,73 @@
           "rotation": {
             "0.0000": {
               "post": [
-                "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-127.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-30.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(124.0000)*kinetic.prone_roll"
+                "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-97.5000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-36.7000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(51.5000)*kinetic.prone_roll"
               ],
               "lerp_mode": "catmullrom"
             },
-            "0.0600": {
+            "0.0500": {
               "post": [
-                "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-90.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-30.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(90.0000)*kinetic.prone_roll"
+                "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-62.5000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-41.7000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(31.5000)*kinetic.prone_roll"
               ],
               "lerp_mode": "catmullrom"
             },
-            "0.1200": {
+            "0.1000": {
               "post": [
-                "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-103.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-30.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(-38.0000)*kinetic.prone_roll"
+                "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-32.5000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-23.7000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(19.5000)*kinetic.prone_roll"
               ],
               "lerp_mode": "catmullrom"
             },
-            "0.1800": {
+            "0.1500": {
               "post": [
-                "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-127.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-30.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(-37.0000)*kinetic.prone_roll"
+                "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-21.5000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-10.7000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(28.5000)*kinetic.prone_roll"
               ],
               "lerp_mode": "catmullrom"
             },
-            "0.2400": {
+            "0.2000": {
               "post": [
-                "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-168.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-30.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(16.0000)*kinetic.prone_roll"
+                "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-51.5000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-25.7000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(15.5000)*kinetic.prone_roll"
+              ],
+              "lerp_mode": "catmullrom"
+            },
+            "0.2500": {
+              "post": [
+                "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-99.5000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-22.7000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(20.5000)*kinetic.prone_roll"
               ],
               "lerp_mode": "catmullrom"
             },
             "0.3000": {
               "post": [
-                "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-91.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-30.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(77.0000)*kinetic.prone_roll"
+                "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-93.5000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-40.7000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(14.5000)*kinetic.prone_roll"
+              ],
+              "lerp_mode": "catmullrom"
+            },
+            "0.3500": {
+              "post": [
+                "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-93.5000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-40.7000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(32.5000)*kinetic.prone_roll"
+              ],
+              "lerp_mode": "catmullrom"
+            },
+            "0.4000": {
+              "post": [
+                "kinetic.bone_rot('RightArm').x*(1-kinetic.prone_roll)+(-97.5000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').y*(1-kinetic.prone_roll)+(-36.7000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightArm').z*(1-kinetic.prone_roll)+(51.5000)*kinetic.prone_roll"
               ],
               "lerp_mode": "catmullrom"
             }
@@ -735,49 +759,73 @@
           "rotation": {
             "0.0000": {
               "post": [
-                "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(-46.0000)*kinetic.prone_roll"
+                "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(-108.8000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(-33.9000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(76.0000)*kinetic.prone_roll"
               ],
               "lerp_mode": "catmullrom"
             },
-            "0.0600": {
+            "0.0500": {
               "post": [
-                "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(-46.0000)*kinetic.prone_roll"
+                "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(-108.8000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(-33.9000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(71.0000)*kinetic.prone_roll"
               ],
               "lerp_mode": "catmullrom"
             },
-            "0.1200": {
+            "0.1000": {
               "post": [
-                "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(-84.0000)*kinetic.prone_roll"
+                "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(-108.8000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(-33.9000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(53.0000)*kinetic.prone_roll"
               ],
               "lerp_mode": "catmullrom"
             },
-            "0.1800": {
+            "0.1500": {
               "post": [
-                "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(-70.0000)*kinetic.prone_roll"
+                "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(-108.8000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(-33.9000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(8.0000)*kinetic.prone_roll"
               ],
               "lerp_mode": "catmullrom"
             },
-            "0.2400": {
+            "0.2000": {
               "post": [
-                "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(-19.0000)*kinetic.prone_roll"
+                "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(-108.8000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(-33.9000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(-8.0000)*kinetic.prone_roll"
+              ],
+              "lerp_mode": "catmullrom"
+            },
+            "0.2500": {
+              "post": [
+                "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(-108.8000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(-33.9000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(30.0000)*kinetic.prone_roll"
               ],
               "lerp_mode": "catmullrom"
             },
             "0.3000": {
               "post": [
-                "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(0.0000)*kinetic.prone_roll",
-                "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(-65.0000)*kinetic.prone_roll"
+                "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(-108.8000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(-33.9000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(60.0000)*kinetic.prone_roll"
+              ],
+              "lerp_mode": "catmullrom"
+            },
+            "0.3500": {
+              "post": [
+                "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(-108.8000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(-33.9000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(72.0000)*kinetic.prone_roll"
+              ],
+              "lerp_mode": "catmullrom"
+            },
+            "0.4000": {
+              "post": [
+                "kinetic.bone_rot('RightForeArm').x*(1-kinetic.prone_roll)+(-108.8000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').y*(1-kinetic.prone_roll)+(-33.9000)*kinetic.prone_roll",
+                "kinetic.bone_rot('RightForeArm').z*(1-kinetic.prone_roll)+(76.0000)*kinetic.prone_roll"
               ],
               "lerp_mode": "catmullrom"
             }
@@ -805,7 +853,7 @@
           ]
         }
       },
-      "animation_length": 0.3
+      "animation_length": 0.4
     },
 
     "prone:action:idle": {

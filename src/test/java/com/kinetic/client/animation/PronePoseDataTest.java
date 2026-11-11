@@ -192,10 +192,17 @@ class PronePoseDataTest {
      * （"不够舒展"），投掷更是整段穿过躯干（实测右臂∩头 5.1）。侧躺 70° 才腾出挥动空间。
      */
     /**
-     * 肘只能往一个方向弯：任何侧躺/挥动动画的前臂通道都不许穿过 0。
+     * 肘只能往一个方向弯：前臂通道不许穿过 0 再翻回来。
      *
      * <p>实战教训：求解器细化时没把前臂角度夹在弯折范围内，挥砍中段得到 +16、投掷中段 +12，
      * 于是前臂在一段动画里从负翻到正再翻回负——玩家看到的就是"胳膊反折"。
+     *
+     * <p>"穿过 0"这个判据只在**前臂只有 Z 一个轴在动**时成立。挥砍改成锚在
+     * {@code hold_mainhand:sword} 之后，那一支的 X/Y 是 {@code (-108.8, -33.9)}——
+     * 屈曲主要由 X/Y 承担，Z 从 +76 走到 -8 再回来时，实际肘关节一直是屈的
+     * （Python 侧实测 -59°…-143°，从未过 0）。所以这里按"是否单轴"分开判：
+     * 单轴动画仍然禁止穿 0，多轴动画只判量级，真实肘角由
+     * {@code analysis/prone_diag.py} 的带符号铰链角守护。
      */
     @Test
     void foreArmsNeverBendBackwards() throws Exception {
@@ -212,22 +219,28 @@ class PronePoseDataTest {
                         continue;
                     }
                     JsonElement rotation = bones.getAsJsonObject(bone).get("rotation");
-                    List<Double> values = new ArrayList<>();
+                    List<double[]> values = new ArrayList<>();
                     if (rotation.isJsonArray()) {
-                        values.add(number(rotation.getAsJsonArray().get(2)));
+                        JsonArray arr = rotation.getAsJsonArray();
+                        values.add(new double[]{number(arr.get(0)), number(arr.get(1)), number(arr.get(2))});
                     } else {
                         for (var key : rotation.getAsJsonObject().entrySet()) {
-                            values.add(number(key.getValue().getAsJsonObject().getAsJsonArray("post").get(2)));
+                            JsonArray arr = key.getValue().getAsJsonObject().getAsJsonArray("post");
+                            values.add(new double[]{number(arr.get(0)), number(arr.get(1)), number(arr.get(2))});
                         }
                     }
-                    boolean hasNegative = values.stream().anyMatch(v -> v < -1.0);
-                    boolean hasPositive = values.stream().anyMatch(v -> v > 1.0);
-                    assertFalse(hasNegative && hasPositive,
-                            model + "/" + name + "/" + bone + ": 前臂在动画中途翻到另一侧（" + values
-                                    + "），肘会看起来反折");
-                    for (double v : values) {
-                        assertTrue(Math.abs(v) <= 165.0,
-                                model + "/" + name + "/" + bone + ": 肘弯 " + v + " 度超出人类活动范围");
+                    boolean singleAxis = values.stream()
+                            .allMatch(v -> Math.abs(v[0]) <= 1.0 && Math.abs(v[1]) <= 1.0);
+                    if (singleAxis) {
+                        boolean hasNegative = values.stream().anyMatch(v -> v[2] < -1.0);
+                        boolean hasPositive = values.stream().anyMatch(v -> v[2] > 1.0);
+                        assertFalse(hasNegative && hasPositive,
+                                model + "/" + name + "/" + bone + ": 前臂在动画中途翻到另一侧（"
+                                        + values.stream().map(v -> v[2]).toList() + "），肘会看起来反折");
+                    }
+                    for (double[] v : values) {
+                        assertTrue(Math.abs(v[2]) <= 165.0,
+                                model + "/" + name + "/" + bone + ": 肘弯 " + v[2] + " 度超出人类活动范围");
                     }
                 }
             }

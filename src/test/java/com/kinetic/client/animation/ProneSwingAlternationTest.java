@@ -38,6 +38,16 @@ class ProneSwingAlternationTest {
     }
 
     @Test
+    void comboOnlyAdvancesInsideTheChainWindow() throws Exception {
+        String text = Files.readString(new File(
+                "src/main/java/com/kinetic/client/animation/predicate/SwingPredicate.java").toPath(),
+                StandardCharsets.UTF_8);
+        assertTrue(text.contains("0.55F"),
+                "必须有连招窗口阈值：太早的连点应当重放当前段，而不是硬切到下一段的起手姿势");
+        assertTrue(text.contains("beginSwing(p, progress"), "段数推进必须由窗口判断决定");
+    }
+
+    @Test
     void bothSegmentsAnimateBothArmBones() throws Exception {
         // 交替时两段都必须自己写右臂；少写一段就会沿用上一段的旋转，看起来像卡住
         for (String model : new String[]{"1_alex", "2_steve"}) {

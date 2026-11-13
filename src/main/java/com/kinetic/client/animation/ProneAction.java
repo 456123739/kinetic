@@ -262,14 +262,15 @@ public final class ProneAction {
      * <p>只在挥动起始帧调用一次（{@code swingTime == 0}）。和站姿的多段连招一样，
      * 连续挥砍左右交替；两段动画的首末帧都锚在持剑姿势上，所以交替时不会跳。
      */
-    public static boolean beginSwing(@Nullable Player player) {
+    public static boolean beginSwing(@Nullable Player player, boolean advance) {
         if (player == null) {
             return false;
         }
         State state = STATES.computeIfAbsent(player, p -> new State());
-        boolean alternate = (state.swingIndex & 1) == 1;
-        state.swingIndex = state.swingIndex + 1;
-        return alternate;
+        if (advance) {
+            state.swingIndex = state.swingIndex + 1;
+        }
+        return ((state.swingIndex - 1) & 1) == 1;
     }
 
     /** 当前这一段是否反手（由 {@link #beginSwing} 推进）。 */

@@ -63,11 +63,16 @@ public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<
 
         if (entity.swinging && !entity.isSleeping()) {
             if (entity.swingTime == 0 && event.getAnimatableEntity().getStateTracker().setEntityTickState(EntityTickStates.SWING)) {
+                // 连招窗口：上一段已经挥出、还没收完（>55%）时再触发才接下一段；
+                // 太早的连点不推进段数，而是把当前这一段重放一遍——否则会从半空里硬切到
+                // 另一段的起手姿势。
+                float progress = swingProgress(event);
                 // swing 开始时重置动画
                 event.getCodedController().indicateReload();
-                // 趴下挥砍和站姿一样左右两段交替
-                if (entity.swingingArm == InteractionHand.MAIN_HAND && entity instanceof net.minecraft.world.entity.player.Player p) {
-                    ProneAction.beginSwing(p);
+                // 趴下挥砍和站姿一样两段交替
+                if (entity.swingingArm == InteractionHand.MAIN_HAND
+                        && entity instanceof net.minecraft.world.entity.player.Player p) {
+                    ProneAction.beginSwing(p, progress >= 0.55F);
                 }
             }
             ConditionManager conditionManager = event.getAnimatableEntity().getConditionManager();

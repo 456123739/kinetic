@@ -129,7 +129,7 @@ LANG=C.UTF-8 LC_ALL=C.UTF-8 ./gradlew test --offline --tests "*ProneActionThroug
 | 场景 | 修复 | 提交 | 守护 |
 | --- | --- | --- | --- |
 | 滑铲与趴下互斥 | `ProneAction.isProne` 显式排除 `SlideLock.isLocked`；判定抽成纯函数 | — | `SlideLockTest` / `SlideLockWiringTest` / **`ProneActionPoseGateTest`**（八道门逐条否决 + 滑铲专项） |
-| 近战（趴下挥砍） | 两段交替（`prone:swing` 下劈 / `prone:swing:alt` 上撩，按挥动次数轮换）；0.45s / **13 关键帧**，前臂的 X 放开（只锁 Z 时手框只转 47°、刀根本挥不动）；逐帧手速 1.3~3.2 格、上臂 18~41°/帧、肘 −50°~−139° 单侧 | — | `ProneWiringTest`、`PronePoseDataTest`；带长刀的逐帧验收见 `prone-actions.md` §4.3 |
+| 近战（趴下挥砍） | 两段交替（`prone:swing` 下劈 / `prone:swing:alt` 前刺，按挥动次数轮换）；0.45s / **13 关键帧**，前臂的 X 放开（只锁 Z 时手框只转 47°、刀根本挥不动）；逐帧手速 1.3~3.2 格、上臂 18~41°/帧、肘 −50°~−139° 单侧 | — | `ProneWiringTest`、`PronePoseDataTest`；带长刀的逐帧验收见 `prone-actions.md` §4.3 |
 | 近战（站起后残留） | 挥动结束且不再趴着时 `STOP` 趴下变体（判定抽成 `shouldStopProneVariant`） | `05c7c14` | `ProneWiringTest`（结构）+ **`SwingPredicateStopRuleTest`**（行为） |
 | 打药 | 0.72s 节奏、腿伸直；支撑臂平贴地面后躯干 0.94、全身最低 0.60 | `ed975bc`、`30e4950` | `PronePoseDataTest` |
 | 死亡 | 布娃娃捕获死亡瞬间的 KINETIC 骨骼，不退回僵直站姿 | — | `KineticRagdollMathTest`（映射/零跳变/关节范围） |

@@ -18,12 +18,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
 
 import static com.kinetic.client.animation.predicate.IAnimationPredicate.playAnimation;
+import static com.kinetic.client.animation.predicate.IAnimationPredicate.playAnimationSeeked;
 
 public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<?>> {
     /** 匍匐挥砍动画名（模型自带才会接管；没有就保持原行为）。 */
     static final String PRONE_SWING = "prone:swing";
     /** 匍匐投掷动画名（手雷/药水等 throwable 的挥动）。 */
     static final String PRONE_THROW = "prone:throw";
+    /** 匍匐挥砍的第二段（反手）；模型没有就退回 {@link #PRONE_SWING}。 */
+    static final String PRONE_SWING_ALT = "prone:swing:alt";
 
     @Override
     public PlayState test(AnimationEvent<CustomHumanoidEntity<?>> event, ExpressionEvaluator<?> evaluator) {
@@ -62,6 +65,10 @@ public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<
             if (entity.swingTime == 0 && event.getAnimatableEntity().getStateTracker().setEntityTickState(EntityTickStates.SWING)) {
                 // swing 开始时重置动画
                 event.getCodedController().indicateReload();
+                // 趴下挥砍和站姿一样左右两段交替
+                if (entity.swingingArm == InteractionHand.MAIN_HAND && entity instanceof net.minecraft.world.entity.player.Player p) {
+                    ProneAction.beginSwing(p);
+                }
             }
             ConditionManager conditionManager = event.getAnimatableEntity().getConditionManager();
             ConditionalSwing conditionalSwing = entity.swingingArm == InteractionHand.MAIN_HAND
@@ -74,14 +81,22 @@ public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<
                 name = (entity.swingingArm == InteractionHand.MAIN_HAND) ? "swing_hand" : "swing_offhand";
             }
             // 趴下时换成匍匐专用的弧线：站姿弧线（尤其投掷）叠到躺姿上会往地里砍/往地上扔。
-            // 每帧按趴姿重新判定——站起来的那一帧立刻回到站姿弧线，不会继续演"抬着头挥刀"。
+            // 每帧按趴姿重新判定，并且**跨姿态时按进度接力**：玩家站着挥到一半趴下（或趴着挥到
+            // 一半站起来），新换上的那段从相同进度继续，而不是回到第 0 帧重来。
+            String target = name;
             if (entity.swingingArm == InteractionHand.MAIN_HAND && ProneAction.isProne(entity)) {
                 String variant = name.contains("throwable_potion") ? PRONE_THROW : PRONE_SWING;
+                if (!name.contains("throwable_potion")
+                        && entity instanceof net.minecraft.world.entity.player.Player p
+                        && ProneAction.isAlternateSwing(p)
+                        && event.getAnimatableEntity().getAnimation(PRONE_SWING_ALT) != null) {
+                    variant = PRONE_SWING_ALT;
+                }
                 if (event.getAnimatableEntity().getAnimation(variant) != null) {
-                    return playAnimation(event, variant);
+                    target = variant;
                 }
             }
-            return playAnimation(event, name);
+            return playAnimationSeeked(event, target, swingProgress(event));
         }
         // 挥动已经结束（entity.swinging 窗口只有 6 tick，而趴下弧线可能更长）：控制器会继续把
         // prone:swing / prone:throw 播完，并且一直覆盖右臂。玩家如果在这段里站起来，就会看到
@@ -91,6 +106,21 @@ public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<
             return PlayState.STOP;
         }
         return PlayState.CONTINUE;
+    }
+
+    /**
+     * 当前挥动动画播到哪了（0~1）。
+     *
+     * <p>用来在"趴下 ↔ 站立"切换时把进度传给另一段弧线：两段长度不同（站姿 0.375s、
+     * 趴下 0.45s），按比例映射后接着播。拿不到长度就返回 0——那等于从头开始，与改动前一致。
+     */
+    static float swingProgress(AnimationEvent<CustomHumanoidEntity<?>> event) {
+        var controller = event.getCodedController();
+        float length = controller.getAnimationLength(controller.getCurrentAnimationName());
+        if (length <= 0.0F) {
+            return 0.0F;
+        }
+        return Math.min(1.0F, Math.max(0.0F, controller.getAnimationTicks() / length));
     }
 
     /**

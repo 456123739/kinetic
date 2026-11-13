@@ -37,6 +37,24 @@ public interface IAnimationController<T extends AnimatableEntity<?>> {
     }
 
     /**
+     * 下一段动画从第 {@code ticks} 个 tick 开始播。
+     *
+     * <p>默认什么也不做——只有 {@code CodedAnimationController} 支持跳转。
+     */
+    default void seekAnimation(float ticks) {
+    }
+
+    /** 当前动画已播放到第几 tick；不知道就返回 0。 */
+    default float getAnimationTicks() {
+        return 0.0f;
+    }
+
+    /** 指定动画的总长度（tick）；不知道就返回 0。 */
+    default float getAnimationLength(@Nullable String animationName) {
+        return 0.0f;
+    }
+
+    /**
      * 更新模型
      */
     void updateModel(List<BoneTopLevelSnapshot> modelRendererList, Object2ReferenceMap<String, List<IValue>> eventHandlers);

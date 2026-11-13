@@ -201,6 +201,21 @@ public class CodedAnimationController<T extends AnimatableEntity<?>> implements 
         this.animationPlayer.indicateReload();
     }
 
+    @Override
+    public void seekAnimation(float ticks) {
+        this.animationPlayer.seekTo(ticks);
+    }
+
+    @Override
+    public float getAnimationTicks() {
+        return this.animationPlayer.getCurrentAnimTicks();
+    }
+
+    @Override
+    public float getAnimationLength(@Nullable String animationName) {
+        return this.animationPlayer.getAnimLength(animationName);
+    }
+
     public void stop(float renderTicks) {
         this.animationPlayer.stop(renderTicks);
     }

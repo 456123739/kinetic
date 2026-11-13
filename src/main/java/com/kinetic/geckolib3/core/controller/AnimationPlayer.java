@@ -66,6 +66,16 @@ public class AnimationPlayer {
 
     private AnimationState state = AnimationState.IDLE;
     private float animTickOffset;
+    /**
+     * 下一次动画开始时直接跳到这个 tick（负数 = 不跳）。
+     *
+     * <p>用途是"同一段动作在两个姿态之间的接力"：趴下挥砍播到 60% 时玩家站起来，
+     * 站姿的挥砍要<b>从 60% 接着播</b>，而不是从头再来一次。没有这个能力时只能
+     * 停掉重开，观感就是"抬到一半的胳膊被拍回去再重新抬"。
+     */
+    private float pendingSeekTicks = -1.0f;
+    /** 最近一次 process 用的渲染 tick，供 getCurrentAnimTicks() 使用。 */
+    private float lastRenderTicks;
     private IBlendTransition beginningTransition;
     private float endingTransitionSrcTick;
 
@@ -152,6 +162,7 @@ public class AnimationPlayer {
      * @param renderTicks 当前 tick + 插值 tick
      */
     public void process(final float renderTicks, ExpressionEvaluator<MolangContext<?>> evaluator, boolean allowEmitting) {
+        this.lastRenderTicks = renderTicks;
         evaluator.entity().setAnimationContext(animationContext);
         var animTicks = getAnimTicks(renderTicks);
 
@@ -180,6 +191,16 @@ public class AnimationPlayer {
 
             this.animTickOffset = renderTicks;
             animTicks = 0;
+
+            if (this.pendingSeekTicks >= 0.0f) {
+                float seek = Math.min(this.pendingSeekTicks,
+                        Math.max(0.0f, this.currentAnim.animationLength - 0.01f));
+                this.pendingSeekTicks = -1.0f;
+                if (seek > 0.0f) {
+                    this.animTickOffset = offsetForSeek(renderTicks, seek);
+                    animTicks = seek;
+                }
+            }
 
             if (this.beginningTransition.length() > 0) {
                 this.state = AnimationState.BEGINNING_TRANSITION;
@@ -525,6 +546,33 @@ public class AnimationPlayer {
 
     public float getAnimTicks(float renderTicks) {
         return Math.max(renderTicks - this.animTickOffset, 0.0f);
+    }
+
+    /**
+     * 从 {@code roundTicks} 开始播、且当前要落在第 {@code seekTicks} 个 tick 时，
+     * 动画起点应该前移多少。抽成纯函数是为了能单测（不依赖渲染上下文）。
+     */
+    static float offsetForSeek(float renderTicks, float seekTicks) {
+        return renderTicks - seekTicks;
+    }
+
+    /** 下一段动画从 {@code ticks} 处开始播（越界会被夹到长度之内）。 */
+    public void seekTo(float ticks) {
+        this.pendingSeekTicks = Math.max(0.0f, ticks);
+    }
+
+    /** 当前正在播的动画已经走到第几 tick。 */
+    public float getCurrentAnimTicks() {
+        return getAnimTicks(this.lastRenderTicks);
+    }
+
+    /** 动画总长度（tick）；动画不存在时返回 0。 */
+    public float getAnimLength(@Nullable String animationName) {
+        if (animationName == null) {
+            return 0.0f;
+        }
+        Animation animation = animatableEntity.getAnimation(animationName);
+        return animation == null ? 0.0f : animation.animationLength;
     }
 
     /**

@@ -256,6 +256,31 @@ public final class ProneAction {
         return state == null ? Kind.NONE : state.kind;
     }
 
+    /**
+     * 开始新的一段挥动，返回这一段是否用"反手"弧线。
+     *
+     * <p>只在挥动起始帧调用一次（{@code swingTime == 0}）。和站姿的多段连招一样，
+     * 连续挥砍左右交替；两段动画的首末帧都锚在持剑姿势上，所以交替时不会跳。
+     */
+    public static boolean beginSwing(@Nullable Player player) {
+        if (player == null) {
+            return false;
+        }
+        State state = STATES.computeIfAbsent(player, p -> new State());
+        boolean alternate = (state.swingIndex & 1) == 1;
+        state.swingIndex = state.swingIndex + 1;
+        return alternate;
+    }
+
+    /** 当前这一段是否反手（由 {@link #beginSwing} 推进）。 */
+    public static boolean isAlternateSwing(@Nullable Player player) {
+        if (player == null) {
+            return false;
+        }
+        State state = STATES.get(player);
+        return state != null && ((state.swingIndex - 1) & 1) == 1;
+    }
+
     public static boolean isActive(@Nullable Player player) {
         return roll(player) > EPSILON;
     }
@@ -289,5 +314,7 @@ public final class ProneAction {
         volatile float detach;
         volatile boolean armedCatchUp;
         volatile Kind kind = Kind.NONE;
+        /** 挥动的段数，用来左右交替（和站姿挥砍的多段连招一个道理）。 */
+        volatile int swingIndex;
     }
 }

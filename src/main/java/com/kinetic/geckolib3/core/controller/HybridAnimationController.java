@@ -56,6 +56,21 @@ public class HybridAnimationController<T extends AnimatableEntity<?>> implements
     }
 
     @Override
+    public void seekAnimation(float ticks) {
+        this.activeController.seekAnimation(ticks);
+    }
+
+    @Override
+    public float getAnimationTicks() {
+        return this.activeController.getAnimationTicks();
+    }
+
+    @Override
+    public float getAnimationLength(@Nullable String animationName) {
+        return this.codedAnimationController.getAnimationLength(animationName);
+    }
+
+    @Override
     public void updateModel(List<BoneTopLevelSnapshot> modelBones, Object2ReferenceMap<String, List<IValue>> eventHandlers) {
         var animationControllerData = animatableEntity.getAnimationControllerData(this.name);
         if (animationControllerData != null) {

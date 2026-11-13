@@ -21,6 +21,27 @@ public interface IAnimationPredicate<T extends AnimatableEntity<?>> {
         return PlayState.CONTINUE;
     }
 
+    /**
+     * 从 {@code progress}（0~1）处开始播另一段动画。
+     *
+     * <p>用于"同一动作在两个姿态之间接力"：趴下挥砍播到 60% 时站起来，站姿的挥砍要从 60%
+     * 接着播，而不是从第 0 帧重来。新动画的长度通过控制器查（两段长度不一样），
+     * 进度按比例映射。
+     */
+    @NotNull
+    static <T extends AnimatableEntity<?>> PlayState playAnimationSeeked(AnimationEvent<T> event,
+                                                                        String animationName, float progress) {
+        var controller = event.getCodedController();
+        if (!animationName.equals(controller.getCurrentAnimationName())) {
+            float length = controller.getAnimationLength(animationName);
+            if (length > 0.0F && progress > 0.0F) {
+                controller.seekAnimation(Math.min(length, progress * length));
+            }
+        }
+        controller.setAnimation(animationName);
+        return PlayState.CONTINUE;
+    }
+
     @NotNull
     static <T extends AnimatableEntity<?>> PlayState playLoopAnimation(AnimationEvent<T> event, String animationName) {
         return playAnimation(event, animationName, LoopType.LOOP);

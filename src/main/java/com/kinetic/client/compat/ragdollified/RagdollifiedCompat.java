@@ -108,6 +108,9 @@ public final class RagdollifiedCompat {
     @Nullable private static Method createFromEntityMethod;
     /** {@code ClientRagdollManager#hasPendingOrActiveRagdoll(int)}：判断上面那次调用是否真的排队了。 */
     @Nullable private static Method hasPendingOrActiveMethod;
+    /** 1.2.2 新增：隐藏/恢复尸体。老版本没有，解析失败即为 null。 */
+    @Nullable private static Method setEntityHiddenMethod;
+    @Nullable private static Method isEntityHiddenMethod;
 
     @Nullable private static Method storePoseMethod;
     @Nullable private static Constructor<?> mobPoseConstructor;
@@ -213,6 +216,16 @@ public final class RagdollifiedCompat {
             hasPendingOrActiveMethod = null;
             Kinetic.LOGGER.warn("Ragdollified does not expose its damage-source spawn entry; "
                     + "death ragdolls will lose the killing blow's knockback", failure);
+        }
+        try {
+            Class<?> api = Class.forName(API_CLASS);
+            setEntityHiddenMethod = api.getMethod("setEntityHidden", int.class, boolean.class);
+            isEntityHiddenMethod = api.getMethod("isEntityHidden", int.class);
+        } catch (ReflectiveOperationException | LinkageError | RuntimeException failure) {
+            // 1.2.2 才有的 API；老版本没有也能正常工作，只是回退时放不出被隐藏的实体。
+            setEntityHiddenMethod = null;
+            isEntityHiddenMethod = null;
+            Kinetic.LOGGER.debug("Ragdollified does not expose setEntityHidden/isEntityHidden", failure);
         }
     }
 
@@ -539,10 +552,19 @@ public final class RagdollifiedCompat {
         if (entity == null) {
             return shouldYieldDeathAnimation();
         }
-        if (FALLBACK_DEATHS.containsKey(entity.getId())) {
+        int id = entity.getId();
+        if (FALLBACK_DEATHS.containsKey(id)) {
             return false;
         }
-        return shouldYieldDeathAnimation();
+        // 我们自己排过队（spawn 返回成功）——让出，由提供方接管。
+        if (PENDING_VERIFY.containsKey(id)) {
+            return true;
+        }
+        // 提供方自己生成的那条路：**只有布娃娃真的存在或在途时才让出**。
+        // 1.2.2 的 ClientDeathHandler 会先用模型类型判定能不能生成布娃娃，而 KINETIC 换过渲染器，
+        // 判定为不支持 → 提供方根本不生成。此时若还让出死亡动画，尸体就既没有布娃娃也没有
+        // 死亡姿势——玩家看到的就是"死了直接消失"。
+        return isPlayerRagdollEnabled() && hasRagdollById(id);
     }
 
     /**
@@ -568,6 +590,7 @@ public final class RagdollifiedCompat {
             }
             it.remove();
             FALLBACK_DEATHS.put(entityId, now);
+            unhideEntity(entityId);
             Kinetic.LOGGER.warn("[Ragdollified] ragdoll for entity {} never appeared; "
                     + "falling back to the KINETIC death animation so the corpse stays visible",
                     entityId);
@@ -588,6 +611,27 @@ public final class RagdollifiedCompat {
     private static long currentTick() {
         var level = Minecraft.getInstance().level;
         return level == null ? 0L : level.getGameTime();
+    }
+
+    /**
+     * 把被提供方隐藏的实体放出来。
+     *
+     * <p>1.2.2 新增了 {@code setEntityHidden}/{@code isEntityHidden}：它可能先隐藏尸体再尝试生成，
+     * 生成失败就再也没人把它放出来。回退时必须自己恢复可见性。
+     */
+    private static void unhideEntity(int entityId) {
+        if (setEntityHiddenMethod == null) {
+            return;
+        }
+        try {
+            Object hidden = isEntityHiddenMethod == null ? null : isEntityHiddenMethod.invoke(null, entityId);
+            if (Boolean.TRUE.equals(hidden)) {
+                setEntityHiddenMethod.invoke(null, entityId, false);
+                Kinetic.LOGGER.info("[Ragdollified] un-hid entity {} (its ragdoll never appeared)", entityId);
+            }
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // 放不出来也不影响死亡动画
+        }
     }
 
     private static boolean hasRagdollById(int entityId) {

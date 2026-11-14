@@ -34,6 +34,19 @@ class RagdollDeathYieldTest {
     }
 
     @Test
+    void yieldingRequiresAnActualRagdoll() throws Exception {
+        // 1.2.2 的 ClientDeathHandler 会按模型类型判定能不能生成布娃娃；KINETIC 换过渲染器，
+        // 判定为不支持 → 提供方不会生成。此时若还"按配置"让出死亡动画，尸体就凭空消失。
+        String compat = Files.readString(COMPAT.toPath(), StandardCharsets.UTF_8);
+        int rule = compat.indexOf("isPlayerRagdollEnabled() && hasRagdollById(id)");
+        assertTrue(rule > 0,
+                "让出死亡动画必须要求布娃娃真的存在（或我们自己排过队），不能只看配置");
+        assertTrue(compat.contains("setEntityHidden"),
+                "1.2.2 会隐藏尸体；回退时必须能把它放出来");
+        assertTrue(compat.contains("unhideEntity"), "回退路径必须恢复可见性");
+    }
+
+    @Test
     void failedRagdollsKeepTheDeathAnimation() throws Exception {
         String compat = Files.readString(COMPAT.toPath(), StandardCharsets.UTF_8);
         assertTrue(compat.contains("FALLBACK_DEATHS"), "验证失败必须登记回退");

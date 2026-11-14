@@ -90,3 +90,59 @@ KINETIC 在这里补的是另外两种情形：
 ## 性能预算
 
 每帧每具布娃娃的成本被限制为：一次骨骼属性数组拷贝、六次四元数反解、至多三个固定子步的阻尼积分、若干次防穿透检测与一次原生 extract，随后复用与普通玩家渲染相同的原生绘制路径。刚体与姿态都静止时跳过积分、姿态重建与 extract，直接复用上一次的模型状态；超出提供方绘制距离的布娃娃不参与绘制。受伤外观是这条路径上的第二遍绘制，同样受该距离约束。
+
+## Ragdollified 1.2.2 的接口核实与让出规则
+可选依赖，全部走反射（零编译期依赖）。本文记录**对着 1.2.2 的 jar 逐项核实过**的接口面，
+以及"什么时候让出死亡动画"这条容易出事的规则。
+
+### 用到的接口（对着 1.2.2 的 jar 逐项核实）
+
+| 类 | 成员 | 用途 |
+| --- | --- | --- |
+| `api.RagdollifiedApi` | `spawn(LivingEntity)` | 触发入口 |
+| `api.RagdollifiedApi` | `hasRagdoll(Entity)` / `hasRagdoll(int)` | 判断布娃娃是否真的存在 |
+| `api.RagdollifiedApi` | `setEntityHidden(int, boolean)` / `isEntityHidden(int)` | **1.2.2 新增**：隐藏/恢复尸体 |
+| `config.RagdollifiedConfig` | `isRagdollEnabledFor(String, boolean)` | 玩家布娃娃是否被配置启用 |
+| `config.RagdollifiedConfig` | `RAGDOLL_LIFETIME` | 清除时间（仅日志） |
+| `MobPoseCapture` | `storePose(int, MobPose)` | 注入死亡瞬间姿态 |
+| `client.ClientRagdollManager` | `createFromEntity(LivingEntity, DamageSource)` | 带致死一击的生成 |
+| `client.ClientRagdollManager` | `hasPendingOrActiveRagdoll(int)` | 判断是否已排队 |
+
+> 1.2.2 的 `RAGDOLL_LIFETIME` 是它自己的 `ConfigSpec$IntValue`，不是 Forge 的
+> `ForgeConfigSpec.IntValue`，所以"读取生命周期只用于日志"那段在 1.2.2 上拿不到值——
+> 不影响功能。
+
+## 2. 为什么"死了直接消失"（1.2.2 的行为变化）
+
+1.2.2 的 `ClientDeathHandler.onLivingDeath` 会先用
+`ClientMobModelHelper.getActualModelType(entity)` + `MobModelHelper.isSupportedModelType(...)`
+判定这个实体能不能生成布娃娃；KINETIC 换过渲染器/模型，判定落到 `UNSUPPORTED`，
+于是**提供方根本不生成**。
+
+而 KINETIC 这边原本只看"配置启用了玩家布娃娃"就让出死亡动画 → 尸体既没有布娃娃、
+也没有死亡姿势 → 玩家看到的就是凭空消失。
+
+**修正后的规则**：
+
+```java
+shouldYieldDeathAnimation(entity)
+  = 没被登记为回退
+ && (我们自己 spawn 成功排队 || 提供方那边 hasRagdoll 为真)
+```
+
+也就是**必须真的存在（或在途）才让出**，而不是按配置猜。
+
+## 3. 回退链
+
+1. 死亡当刻：`handleClientDeath` → 注入姿态 → `spawn`；
+2. `spawn` 返回成功 → 登记 `PENDING_VERIFY`（20 tick 内验证）；
+3. 20 tick 内 `hasRagdoll`/`hasPendingOrActiveRagdoll` 仍为假 → 登记 `FALLBACK_DEATHS`
+   + 调 `setEntityHidden(id, false)` 把可能被隐藏的尸体放出来；
+4. 该实体的死亡动画恢复播放（`AnimationRegister` 按实体询问让出规则）。
+
+最坏情况因此从"玩家凭空消失"变成"播正常死亡动画"。
+
+## 4. 测试
+
+- `RagdollDeathYieldTest`：排队后要验证、验证失败要登记回退、让出判定要按实体问且**要求真的存在**、
+  回退路径要能恢复可见性。

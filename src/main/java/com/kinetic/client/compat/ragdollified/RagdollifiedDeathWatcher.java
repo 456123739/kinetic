@@ -30,6 +30,8 @@ public final class RagdollifiedDeathWatcher {
         if (!RagdollifiedCompat.isInstalled()) {
             return;
         }
+        // 排队过的布娃娃要回头确认真的出现了：没出现就把死亡动画还回去，别让尸体凭空消失。
+        RagdollifiedCompat.verifyQueuedRagdolls();
         var level = Minecraft.getInstance().level;
         if (level == null) {
             HANDLED.clear();

@@ -72,7 +72,7 @@ public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<
                 // 趴下挥砍和站姿一样两段交替
                 if (entity.swingingArm == InteractionHand.MAIN_HAND
                         && entity instanceof net.minecraft.world.entity.player.Player p) {
-                    ProneAction.beginSwing(p, progress >= 0.55F);
+                    ProneAction.beginSwing(p, progress >= 0.70F);
                 }
             }
             ConditionManager conditionManager = event.getAnimatableEntity().getConditionManager();
@@ -90,8 +90,14 @@ public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<
             // 一半站起来），新换上的那段从相同进度继续，而不是回到第 0 帧重来。
             String target = name;
             if (entity.swingingArm == InteractionHand.MAIN_HAND && ProneAction.isProne(entity)) {
-                String variant = name.contains("throwable_potion") ? PRONE_THROW : PRONE_SWING;
-                if (!name.contains("throwable_potion")
+                // 投掷：站姿名里带 throwable_potion，或者手里那把东西本身就是手雷/投掷物
+                // （很多投掷模组的挥动名并不叫 throwable_potion）。
+                boolean throwing = name.contains("throwable_potion")
+                        || PronePredicate.idLooksLike(entity.getMainHandItem(),
+                        new String[]{"grenade", "nade", "frag", "c4", "claymore", "dynamite", "semtex",
+                                "potion", "bomb", "throwing"});
+                String variant = throwing ? PRONE_THROW : PRONE_SWING;
+                if (!throwing
                         && entity instanceof net.minecraft.world.entity.player.Player p
                         && ProneAction.isAlternateSwing(p)
                         && event.getAnimatableEntity().getAnimation(PRONE_SWING_ALT) != null) {

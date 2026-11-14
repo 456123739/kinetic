@@ -42,7 +42,7 @@ class ProneSwingAlternationTest {
         String text = Files.readString(new File(
                 "src/main/java/com/kinetic/client/animation/predicate/SwingPredicate.java").toPath(),
                 StandardCharsets.UTF_8);
-        assertTrue(text.contains("0.55F"),
+        assertTrue(text.contains("0.70F"),
                 "必须有连招窗口阈值：太早的连点应当重放当前段，而不是硬切到下一段的起手姿势");
         assertTrue(text.contains("beginSwing(p, progress"), "段数推进必须由窗口判断决定");
     }

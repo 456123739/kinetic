@@ -49,6 +49,19 @@ public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<
     /** 物品分类表里"医疗/注射类消耗品"的键，与 {@code use_mainhand:medical} 动画名同源。 */
     private static final String MEDICAL_CLASS = "medical";
 
+    /**
+     * 兜底识别用的物品 id 关键词。
+     *
+     * <p>前面的判定依赖联动模组的接口（{@code TACZCompat#isGrenade} 等）或物品分类表，一旦某个
+     * 消耗品不是那几家的、也没进分类表，趴下时就会被判成"没有动作"，退到通用姿势——表现正是
+     * 玩家说的"趴下打药/扔雷还是站立时的动作"。这里按注册名兜一层，不依赖任何模组。
+     */
+    private static final String[] GRENADE_HINTS = {
+            "grenade", "nade", "frag", "c4", "claymore", "dynamite", "semtex"};
+    private static final String[] MEDICAL_HINTS = {
+            "medkit", "medic", "bandage", "syringe", "inject", "morphine", "firstaid",
+            "healthkit", "stimulant", "antidote", "tourniquet"};
+
     @Override
     public PlayState test(AnimationEvent<CustomHumanoidEntity<?>> event, ExpressionEvaluator<?> evaluator) {
         Entity entity = event.getAnimatableEntity().getEntity();
@@ -80,10 +93,11 @@ public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<
         // 这条判定不依赖任何联动模组的分支细节，因此对 TaCZ 之外的枪械/消耗品联动同样成立。
         if (player.isUsingItem()) {
             ItemStack using = player.getUseItem();
-            if (isGrenade(using)) {
+            if (isGrenade(using) || idLooksLike(using, GRENADE_HINTS)) {
                 return ProneAction.Kind.GRENADE;
             }
-            if (MEDICAL_CLASS.equals(InnerClassify.getClassify(using))) {
+            if (MEDICAL_CLASS.equals(InnerClassify.getClassify(using))
+                    || idLooksLike(using, MEDICAL_HINTS)) {
                 return ProneAction.Kind.MEDICAL;
             }
             UseAnim useAnim = using.getUseAnimation();
@@ -96,9 +110,13 @@ public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<
         if (hold != null && hold.startsWith("tac:mainhand:grenade")) {
             return ProneAction.Kind.GRENADE;
         }
+        // 蓄力不经过 isUsingItem 的模组：手持物本身像手雷就按手雷蓄力处理
+        if (idLooksLike(player.getMainHandItem(), GRENADE_HINTS)) {
+            return ProneAction.Kind.GRENADE;
+        }
         String use = currentAnimation(event, CONTROLLER_USE);
         if (use != null) {
-            if (use.contains(":medical")) {
+            if (use.contains(":medical") || use.contains(":inject")) {
                 return ProneAction.Kind.MEDICAL;
             }
             if (use.endsWith(":eat") || use.endsWith(":drink")) {
@@ -118,6 +136,24 @@ public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<
 
     private static boolean isGrenade(ItemStack stack) {
         return TACZCompat.isGrenade(stack) || SWarfareCompat.isGrenade(stack);
+    }
+
+    /** 物品注册名里是否含有关键词（不依赖任何联动模组）。 */
+    static boolean idLooksLike(ItemStack stack, String[] hints) {
+        if (stack == null || stack.isEmpty()) {
+            return false;
+        }
+        var key = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(stack.getItem());
+        if (key == null) {
+            return false;
+        }
+        String path = key.getPath().toLowerCase(java.util.Locale.ROOT);
+        for (String hint : hints) {
+            if (path.contains(hint)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isReloading(Player player) {

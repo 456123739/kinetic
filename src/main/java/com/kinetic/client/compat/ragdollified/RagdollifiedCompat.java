@@ -56,6 +56,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class RagdollifiedCompat {
     private static final String MOD_ID = "ragdollified";
+    /** 排队后等多久（tick）确认布娃娃真的出现；超时就回退到 KINETIC 自己的死亡动画。 */
+    static final int RAGDOLL_VERIFY_TICKS = 20;
     private static final String API_CLASS = "com.raiiiden.ragdollified.api.RagdollifiedApi";
     private static final String CONFIG_CLASS = "com.raiiiden.ragdollified.config.RagdollifiedConfig";
     private static final String MANAGER_CLASS = "com.raiiiden.ragdollified.client.ClientRagdollManager";
@@ -70,6 +72,10 @@ public final class RagdollifiedCompat {
 
     private static boolean installed;
     private static boolean apiResolved;
+    /** 已排队、等待验证布娃娃是否真的出现的实体（entityId → 截止 tick）。 */
+    private static final Map<Integer, Long> PENDING_VERIFY = new ConcurrentHashMap<>();
+    /** 布娃娃最终没出现的实体；它们的死亡动画不再让出。 */
+    private static final Map<Integer, Long> FALLBACK_DEATHS = new ConcurrentHashMap<>();
     private static boolean poseResolved;
 
     @Nullable private static Method spawnMethod;
@@ -370,6 +376,7 @@ public final class RagdollifiedCompat {
         boolean posed = storeDeathPose(player);
         boolean queued = spawnRagdoll(player, source);
         if (queued) {
+            PENDING_VERIFY.put(player.getId(), currentTick() + RAGDOLL_VERIFY_TICKS);
             Kinetic.LOGGER.debug("Queued a Ragdollified ragdoll for {} "
                             + "(death pose captured: {}, damage source: {}, lifetime {} ticks)",
                     player.getName().getString(), posed,
@@ -519,5 +526,90 @@ public final class RagdollifiedCompat {
      */
     public static boolean shouldYieldDeathAnimation() {
         return isPlayerRagdollEnabled();
+    }
+
+    /**
+     * 同上，但按实体判断：**布娃娃没有真的生成出来时，不要让出死亡动画**。
+     *
+     * <p>实战教训：提供方换版本后接口签名变了，{@code createFromEntity} 调不通、布娃娃没生成，
+     * 而这边照样让出死亡动画——尸体就既没有布娃娃、也没有 KINETIC 的死亡姿势，直接"消失"。
+     * 现在排队后会盯几个 tick，确认布娃娃真的存在；没有就回退到自己画死亡姿势。
+     */
+    public static boolean shouldYieldDeathAnimation(Entity entity) {
+        if (entity == null) {
+            return shouldYieldDeathAnimation();
+        }
+        if (FALLBACK_DEATHS.containsKey(entity.getId())) {
+            return false;
+        }
+        return shouldYieldDeathAnimation();
+    }
+
+    /**
+     * 排队之后盯一段时间：布娃娃没出现就登记为回退，让死亡动画继续画。
+     *
+     * <p>由客户端每 tick 调用。
+     */
+    public static void verifyQueuedRagdolls() {
+        if (PENDING_VERIFY.isEmpty()) {
+            return;
+        }
+        long now = currentTick();
+        Iterator<Map.Entry<Integer, Long>> it = PENDING_VERIFY.entrySet().iterator();
+        while (it.hasNext()) {
+            var entry = it.next();
+            int entityId = entry.getKey();
+            if (hasRagdollById(entityId)) {
+                it.remove();
+                continue;
+            }
+            if (now < entry.getValue()) {
+                continue;
+            }
+            it.remove();
+            FALLBACK_DEATHS.put(entityId, now);
+            Kinetic.LOGGER.warn("[Ragdollified] ragdoll for entity {} never appeared; "
+                    + "falling back to the KINETIC death animation so the corpse stays visible",
+                    entityId);
+        }
+    }
+
+    /** 实体离开客户端世界后清掉回退标记，避免 id 复用时误判。 */
+    public static void forgetEntity(int entityId) {
+        FALLBACK_DEATHS.remove(entityId);
+        PENDING_VERIFY.remove(entityId);
+    }
+
+    /** 被登记为回退的死亡实体数（测试与诊断用）。 */
+    static int fallbackCount() {
+        return FALLBACK_DEATHS.size();
+    }
+
+    private static long currentTick() {
+        var level = Minecraft.getInstance().level;
+        return level == null ? 0L : level.getGameTime();
+    }
+
+    private static boolean hasRagdollById(int entityId) {
+        if (!isAvailable()) {
+            return false;
+        }
+        try {
+            if (hasRagdollByIdMethod != null) {
+                Object result = hasRagdollByIdMethod.invoke(null, entityId);
+                if (result instanceof Boolean present) {
+                    return present;
+                }
+            }
+            if (hasPendingOrActiveMethod != null) {
+                Object result = hasPendingOrActiveMethod.invoke(null, entityId);
+                if (result instanceof Boolean present) {
+                    return present;
+                }
+            }
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            // 查不到就当没有：宁可回退画死亡姿势，也不要让尸体消失
+        }
+        return false;
     }
 }

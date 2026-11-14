@@ -129,13 +129,15 @@ LANG=C.UTF-8 LC_ALL=C.UTF-8 ./gradlew test --offline --tests "*ProneActionThroug
 | 场景 | 修复 | 提交 | 守护 |
 | --- | --- | --- | --- |
 | 滑铲与趴下互斥 | `ProneAction.isProne` 显式排除 `SlideLock.isLocked`；判定抽成纯函数 | — | `SlideLockTest` / `SlideLockWiringTest` / **`ProneActionPoseGateTest`**（八道门逐条否决 + 滑铲专项） |
-| 近战（趴下挥砍） | 两段交替（`prone:swing` 下劈 / `prone:swing:alt` 前刺，按挥动次数轮换）；0.45s / **13 关键帧**，前臂的 X 放开（只锁 Z 时手框只转 47°、刀根本挥不动）；逐帧手速 1.3~3.2 格、上臂 18~41°/帧、肘 −50°~−139° 单侧 | — | `ProneWiringTest`、`PronePoseDataTest`；带长刀的逐帧验收见 `prone-actions.md` §4.3 |
+| 近战（趴下挥砍） | 两段交替，**直接取自 `swing:sword` 的 variant 1/2 手臂曲线**、放进侧滚 70° 的身体系（`prone:swing` 下劈 / `prone:swing:alt` 反手横斩，按挥动次数轮换）；0.45s / **13 关键帧**，前臂的 X 放开（只锁 Z 时手框只转 47°、刀根本挥不动）；逐帧手速 1.3~3.2 格、上臂 18~41°/帧、肘 −50°~−139° 单侧 | — | `ProneWiringTest`、`PronePoseDataTest`；带长刀的逐帧验收见 `prone-actions.md` §4.3 |
 | 近战（站起后残留） | 挥动结束且不再趴着时 `STOP` 趴下变体（判定抽成 `shouldStopProneVariant`） | `05c7c14` | `ProneWiringTest`（结构）+ **`SwingPredicateStopRuleTest`**（行为） |
 | 打药 | 0.72s 节奏、腿伸直；支撑臂平贴地面后躯干 0.94、全身最低 0.60 | `ed975bc`、`30e4950` | `PronePoseDataTest` |
 | 死亡 | 布娃娃捕获死亡瞬间的 KINETIC 骨骼，不退回僵直站姿 | — | `KineticRagdollMathTest`（映射/零跳变/关节范围） |
 | 侧躺过渡 | 站姿动作途中趴下**当帧即完整侧躺**（`CATCH_UP_PROGRESS=1.0` + 频道过渡 0），进入 0.15s / 退出 0.24s | `ed975bc`、`0d49ab6` | `ProneActionTest` |
 | 站起 / 死亡时的收尾 | 不再趴着时走 **SNAP 0.08s** 而不是 EXIT 0.24s；`armedCatchUp` 留住"动作是站着开始的"，再趴下当帧到位 | — | `ProneActionTest#standingUpSnapsTheRollBackWithinTheSnapWindow`、`#standingUpKeepsTheActionKindSoLyingDownAgainIsImmediate` |
 | 换弹 / 掐雷 | 支撑侧（左）手臂改为平贴体前并参与贴地补偿；原"手肘撑地"姿态只算进补偿会把躯干顶到 2.29，更像悬浮 | `30e4950` | `PronePoseDataTest` |
+| 趴下动作识别 | 打药/扔雷原先只靠联动模组接口与分类表，没进表的消耗品会被判成"没有动作"而退回通用姿势（手臂继续播站姿动画）。加了一层**物品注册名关键词**兜底（grenade/frag/medkit/syringe/inject…），投掷也按手里的东西判断 | — | `PronePredicate` 源码护栏 + `ProneSwingAlternationTest` |
+| 布娃娃没生成 | 提供方换版本后接口调不通、布娃娃没生成，而 KINETIC 照样让出死亡动画 → 尸体凭空消失。排队后每 tick 验证，20 tick 内没出现就登记回退、死亡动画继续画 | — | `RagdollDeathYieldTest` |
 | 跨姿态接力 | 趴着挥到一半站起来（或反向）时，新动画从**同一进度**继续（`seekTo` + `playAnimationSeeked`），不再回到第 0 帧 | — | `AnimationSeekTest`、`ProneSwingHandoverTest` |
 | 侧躺时头的侧倾 | `Head` 的 Y（绕身体长轴）从默认 +20（实测侧倾 **84°**，像整个头侧躺在耳朵上）收到目标 **45°**；X/Z 由 `prone_head_tilt.py` 联立反解，视线俯仰与横偏都不变 | — | `PronePoseDataTest`（只钉通道存在）；数值见 `prone-actions.md` §2.1 |
 | 支撑侧手臂入地 | 贴地补偿原先排除全部四条手臂，六个动作左臂入地 1.09~2.17；改为只排除右臂与头，躯干压在支撑臂上 | `30e4950` | 同上 |

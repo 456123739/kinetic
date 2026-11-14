@@ -146,3 +146,21 @@ shouldYieldDeathAnimation(entity)
 
 - `RagdollDeathYieldTest`：排队后要验证、验证失败要登记回退、让出判定要按实体问且**要求真的存在**、
   回退路径要能恢复可见性。
+
+### 1.2.2 反编译结论：布娃娃是服务端权威的
+
+对着 `ragdollified-forge-1.20.1-1.2.2.jar` 反编译（Vineflower）后确认：
+
+- `PhysicsHooks.spawnRagdoll` **只在服务端跑**（`if (!entity.level().isClientSide)`），
+  生成后由 `ServerRagdollSyncManager` + `RagdollSpawnPacket` 同步给客户端；
+- 玩家分支里 `modelType` **写死** `HUMANOID_STANDARD`，**不看客户端渲染器**——
+  所以 KINETIC 换过模型不影响玩家布娃娃；
+- 服务端用 `DeadPlayerKeepMixin` 拦住 `LivingEntity.tickDeath`，尸体实体不会被移除；
+- `ClientDeathHandler.onLivingDeath` 那条客户端路径只在客户端真的收到
+  `LivingDeathEvent` 时才跑，玩家通常是拿不到的。
+
+因此 KINETIC 的客户端 spawn **只能是兜底**：死亡当刻先只注入姿态，`DEFERRED_SPAWN`
+等 6 tick；到点仍没有服务端那份（`hasRagdoll` / `hasPendingOrActiveRagdoll` 都为假）
+才在客户端补一个，再进 20 tick 的验证队列。顺序反了就会在同一具尸体上出现两份布娃娃。
+
+姿态注入用的 `MobPose(Map)` 与 `PartPose(float,float,float)` 在 1.2.2 里仍然存在。

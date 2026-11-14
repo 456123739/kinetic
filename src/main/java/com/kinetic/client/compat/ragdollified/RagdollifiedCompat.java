@@ -58,6 +58,8 @@ public final class RagdollifiedCompat {
     private static final String MOD_ID = "ragdollified";
     /** 排队后等多久（tick）确认布娃娃真的出现；超时就回退到 KINETIC 自己的死亡动画。 */
     static final int RAGDOLL_VERIFY_TICKS = 20;
+    /** 等服务端那份布娃娃多久（tick）；等不到再自己补一个客户端布娃娃。 */
+    static final int DEFERRED_SPAWN_TICKS = 6;
     private static final String API_CLASS = "com.raiiiden.ragdollified.api.RagdollifiedApi";
     private static final String CONFIG_CLASS = "com.raiiiden.ragdollified.config.RagdollifiedConfig";
     private static final String MANAGER_CLASS = "com.raiiiden.ragdollified.client.ClientRagdollManager";
@@ -76,6 +78,8 @@ public final class RagdollifiedCompat {
     private static final Map<Integer, Long> PENDING_VERIFY = new ConcurrentHashMap<>();
     /** 布娃娃最终没出现的实体；它们的死亡动画不再让出。 */
     private static final Map<Integer, Long> FALLBACK_DEATHS = new ConcurrentHashMap<>();
+    /** 等服务端布娃娃的实体（entityId → 补 spawn 的 tick）。 */
+    private static final Map<Integer, Long> DEFERRED_SPAWN = new ConcurrentHashMap<>();
     private static boolean poseResolved;
 
     @Nullable private static Method spawnMethod;
@@ -388,6 +392,11 @@ public final class RagdollifiedCompat {
         // 顺序不能反：提供方只在姿态年龄 ≤50ms 时采用注入的姿态，否则会退回它自己捕获的预设姿态。
         boolean posed = storeDeathPose(player);
         boolean queued = spawnRagdoll(player, source);
+        // 1.2.2 起布娃娃是**服务端权威**的：服务端在 death 时生成、把 spawn 包同步给客户端，
+        // 客户端只负责渲染（PhysicsHooks.spawnRagdoll 里写死 isPlayer → HUMANOID_STANDARD，
+        // 不看客户端渲染器）。所以客户端这次 spawn 只是**兜底**，正常情况下服务端那份很快就到；
+        // 我们先排队验证，确认没有服务端那份时再由这里补上。
+        DEFERRED_SPAWN.put(player.getId(), currentTick() + DEFERRED_SPAWN_TICKS);
         if (queued) {
             PENDING_VERIFY.put(player.getId(), currentTick() + RAGDOLL_VERIFY_TICKS);
             Kinetic.LOGGER.debug("Queued a Ragdollified ragdoll for {} "
@@ -573,6 +582,7 @@ public final class RagdollifiedCompat {
      * <p>由客户端每 tick 调用。
      */
     public static void verifyQueuedRagdolls() {
+        flushDeferredSpawns();
         if (PENDING_VERIFY.isEmpty()) {
             return;
         }
@@ -597,10 +607,49 @@ public final class RagdollifiedCompat {
         }
     }
 
+    /**
+     * 等服务端那份布娃娃；到点还没有，才由客户端补一个。
+     *
+     * <p>顺序很重要：先信服务端，避免同一具尸体同时存在两份布娃娃。
+     */
+    private static void flushDeferredSpawns() {
+        if (DEFERRED_SPAWN.isEmpty()) {
+            return;
+        }
+        long now = currentTick();
+        Iterator<Map.Entry<Integer, Long>> it = DEFERRED_SPAWN.entrySet().iterator();
+        while (it.hasNext()) {
+            var entry = it.next();
+            int entityId = entry.getKey();
+            if (hasRagdollById(entityId)) {
+                it.remove();
+                continue;
+            }
+            if (now < entry.getValue()) {
+                continue;
+            }
+            it.remove();
+            var level = Minecraft.getInstance().level;
+            if (level == null) {
+                continue;
+            }
+            var entity = level.getEntity(entityId);
+            if (!(entity instanceof LivingEntity living)) {
+                continue;
+            }
+            if (spawnRagdoll(living, living.getLastDamageSource())) {
+                PENDING_VERIFY.put(entityId, now + RAGDOLL_VERIFY_TICKS);
+                Kinetic.LOGGER.info("[Ragdollified] server did not provide a ragdoll for {} within {} ticks; "
+                        + "queued a client-side one", entityId, DEFERRED_SPAWN_TICKS);
+            }
+        }
+    }
+
     /** 实体离开客户端世界后清掉回退标记，避免 id 复用时误判。 */
     public static void forgetEntity(int entityId) {
         FALLBACK_DEATHS.remove(entityId);
         PENDING_VERIFY.remove(entityId);
+        DEFERRED_SPAWN.remove(entityId);
     }
 
     /** 被登记为回退的死亡实体数（测试与诊断用）。 */

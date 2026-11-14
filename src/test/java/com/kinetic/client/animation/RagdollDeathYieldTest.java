@@ -47,6 +47,20 @@ class RagdollDeathYieldTest {
     }
 
     @Test
+    void theServerOwnsTheRagdollAndTheClientOnlyBacksUpp() throws Exception {
+        // 1.2.2 反编译确认：PhysicsHooks.spawnRagdoll 只在服务端跑，玩家的 modelType 写死
+        // HUMANOID_STANDARD（不看客户端渲染器）；客户端只负责渲染同步过来的布娃娃。
+        // 所以客户端必须先等，等不到才自己补——否则同一具尸体会有两份。
+        String compat = Files.readString(COMPAT.toPath(), StandardCharsets.UTF_8);
+        assertTrue(compat.contains("DEFERRED_SPAWN"), "客户端 spawn 必须延后");
+        assertTrue(compat.contains("flushDeferredSpawns"), "延后队列必须有处理入口");
+        int wait = compat.indexOf("hasRagdollById(entityId)");
+        int spawn = compat.indexOf("spawnRagdoll(living", wait);
+        assertTrue(wait > 0 && spawn > wait,
+                "必须先查服务端那份是否存在，再决定自己补");
+    }
+
+    @Test
     void failedRagdollsKeepTheDeathAnimation() throws Exception {
         String compat = Files.readString(COMPAT.toPath(), StandardCharsets.UTF_8);
         assertTrue(compat.contains("FALLBACK_DEATHS"), "验证失败必须登记回退");

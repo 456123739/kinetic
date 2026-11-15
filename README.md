@@ -35,6 +35,11 @@
 - [架构总览](docs/architecture/README.md) / [运行模型](docs/architecture/runtime-model.md)
 - [当前支持状态](docs/status/support-and-verification.md)
 
+## 资源归档
+
+渲染图、分析输出、参考包、崩溃报告和构建日志不在 `main` 上，放在本仓库的 `resources` 分支，
+按需取回并带 sha256 校验。见 [资源归档说明](RESOURCES.md)。
+
 ## 许可证
 
 - 除另有声明的内容外，本仓库的原创代码按 [Apache License 2.0](LICENSE) 开源。

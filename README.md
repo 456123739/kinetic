@@ -25,10 +25,10 @@ bundles/                 归档本体
   tooling.tar.zst
   ragdollified-src.tar.zst
   logs.tar.zst
-scripts/
-  fetch-resources.sh     取回 + 校验
-  build-manifest.py      重新生成 MANIFEST.json
 ```
+
+本分支只放数据。取回与清单维护的脚本在 `main` 的 `scripts/` 下
+（`fetch-resources.sh`、`build-manifest.py`），跟源码一起版本化，避免两份实现漂移。
 
 两种 bundle：
 
@@ -39,11 +39,12 @@ scripts/
 
 ## 取回
 
+在 `main` 的检出里执行（脚本会自动拉取本分支并把 MANIFEST.json 取出来）：
+
 ```bash
-# 在 kinetic 仓库里
-./scripts/fetch-resources.sh --list          # 看有哪些
-./scripts/fetch-resources.sh renders         # 取一份，按 MANIFEST 的 restore_to 放好
-./scripts/fetch-resources.sh --all           # 全取
+./scripts/fetch-resources.sh --list                # 看有哪些
+./scripts/fetch-resources.sh renders               # 取一份，按 MANIFEST 的 restore_to 放好
+./scripts/fetch-resources.sh --all                 # 全取
 ./scripts/fetch-resources.sh --to /tmp/x renders   # 换个地方解
 ./scripts/fetch-resources.sh --verify renders      # 只校验现有副本
 ```
@@ -65,6 +66,7 @@ git show FETCH_HEAD:bundles/tooling.tar.zst | zstd -dc | tar -x -C /path/to/kine
 - 快照打标签：`resources/<YYYY-MM-DD>`，需要复刻某个时间点的全套资源就 checkout 标签。
 - `MANIFEST.json` 里的 `main_commit` 是归档时 `main` 的提交，渲染图与代码版本因此能对上。
 - 改完 bundle 后重跑 `python3 scripts/build-manifest.py` 刷新清单，再一起提交。
+- 本分支不含脚本；`build-manifest.py --root <本分支检出目录>` 可以就地重算清单。
 
 ## 当前快照
 

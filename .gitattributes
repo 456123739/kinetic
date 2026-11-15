@@ -1,0 +1,6 @@
+# 二进制归档不要做文本 diff
+*.tar.zst binary
+*.zip binary
+*.png binary
+*.ogg binary
+*.jar binary

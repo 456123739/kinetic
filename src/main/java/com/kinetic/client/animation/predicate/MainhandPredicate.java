@@ -93,11 +93,22 @@ public class MainhandPredicate implements IAnimationPredicate<CustomHumanoidEnti
         if (conditionalHold != null) {
             String name = conditionalHold.doTest(entity, InteractionHand.MAIN_HAND);
             if (StringUtils.isNoneBlank(name)) {
-                return playAnimation(event, name);
+                // 趴下持刀不能把站姿"垂刀"直接叠到爬姿上：小臂朝下时刀尖必然穿地。
+                // 这里只换持械手臂的预备位；躯干仍由主频道爬行，挥刀首末帧与它相同。
+                boolean prone = entity instanceof Player player && com.kinetic.client.animation.ProneAction.isProne(player);
+                String proneHold = proneHoldFor(prone, name,
+                        event.getAnimatableEntity().getAnimation("prone:hold:sword") != null);
+                return playAnimation(event, proneHold);
             }
         }
 
         return PlayState.STOP;
+    }
+
+    /** 趴下且模型提供预备位时，持剑走 prone:hold:sword；其他物品完全不变。 */
+    static String proneHoldFor(boolean prone, String original, boolean proneHoldAvailable) {
+        return prone && proneHoldAvailable && "hold_mainhand:sword".equals(original)
+                ? "prone:hold:sword" : original;
     }
 
     private boolean isSameItem(ItemStack playerItem, HumanoidStateTracker<?> tracker, InteractionHand hand) {

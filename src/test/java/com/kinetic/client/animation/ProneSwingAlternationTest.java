@@ -49,6 +49,33 @@ class ProneSwingAlternationTest {
     }
 
     @Test
+    void swingEndpointsMatchTheProneSwordReadyPose() throws Exception {
+        for (String model : new String[]{"1_alex", "2_steve"}) {
+            var root = com.google.gson.JsonParser.parseString(Files.readString(
+                    new File(MODELS, model + "/animations/main.animation.json").toPath(),
+                    StandardCharsets.UTF_8)).getAsJsonObject().getAsJsonObject("animations");
+            var ready = root.getAsJsonObject("prone:hold:sword").getAsJsonObject("bones");
+            for (String bone : new String[]{"RightArm", "RightForeArm"}) {
+                var readyValues = ready.getAsJsonObject(bone).getAsJsonArray("rotation");
+                for (String name : new String[]{"prone:swing", "prone:swing:alt"}) {
+                    var keys = root.getAsJsonObject(name).getAsJsonObject("bones")
+                            .getAsJsonObject(bone).getAsJsonObject("rotation");
+                    for (String time : new String[]{"0.0000", "0.6200"}) {
+                        var post = keys.getAsJsonObject(time).getAsJsonArray("post");
+                        for (int axis = 0; axis < 3; axis++) {
+                            String target = String.format(java.util.Locale.ROOT, "(%.4f)*kinetic.prone_roll",
+                                    readyValues.get(axis).getAsDouble());
+                            assertTrue(post.get(axis).getAsString().contains(target),
+                                    model + "/" + name + "/" + bone + "@" + time
+                                            + ": 首末帧必须等于趴下持剑预备位");
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     void bothSegmentsAnimateBothArmBones() throws Exception {
         // 交替时两段都必须自己写右臂；少写一段就会沿用上一段的旋转，看起来像卡住
         for (String model : new String[]{"1_alex", "2_steve"}) {

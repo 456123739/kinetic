@@ -2,6 +2,7 @@ package com.kinetic.client.animation.predicate;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -41,5 +42,18 @@ class MainhandHoldGateTest {
     void usingAGrenadeKeepsTheHoldChannelRunning() {
         assertTrue(MainhandPredicate.holdChannelRuns(false, true, true),
                 "手雷蓄力必须让 hold 频道继续，否则抬雷/待投姿势不会被播放");
+    }
+
+    @Test
+    void proneSwordUsesTheSameReadyPoseAsSwingEndpoints() {
+        assertEquals("prone:hold:sword",
+                MainhandPredicate.proneHoldFor(true, "hold_mainhand:sword", true));
+        assertEquals("hold_mainhand:sword",
+                MainhandPredicate.proneHoldFor(false, "hold_mainhand:sword", true));
+        assertEquals("hold_mainhand:sword",
+                MainhandPredicate.proneHoldFor(true, "hold_mainhand:sword", false),
+                "自建模型没有预备位时保持原行为");
+        assertEquals("hold_mainhand:bow",
+                MainhandPredicate.proneHoldFor(true, "hold_mainhand:bow", true));
     }
 }

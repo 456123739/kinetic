@@ -39,6 +39,7 @@
 
 ## 联动与验证
 
+- 匍匐打药/换弹/持雷/投掷/挥砍已有多视角逐帧渲染与 65 帧几何检查，覆盖接地、刀尖、头侧倾、支撑臂和持雷→投掷接缝；TaCZ 本地换弹事件、gunId 失效与一次性投掷重放有自动化守护。真实客户端中的 rifle/pistol 战术与空仓换弹、三种手雷、非消耗创造投掷、连续两次投掷、副手互斥及联机高延迟仍未实机验收；离线结果不能替代这些组合。
 - 主线仍直接接线部分战斗、移动、载具和装备 adapter，大量目标未迁入；既有接线也未按统一输入边界完成线程审计与实机验收，不能视为正式支持。
 - Java/corpus 测试已覆盖 animation/controller 的 Proto 映射与字段顺序、`Program` envelope 的 oneof tag 与 source 往返、ModelData 的双 Proto codec 互操作、内置目录索引、模型导入与 raw parse、Roaming 变量存储，以及模型声音 retention/playback/handoff 的局部边界。`MolangEvaluationBenchmarkTest` 现在覆盖一个动态 query binding，并提供 opt-in 的固定表达式 parse/evaluate 微基准；仍缺少 coded / Bedrock / hybrid controller 在真实 entity 上运行、controller config、`kinetic.sync`、多人远端 `Entity`、模型热切换、同帧多 `RenderContext`、声音 once-only/音量/host adoption、第一人称共享和长期 reference convergence 的 Minecraft 端到端测试。完整测试计数见[当前支持状态](../support-and-verification.md)。表达式解释器的广泛语义仍未覆盖。
 - `BoneAttribute` 与 `BakedModel` preorder、可见性、locator 的跨语言契约缺少独立 golden 验证；布局重复定义仍有漂移风险。

@@ -92,10 +92,9 @@ public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<
             if (entity.swingingArm == InteractionHand.MAIN_HAND && ProneAction.isProne(entity)) {
                 // 投掷：站姿名里带 throwable_potion，或者手里那把东西本身就是手雷/投掷物
                 // （很多投掷模组的挥动名并不叫 throwable_potion）。
+                // 投掷判定与匍匐频道共用一份（标签 + 注册名关键词），两边不会各说各话。
                 boolean throwing = name.contains("throwable_potion")
-                        || PronePredicate.idLooksLike(entity.getMainHandItem(),
-                        new String[]{"grenade", "nade", "frag", "c4", "claymore", "dynamite", "semtex",
-                                "potion", "bomb", "throwing"});
+                        || PronePredicate.isThrowable(entity.getMainHandItem());
                 String variant = throwing ? PRONE_THROW : PRONE_SWING;
                 if (!throwing
                         && entity instanceof net.minecraft.world.entity.player.Player p

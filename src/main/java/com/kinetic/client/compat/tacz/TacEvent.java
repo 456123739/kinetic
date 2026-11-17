@@ -40,6 +40,9 @@ public class TacEvent {
             return;
         }
         LivingEntity shooter = event.getEntity();
+        if (event.getLogicalSide() == net.minecraftforge.fml.LogicalSide.CLIENT) {
+            TACZCompat.noteReloadStarted(shooter, event.getGunItemStack());
+        }
         shooter.getCapability(PlayerAnimatableCapabilityProvider.CAP).ifPresent(cap -> {
             cap.setTacGunAnimationNeedReload(true);
         });

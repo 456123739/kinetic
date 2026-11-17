@@ -11,6 +11,7 @@ import com.kinetic.molang.runtime.ExpressionEvaluator;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 
@@ -26,7 +27,9 @@ public class GunFirePredicate implements IAnimationPredicate<CustomHumanoidEntit
         if (SlideLock.suppressesOneShot(entity)) {
             return PlayState.STOP;
         }
-        if (!entity.swinging && !entity.isUsingItem()) {
+        boolean reloading = TACZCompat.isReloading(entity) || SWarfareCompat.isReloading(entity)
+                || isReloadAnimation(event.getCodedController().getCurrentAnimationName());
+        if (mayPlayOneShot(entity.swinging, entity.isUsingItem(), reloading)) {
             ItemStack mainHandItem = entity.getItemInHand(InteractionHand.MAIN_HAND);
             PlayState result = TACZCompat.playGunOnceAnimation(mainHandItem, event);
             if (result == null) {
@@ -35,6 +38,21 @@ public class GunFirePredicate implements IAnimationPredicate<CustomHumanoidEntit
             return Objects.requireNonNullElse(result, PlayState.STOP);
         }
         return PlayState.STOP;
+    }
+
+    /**
+     * 换弹优先级高于挥动/使用互斥门。
+     *
+     * <p>TaCZ 的本地换弹事件先于服务端同步到达；这一帧可能同时存在 swinging 或
+     * isUsingItem。若沿用普通开火动画的门，本地起手和同步后的换弹都会被整个吞掉。
+     * 普通开火/近战仍保持原互斥，只有真实换弹信号放行。
+     */
+    public static boolean isReloadAnimation(@Nullable String animation) {
+        return animation != null && animation.startsWith("tac:reload:");
+    }
+
+    static boolean mayPlayOneShot(boolean swinging, boolean usingItem, boolean reloading) {
+        return reloading || (!swinging && !usingItem);
     }
 
     public static boolean available() {

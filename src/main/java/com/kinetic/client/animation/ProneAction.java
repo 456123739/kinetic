@@ -3,6 +3,7 @@ package com.kinetic.client.animation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Iterator;
@@ -22,8 +23,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@code bone_rot('X').ax * (1 - kinetic.prone_roll) + <目标> * kinetic.prone_roll}，
  * 因此 {@code roll == 0} 时逐位等于底层动画的输出（不是"接近"），进出在任意底层姿势下都连续。
  *
- * <p>动作种类不看游戏内部状态，而是看其他频道这一帧选中的动画名（见 {@code PronePredicate}），
- * 这样对任何往那些频道塞动画的枪械联动都自动成立。
+ * <p>动作识别由 {@code PronePredicate} 负责：真实使用/换弹/挥动状态优先，频道动画名只作
+ * 兼容回退。本类只保存侧滚进度、锁定的动作种类与有限的投掷蓄力快照，不修改玩法状态。
  */
 public final class ProneAction {
     /** 动作种类。{@code OTHER} 覆盖吃喝这类"只需要把头和腿摆正"的动作。 */
@@ -285,6 +286,42 @@ public final class ProneAction {
         return state.swingIndex > 0 && (state.swingIndex & 1) == 0;
     }
 
+    /** 蓄力中的投掷物快照；只用于识别"脱手消耗"，不驱动物品逻辑。 */
+    public static void noteThrowableCharge(Player player, ItemStack stack) {
+        if (stack.isEmpty()) {
+            return;
+        }
+        STATES.computeIfAbsent(player, p -> new State()).chargeItem = stack.copy();
+    }
+
+    public static void cancelThrowableCharge(@Nullable Player player) {
+        State state = STATES.get(player);
+        if (state != null) {
+            state.chargeItem = null;
+        }
+    }
+
+    /**
+     * 蓄力结束是否真的是一次投掷。
+     *
+     * <p>有些联动不用 {@code swinging} 表达脱手。此时只在物品被消耗（数量减少、主手变空/
+     * 换成别的东西）时给一次有限的表现事务；单纯取消蓄力、创造模式不消耗物品都不伪造投掷。
+     */
+    public static boolean consumeThrowableRelease(Player player, ItemStack current) {
+        State state = STATES.get(player);
+        if (state == null || state.chargeItem == null) {
+            return false;
+        }
+        ItemStack previous = state.chargeItem;
+        state.chargeItem = null;
+        boolean sameItem = !current.isEmpty() && previous.getItem() == current.getItem();
+        return consumedOnRelease(previous.getCount(), current.getCount(), sameItem);
+    }
+
+    static boolean consumedOnRelease(int previousCount, int currentCount, boolean sameItem) {
+        return !sameItem || currentCount < previousCount;
+    }
+
     /** 当前这一段是否反手（由 {@link #beginSwing} 推进）。 */
     public static boolean isAlternateSwing(@Nullable Player player) {
         if (player == null) {
@@ -329,5 +366,8 @@ public final class ProneAction {
         volatile Kind kind = Kind.NONE;
         /** 挥动的段数，用来左右交替（和站姿挥砍的多段连招一个道理）。 */
         volatile int swingIndex;
+        /** 最近一次手雷/投掷物蓄力的主手快照；脱手后立刻清空。 */
+        @Nullable
+        volatile ItemStack chargeItem;
     }
 }

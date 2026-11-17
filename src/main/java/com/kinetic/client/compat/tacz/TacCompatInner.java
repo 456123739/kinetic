@@ -1,6 +1,7 @@
 package com.kinetic.client.compat.tacz;
 
 import com.kinetic.client.animation.condition.ConditionTAC;
+import com.kinetic.client.animation.predicate.GunFirePredicate;
 import com.kinetic.client.compat.parcool.ParCoolCompat;
 import com.kinetic.client.entity.CustomHumanoidEntity;
 import com.kinetic.client.model.locator.PlayerLocator;
@@ -40,6 +41,39 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Optional;
 
 class TacCompatInner {
+    /**
+     * 本地换弹开始的短暂桥接信号。
+     *
+     * <p>TaCZ 先在客户端发出 {@code GunReloadEvent}、播放枪械自身动画并发包，服务端的
+     * {@code ReloadState} 随后才同步回来。趴下时如果只认同步计数，起始这几帧就没有动作信号；
+     * 若那一帧还夹着开火/持枪动画，匍匐频道会一直选不到换弹。这里只桥接同步前的空窗，
+     * 不伪造弹药或服务端状态，8 tick 后自动失效。
+     */
+    private static final long RELOAD_HINT_TICKS = 8L;
+    private static final java.util.Map<LivingEntity, ReloadHint> RELOAD_HINTS =
+            java.util.Collections.synchronizedMap(new java.util.WeakHashMap<>());
+
+    private record ReloadHint(long expiresAt, ResourceLocation gunId) {
+    }
+
+    static void noteReloadStarted(LivingEntity entity, ItemStack eventGun) {
+        if (!entity.level().isClientSide()) {
+            return;
+        }
+        IGun gun = IGun.getIGunOrNull(eventGun);
+        if (gun == null) {
+            return;
+        }
+        RELOAD_HINTS.put(entity, new ReloadHint(entity.level().getGameTime() + RELOAD_HINT_TICKS,
+                gun.getGunId(eventGun)));
+    }
+
+    /** 供离线测试：桥接信号只在有效期内、且仍是同一个 TaCZ gunId 时成立。 */
+    static boolean isReloadHintActive(long gameTime, long expiresAt,
+                                      @Nullable ResourceLocation current, @Nullable ResourceLocation expected) {
+        return current != null && current.equals(expected) && gameTime <= expiresAt;
+    }
+
     /**
      * 手枪判定缓存。{@code CustomPlayerItemInHandLayer} 每个渲染帧、每个玩家都会问一次，
      * 原先每次都要查一遍枪包索引（{@code TimelessAPI.getCommonGunIndex}）。
@@ -221,9 +255,23 @@ class TacCompatInner {
     static boolean isReloading(LivingEntity entity) {
         IGun gun = IGun.getIGunOrNull(entity.getMainHandItem());
         if (gun == null) {
+            RELOAD_HINTS.remove(entity);
             return false;
         }
-        return IGunOperator.fromLivingEntity(entity).getSynReloadState().getCountDown() > 0;
+        if (IGunOperator.fromLivingEntity(entity).getSynReloadState().getCountDown() > 0) {
+            RELOAD_HINTS.remove(entity);
+            return true;
+        }
+        ReloadHint hint = RELOAD_HINTS.get(entity);
+        if (hint == null) {
+            return false;
+        }
+        boolean active = isReloadHintActive(entity.level().getGameTime(), hint.expiresAt(),
+                gun.getGunId(entity.getMainHandItem()), hint.gunId());
+        if (!active) {
+            RELOAD_HINTS.remove(entity);
+        }
+        return active;
     }
 
     /**
@@ -258,8 +306,11 @@ class TacCompatInner {
         }
         event.getAnimatableEntity().setTacGunAnimationNeedReload(false);
 
-        float reloadProgress = operator.getSynReloadState().getCountDown();
-        if (reloadProgress > 0) {
+        // 与 PronePredicate 共用同一个换弹信号（本地事件桥接 + 服务端同步）。
+        // 只读同步计数会让本地起手的动画选择慢半拍，甚至因 fire 频道没选到 reload 而永不侧躺。
+        String current = event.getCodedController().getCurrentAnimationName();
+        if (isReloading(livingEntity)
+                || GunFirePredicate.isReloadAnimation(current)) {
             return getGunTypeAnimation(event, weaponType, "tac:reload:", LoopType.PLAY_ONCE);
         }
 

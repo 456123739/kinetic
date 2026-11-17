@@ -2,12 +2,12 @@
   "schema": 1,
   "repo": "456123739/kinetic",
   "branch": "resources",
-  "generated_at": "2026-11-15T10:07:26+08:00",
-  "main_commit": "97b7478cc36b71cf0ba22304eb21834387b6b802",
+  "generated_at": "2026-11-18T00:02:19+08:00",
+  "main_commit": "74bb0405caab1e073b444f88c45b066c687cd353",
   "totals": {
     "bundles": 7,
-    "bytes_raw": 64822646,
-    "bytes_archived": 27704365
+    "bytes_raw": 65728759,
+    "bytes_archived": 28387408
   },
   "bundles": [
     {
@@ -21,10 +21,10 @@
       ],
       "restore_to": "analysis/renders",
       "generator": "analysis/prone_build.py 等（见 tooling bundle）",
-      "file_count": 144,
-      "bytes_raw": 7232828,
-      "bytes_archived": 7232828,
-      "sha256": "a8891f22e73bf1f55a0bdd398e0cb27e4e75fd79a19b517da3846d0683840342",
+      "file_count": 151,
+      "bytes_raw": 7904140,
+      "bytes_archived": 7904140,
+      "sha256": "f39f5a3f3f6912716955df61bcd04a1ad96e8a5a8f1a11c2bfc8278223136fa3",
       "files": [
         {
           "path": "0_medical_transition.png",
@@ -600,6 +600,41 @@
           "path": "P1_swing_9f.png",
           "bytes": 120450,
           "sha256": "25d370ac6f65c90092fb26d773e6436b5b33ee36a0534dd40a94a84f55d688b8"
+        },
+        {
+          "path": "PRONE_grenade_final.png",
+          "bytes": 78953,
+          "sha256": "88abbe950f31b0bfadb68b5c9ad11f9a19533d9f6ae6da0428e3a245de46982d"
+        },
+        {
+          "path": "PRONE_hold_sword_final.png",
+          "bytes": 33432,
+          "sha256": "7204b8653e0c07dc4bde1aa24bce421d668b314107cf737b520ebd708031d112"
+        },
+        {
+          "path": "PRONE_medical_final.png",
+          "bytes": 91765,
+          "sha256": "21f42285dd12d34113b621802ff4ad60b9d8dfa46d805969c0fccda45c541b52"
+        },
+        {
+          "path": "PRONE_reload_final.png",
+          "bytes": 105391,
+          "sha256": "52c2ba237045a345749018ae3c12303cba4d19ca70a33271c9d2c703d0ceb467"
+        },
+        {
+          "path": "PRONE_swing_alt_final.png",
+          "bytes": 141491,
+          "sha256": "b85d30e3fe16ca9c449f2a06cd2d13f2dce06ecd3ead3217d90cd7f299f92982"
+        },
+        {
+          "path": "PRONE_swing_final.png",
+          "bytes": 141507,
+          "sha256": "ff8f60cba4459c1671137fc997bbd54bf18d1ad70901430411558351e8a254af"
+        },
+        {
+          "path": "PRONE_throw_final.png",
+          "bytes": 78773,
+          "sha256": "42d0feb068e703e0cb9fd3a51ee76c3054a747f8675f2a37f20beddac83f5d98"
         },
         {
           "path": "Q1_swing_new.png",
@@ -5302,10 +5337,10 @@
       ],
       "restore_to": ".",
       "members_root": "analysis",
-      "file_count": 87,
-      "bytes_raw": 534766,
-      "bytes_archived": 181526,
-      "sha256": "eae4829698481ddf301d5c8fdfe13489ef8ee484a56bbc4f63ebbc1ab02f3746",
+      "file_count": 92,
+      "bytes_raw": 769567,
+      "bytes_archived": 193257,
+      "sha256": "4af4dc017043d4ba92593f02c1e243b3947191747e0e74386c0fbc6dc9947023",
       "members": [
         {
           "path": "analysis/backface_cull_geom_check.py",
@@ -5341,11 +5376,11 @@
         },
         {
           "path": "analysis/prone_build.py",
-          "bytes": 3271
+          "bytes": 4227
         },
         {
           "path": "analysis/prone_author.py",
-          "bytes": 21012
+          "bytes": 21682
         },
         {
           "path": "analysis/prone_head_tilt.py",
@@ -5382,6 +5417,10 @@
         {
           "path": "analysis/lod_flatten_extend.py",
           "bytes": 10085
+        },
+        {
+          "path": "analysis/png_ascii.py",
+          "bytes": 1712
         },
         {
           "path": "analysis/prone_track.py",
@@ -5434,6 +5473,10 @@
         {
           "path": "analysis/prone_diag.py",
           "bytes": 5470
+        },
+        {
+          "path": "analysis/prone_review.py",
+          "bytes": 5938
         },
         {
           "path": "analysis/gun_lod_textured.py",
@@ -5505,7 +5548,7 @@
         },
         {
           "path": "analysis/prone/grenade.json",
-          "bytes": 488
+          "bytes": 9574
         },
         {
           "path": "analysis/prone/_med_live.json",
@@ -5521,7 +5564,7 @@
         },
         {
           "path": "analysis/prone/swing.json",
-          "bytes": 2155
+          "bytes": 3290
         },
         {
           "path": "analysis/prone/_g.json",
@@ -5529,31 +5572,35 @@
         },
         {
           "path": "analysis/prone/reload.json",
-          "bytes": 479
+          "bytes": 17239
         },
         {
           "path": "analysis/prone/generated/grenade.json",
-          "bytes": 5212
+          "bytes": 50285
         },
         {
           "path": "analysis/prone/generated/swing.json",
-          "bytes": 12284
+          "bytes": 17098
         },
         {
           "path": "analysis/prone/generated/reload.json",
-          "bytes": 5207
+          "bytes": 90888
         },
         {
           "path": "analysis/prone/generated/throw.json",
-          "bytes": 6364
+          "bytes": 12240
         },
         {
           "path": "analysis/prone/generated/medical.json",
-          "bytes": 9819
+          "bytes": 47680
         },
         {
           "path": "analysis/prone/generated/swing_alt.json",
-          "bytes": 12288
+          "bytes": 17102
+        },
+        {
+          "path": "analysis/prone/generated/hold_sword.json",
+          "bytes": 232
         },
         {
           "path": "analysis/prone/generated/generic.json",
@@ -5569,7 +5616,7 @@
         },
         {
           "path": "analysis/prone/throw.json",
-          "bytes": 975
+          "bytes": 2193
         },
         {
           "path": "analysis/prone/_vR3.json",
@@ -5605,11 +5652,11 @@
         },
         {
           "path": "analysis/prone/medical.json",
-          "bytes": 1706
+          "bytes": 8896
         },
         {
           "path": "analysis/prone/swing_alt.json",
-          "bytes": 2207
+          "bytes": 3019
         },
         {
           "path": "analysis/prone/_med2.json",
@@ -5618,6 +5665,10 @@
         {
           "path": "analysis/prone/_vA.json",
           "bytes": 264
+        },
+        {
+          "path": "analysis/prone/hold_sword.json",
+          "bytes": 187
         },
         {
           "path": "analysis/prone/generic.json",
@@ -5650,6 +5701,10 @@
         {
           "path": "analysis/textures/ak47.png",
           "bytes": 37601
+        },
+        {
+          "path": "analysis/prone_check.py",
+          "bytes": 4786
         },
         {
           "path": "analysis/wound_preview.py",

@@ -121,7 +121,7 @@ public class SwingPredicate implements IAnimationPredicate<CustomHumanoidEntity<
     /**
      * 当前挥动动画播到哪了（0~1）。
      *
-     * <p>用来在"趴下 ↔ 站立"切换时把进度传给另一段弧线：站姿挥动长 0.375s、侧躺挥砍长 0.62s，
+     * <p>用来在"趴下 ↔ 站立"切换时把进度传给另一段弧线：站姿挥动长 0.375s、侧躺挥砍长 0.75s，
      * 投掷时则使用资源自身的长度；按比例映射后接着播。拿不到长度就返回 0——那等于从头开始，与改动前一致。
      */
     static float swingProgress(AnimationEvent<CustomHumanoidEntity<?>> event) {

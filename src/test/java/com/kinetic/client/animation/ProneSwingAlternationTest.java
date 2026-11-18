@@ -60,7 +60,7 @@ class ProneSwingAlternationTest {
                 for (String name : new String[]{"prone:swing", "prone:swing:alt"}) {
                     var keys = root.getAsJsonObject(name).getAsJsonObject("bones")
                             .getAsJsonObject(bone).getAsJsonObject("rotation");
-                    for (String time : new String[]{"0.0000", "0.6200"}) {
+                    for (String time : new String[]{"0.0000", "0.7500"}) {
                         var post = keys.getAsJsonObject(time).getAsJsonArray("post");
                         for (int axis = 0; axis < 3; axis++) {
                             String target = String.format(java.util.Locale.ROOT, "(%.4f)*kinetic.prone_roll",
@@ -85,8 +85,8 @@ class ProneSwingAlternationTest {
             for (String name : new String[]{"prone:swing", "prone:swing:alt"}) {
                 var animation = root.getAsJsonObject(name);
                 var bones = animation.getAsJsonObject("bones");
-                assertEquals(0.62, animation.get("animation_length").getAsDouble(), 1e-6,
-                        model + "/" + name + ": current authored swing duration is 0.62s");
+                assertEquals(0.75, animation.get("animation_length").getAsDouble(), 1e-6,
+                        model + "/" + name + ": current authored swing duration is 0.75s");
                 assertTrue(bones.has("RightArm"), model + "/" + name + ": 缺 RightArm");
                 assertTrue(bones.has("RightForeArm"), model + "/" + name + ": 缺 RightForeArm");
                 assertEquals(13, bones.getAsJsonObject("RightArm").getAsJsonObject("rotation").size(),

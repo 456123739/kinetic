@@ -8,8 +8,8 @@
 | 项 | 值 |
 | --- | --- |
 | jar | `kinetic-3.0-dev-forge+mc1.20.1.jar` |
-| 字节数 | 17,753,548 |
-| sha256 | `d86c7b43cd7fb82483d75cc3a4dea89924fa043925ef710272f963874c7e8e36` |
+| 字节数 | 17,754,904 |
+| sha256 | `42ff7e6ee82e7c030fd01c1cf27c99176f1a1fdb4b85c8332b6ca3a8d2bf7438` |
 | 测试 | 814 tests / 0 failures / 0 errors / 11 skipped |
 | 构建 | JDK 17：`./gradlew build --offline`（含全量测试）pass |
 | 文档自检 | `python3 docs/tools/check_docs.py` → OK |
@@ -156,7 +156,7 @@ KINETIC_BENCH_MOLANG=1 ./gradlew test --offline --tests "*MolangEvaluationBenchm
 | 场景 | 修复 | 提交 | 守护 |
 | --- | --- | --- | --- |
 | 滑铲与趴下互斥 | `ProneAction.isProne` 显式排除 `SlideLock.isLocked`；判定抽成纯函数 | — | `SlideLockTest` / `SlideLockWiringTest` / **`ProneActionPoseGateTest`**（八道门逐条否决 + 滑铲专项） |
-| 近战（趴下挥砍） | 0.75s / 13 关键帧，降低中段抬刀后集中前向横扫；两段由同一生成源正反同步，首末帧锚定 `prone:hold:sword`；65 帧刀尖最高 16.74、最低 5.79；预备位→侧滚 41 档最低 2.792 | — | `ProneSwingAlternationTest`、`PronePoseDataTest`、多视角带刀渲染 |
+| 近战（趴下挥砍） | 0.75s / 13 关键帧，降低中段抬刀后集中前向横扫；两段由同一生成源正反同步，首末帧锚定 `prone:hold:sword`；193 帧刀尖最高 12.46、最低 0.95；手腕 X 扫距 2.17~8.54、Z 前伸至 -10.90，命中时肘接近伸直；预备位→侧滚 41 档最低 2.792 | — | `ProneSwingAlternationTest`、`PronePoseDataTest`、多视角带刀渲染 |
 | 近战（站起后残留） | 挥动结束且不再趴着时 `STOP` 趴下变体（判定抽成 `shouldStopProneVariant`） | `05c7c14` | `ProneWiringTest`（结构）+ **`SwingPredicateStopRuleTest`**（行为） |
 | 打药 | 1.44s 完整循环：拿起/接触/推注/停顿/拔离/收回；首末姿势闭合，Catmull-Rom 与运行期一致 | — | `PronePoseDataTest`、逐帧渲染 |
 | 死亡 | 布娃娃捕获死亡瞬间的 KINETIC 骨骼，不退回僵直站姿 | — | `KineticRagdollMathTest`（映射/零跳变/关节范围） |

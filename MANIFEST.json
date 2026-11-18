@@ -2,12 +2,12 @@
   "schema": 1,
   "repo": "456123739/kinetic",
   "branch": "resources",
-  "generated_at": "2026-11-18T00:02:19+08:00",
-  "main_commit": "74bb0405caab1e073b444f88c45b066c687cd353",
+  "generated_at": "2026-11-18T23:04:46+08:00",
+  "main_commit": "be598dc",
   "totals": {
     "bundles": 7,
-    "bytes_raw": 65728759,
-    "bytes_archived": 28387408
+    "bytes_raw": 65805825,
+    "bytes_archived": 28464760
   },
   "bundles": [
     {
@@ -21,10 +21,10 @@
       ],
       "restore_to": "analysis/renders",
       "generator": "analysis/prone_build.py 等（见 tooling bundle）",
-      "file_count": 151,
-      "bytes_raw": 7904140,
-      "bytes_archived": 7904140,
-      "sha256": "f39f5a3f3f6912716955df61bcd04a1ad96e8a5a8f1a11c2bfc8278223136fa3",
+      "file_count": 152,
+      "bytes_raw": 7981202,
+      "bytes_archived": 7981202,
+      "sha256": "da022c40cc4424f1bba3b3b8ac746f33e06b6f788de508ae97fdf3c8c48cb858",
       "files": [
         {
           "path": "0_medical_transition.png",
@@ -623,13 +623,18 @@
         },
         {
           "path": "PRONE_swing_alt_final.png",
-          "bytes": 141491,
-          "sha256": "b85d30e3fe16ca9c449f2a06cd2d13f2dce06ecd3ead3217d90cd7f299f92982"
+          "bytes": 173324,
+          "sha256": "6dd74c467ceadf1cbdf401a125696c6e0583f069080a21df09558fe36d983878"
+        },
+        {
+          "path": "PRONE_swing_final.mp4",
+          "bytes": 13220,
+          "sha256": "845e75ef25d0330fb22f56580a6061cff9e0b6b1d6a8b528cc47f982a5c31be9"
         },
         {
           "path": "PRONE_swing_final.png",
-          "bytes": 141507,
-          "sha256": "ff8f60cba4459c1671137fc997bbd54bf18d1ad70901430411558351e8a254af"
+          "bytes": 173516,
+          "sha256": "76fdeb9ddc9d849ceb52e7d1dc7011c4eefe1ac7119ad65864937754e6158e4e"
         },
         {
           "path": "PRONE_throw_final.png",
@@ -5338,9 +5343,9 @@
       "restore_to": ".",
       "members_root": "analysis",
       "file_count": 92,
-      "bytes_raw": 769567,
-      "bytes_archived": 193257,
-      "sha256": "4af4dc017043d4ba92593f02c1e243b3947191747e0e74386c0fbc6dc9947023",
+      "bytes_raw": 769571,
+      "bytes_archived": 193547,
+      "sha256": "1e1b5b10a19838889c509432e087b8a83d5cb07fdfe31168002126ac469ce613",
       "members": [
         {
           "path": "analysis/backface_cull_geom_check.py",
@@ -5564,7 +5569,7 @@
         },
         {
           "path": "analysis/prone/swing.json",
-          "bytes": 3290
+          "bytes": 3291
         },
         {
           "path": "analysis/prone/_g.json",
@@ -5580,7 +5585,7 @@
         },
         {
           "path": "analysis/prone/generated/swing.json",
-          "bytes": 17098
+          "bytes": 17099
         },
         {
           "path": "analysis/prone/generated/reload.json",
@@ -5596,7 +5601,7 @@
         },
         {
           "path": "analysis/prone/generated/swing_alt.json",
-          "bytes": 17102
+          "bytes": 17103
         },
         {
           "path": "analysis/prone/generated/hold_sword.json",
@@ -5656,7 +5661,7 @@
         },
         {
           "path": "analysis/prone/swing_alt.json",
-          "bytes": 3019
+          "bytes": 3020
         },
         {
           "path": "analysis/prone/_med2.json",

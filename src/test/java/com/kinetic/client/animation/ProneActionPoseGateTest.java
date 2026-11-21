@@ -15,7 +15,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ProneActionPoseGateTest {
     private static boolean prone(boolean pose, boolean swimming, boolean onGround, boolean dead,
                                  boolean sleeping, boolean spectator, boolean riding, boolean locked) {
-        return ProneAction.isProne(pose, swimming, onGround, dead, sleeping, spectator, riding, locked);
+        return ProneAction.isProne(pose, swimming, onGround, dead, sleeping, spectator, riding, locked, false);
+    }
+
+    private static boolean proneMoving(boolean fastMovement) {
+        return ProneAction.isProne(true, false, true, false, false, false, false, false, fastMovement);
     }
 
     @Test
@@ -33,6 +37,14 @@ class ProneActionPoseGateTest {
         assertFalse(prone(true, false, true, false, false, true, false, false), "旁观");
         assertFalse(prone(true, false, true, false, false, false, true, false), "骑乘");
         assertFalse(prone(true, false, true, false, false, false, false, true), "滑铲锁定中");
+    }
+
+    @Test
+    void fastGroundMovementIsNotCrawlingEvenWithoutAGun() {
+        // 拿刀/空手滑铲时 SlideLock 不会锁定（它只覆盖持枪），以前这种滑铲会被当成爬行，
+        // 于是滑铲挥刀播成了趴下挥刀。速度门槛与 AnimationRegister 的爬行判定同源。
+        assertFalse(proneMoving(true), "高速贴地移动（滑铲/击退）不是爬行");
+        assertTrue(proneMoving(false), "慢速爬行仍然是爬行");
     }
 
     @Test

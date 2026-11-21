@@ -155,7 +155,7 @@ KINETIC_BENCH_MOLANG=1 ./gradlew test --offline --tests "*MolangEvaluationBenchm
 
 | 场景 | 修复 | 提交 | 守护 |
 | --- | --- | --- | --- |
-| 滑铲与趴下互斥 | `ProneAction.isProne` 显式排除 `SlideLock.isLocked`；判定抽成纯函数 | — | `SlideLockTest` / `SlideLockWiringTest` / **`ProneActionPoseGateTest`**（八道门逐条否决 + 滑铲专项） |
+| 滑铲与趴下互斥 | 只排除 `SlideLock` 不够：它仅在**持枪**滑铲时锁定，拿刀/空手滑铲会被当成爬行，滑铲挥刀于是播成趴下挥刀。改为按**水平速度**判定（与 `AnimationRegister` 区分 `climb`/`climbing` 同一门槛 0.2 格/tick），并在最后一次"快"之后再保留 0.6 秒覆盖滑铲减速尾段；判定抽成纯函数 | — | `SlideLockTest` / `SlideLockWiringTest` / **`ProneActionPoseGateTest`**（逐条否决 + 速度门槛专项） |
 | 近战（趴下挥砍） | 0.75s / 13 关键帧，降低中段抬刀后集中前向横扫；两段由同一生成源正反同步，首末帧锚定 `prone:hold:sword`；193 帧刀尖最高 12.46、最低 0.95；手腕 X 扫距 2.17~8.54、Z 前伸至 -10.90，命中时肘接近伸直；预备位→侧滚 41 档最低 2.792 | — | `ProneSwingAlternationTest`、`PronePoseDataTest`、多视角带刀渲染 |
 | 近战（站起后残留） | 挥动结束且不再趴着时 `STOP` 趴下变体（判定抽成 `shouldStopProneVariant`） | `05c7c14` | `ProneWiringTest`（结构）+ **`SwingPredicateStopRuleTest`**（行为） |
 | 打药 | 1.44s 完整循环：拿起/接触/推注/停顿/拔离/收回；首末姿势闭合，Catmull-Rom 与运行期一致 | — | `PronePoseDataTest`、逐帧渲染 |
@@ -163,8 +163,8 @@ KINETIC_BENCH_MOLANG=1 ./gradlew test --offline --tests "*MolangEvaluationBenchm
 | 侧躺过渡 | 站姿动作途中趴下**当帧即完整侧躺**（`CATCH_UP_PROGRESS=1.0` + 频道过渡 0），进入 0.15s / 退出 0.24s | `ed975bc`、`0d49ab6` | `ProneActionTest` |
 | 站起 / 死亡时的收尾 | 不再趴着时走 **SNAP 0.08s** 而不是 EXIT 0.24s；`armedCatchUp` 留住"动作是站着开始的"，再趴下当帧到位 | — | `ProneActionTest#standingUpSnapsTheRollBackWithinTheSnapWindow`、`#standingUpKeepsTheActionKindSoLyingDownAgainIsImmediate` |
 | 换弹 / 掐雷 | 换弹有退匣/取匣/插入/上膛，持雷有拔销/抬雷；左手操作物品时不再冒充支撑臂，持雷与投掷共用接缝补偿 | — | `TacReloadHintTest`、`GunFirePredicateGateTest`、`PronePoseDataTest` |
-| 趴下动作识别 | 换弹由 CLIENT 事件→当前 PLAY_ONCE→服务端同步接力；投掷按蓄力/主手脱手/随挥分态，无裸持有常驻；第二次投掷显式重播，副手不串主手 | — | `GunFirePredicateGateTest`、`TacReloadHintTest`、`ProneThrowableReleaseTest`、`PronePredicateMappingTest` |
-| 布娃娃没生成 | 提供方换版本后接口调不通、布娃娃没生成，而 KINETIC 照样让出死亡动画 → 尸体凭空消失。排队后每 tick 验证，20 tick 内没出现就登记回退、死亡动画继续画 | — | `RagdollDeathYieldTest` |
+| 趴下动作识别 | 换弹由 CLIENT 事件→当前 PLAY_ONCE→服务端同步接力；投掷按蓄力/主手脱手/随挥分态，无裸持有常驻；第二次投掷显式重播，副手不串主手。趴着按右键拿不到 `isUsingItem` 时，改用真实按键意图（`ProneUseIntent`：按着使用键 + 同一件主手物品 + 3 秒上限），两条入口共用同一个分类函数 | — | `GunFirePredicateGateTest`、`TacReloadHintTest`、`ProneThrowableReleaseTest`、`PronePredicateMappingTest`、**`ProneUseIntentTest`** |
+| 布娃娃没生成 | Ragdollified 1.2.2 由服务端权威生成；客户端死亡入口仅注入姿态并等待 6 tick，未收到服务端布娃娃才兜底 spawn。排队后验证 20 tick，仍不存在就登记回退、恢复死亡动画和尸体可见性 | — | `RagdollDeathYieldTest`、`RagdollTuningTest` 定向测试通过（禁止立即客户端 spawn、独立探测待处理状态） |
 | 跨姿态接力 | 趴着挥到一半站起来（或反向）时，新动画从**同一进度**继续（`seekTo` + `playAnimationSeeked`），不再回到第 0 帧 | — | `AnimationSeekTest`、`ProneSwingHandoverTest` |
 | 侧躺时头的侧倾 | `Head` 的 Y（绕身体长轴）从默认 +20（实测侧倾 **84°**，像整个头侧躺在耳朵上）收到目标 **45°**；X/Z 由 `prone_head_tilt.py` 联立反解，视线俯仰与横偏都不变 | — | `PronePoseDataTest`（只钉通道存在）；数值见 `prone-actions.md` §2.1 |
 | 支撑侧手臂入地 | 落地按动作真实支撑关系计算：左臂静止支撑时参与，换弹/拔销/投掷操作物品时退出；头与动作侧右臂始终不参与 | — | `PronePoseDataTest`、65 帧接地检查 |

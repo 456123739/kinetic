@@ -84,6 +84,17 @@ public final class ProneAction {
     private static final ConcurrentHashMap<Player, State> STATES = new ConcurrentHashMap<>();
     private static int observeCounter;
 
+    /**
+     * 最后一次"快"之后还继续按非爬行处理多久（tick）。
+     *
+     * <p>滑铲会减速，只按瞬时速度判会在尾段突然变成"爬行"，身体和挥刀姿势中途换一套。
+     * 0.6 秒足够盖住滑铲尾巴，又短到不会把真正的爬行误判成滑铲。
+     */
+    static final int FAST_MEMORY_TICKS = 12;
+
+    /** 每名玩家最后一次"水平速度超过爬行门槛"的 tick。 */
+    private static final ConcurrentHashMap<Player, Integer> LAST_FAST_TICK = new ConcurrentHashMap<>();
+
     private ProneAction() {
     }
 
@@ -99,7 +110,32 @@ public final class ProneAction {
                 player.isSleeping(),
                 player.isSpectator(),
                 player.getVehicle() != null,
-                SlideLock.isLocked(player));
+                SlideLock.isLocked(player),
+                fastGroundMovement(player));
+    }
+
+    /**
+     * 这一刻是不是"在地面上快速移动"（滑铲、被击退、顺着斜面滑下去）。
+     *
+     * <p>{@link SlideLock} 只覆盖"持枪滑铲"——拿刀或空手滑铲时它根本不会锁定，
+     * 于是 {@code Pose.SWIMMING} 会被当成爬行，滑铲挥刀就播成了趴下挥刀。这里改用速度判定，
+     * 与模型切换爬行循环用的是同一个门槛，不依赖手里拿什么。
+     */
+    static boolean fastGroundMovement(Player player) {
+        int now = player.tickCount;
+        if (AnimationRegister.isFastGroundMovement(player)) {
+            LAST_FAST_TICK.put(player, now);
+            return true;
+        }
+        Integer last = LAST_FAST_TICK.get(player);
+        if (last == null) {
+            return false;
+        }
+        if (now - last > FAST_MEMORY_TICKS || now < last) {
+            LAST_FAST_TICK.remove(player);
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -116,9 +152,11 @@ public final class ProneAction {
      * @param spectator    旁观
      * @param riding       骑着东西
      * @param slideLocked  {@link SlideLock} 判定为滑铲锁定中
+     * @param fastMovement 此刻正在地面上高速移动（滑铲/击退）；见 {@link #fastGroundMovement(Player)}
      */
     static boolean isProne(boolean swimmingPose, boolean swimming, boolean onGround, boolean dead,
-                           boolean sleeping, boolean spectator, boolean riding, boolean slideLocked) {
+                           boolean sleeping, boolean spectator, boolean riding, boolean slideLocked,
+                           boolean fastMovement) {
         return swimmingPose
                 && !swimming
                 && onGround
@@ -126,7 +164,8 @@ public final class ProneAction {
                 && !sleeping
                 && !spectator
                 && !riding
-                && !slideLocked;
+                && !slideLocked
+                && !fastMovement;
     }
 
     /** {@link #isProne(Player)} 的实体版：非玩家一律 false。 */
@@ -338,11 +377,13 @@ public final class ProneAction {
     public static void clear(@Nullable Player player) {
         if (player != null) {
             STATES.remove(player);
+            LAST_FAST_TICK.remove(player);
         }
     }
 
     public static void clearAll() {
         STATES.clear();
+        LAST_FAST_TICK.clear();
     }
 
     private static void prune(float renderTicks) {
@@ -350,6 +391,7 @@ public final class ProneAction {
         while (iterator.hasNext()) {
             var entry = iterator.next();
             if (entry.getKey().isRemoved() || renderTicks - entry.getValue().lastRenderTicks > 200.0f) {
+                LAST_FAST_TICK.remove(entry.getKey());
                 iterator.remove();
             }
         }

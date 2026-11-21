@@ -1,6 +1,7 @@
 package com.kinetic.client.animation.predicate;
 
 import com.kinetic.client.animation.ProneAction;
+import com.kinetic.client.animation.ProneUseIntent;
 import com.kinetic.client.animation.condition.InnerClassify;
 import com.kinetic.client.compat.swarfare.SWarfareCompat;
 import com.kinetic.client.compat.tacz.TACZCompat;
@@ -108,22 +109,38 @@ public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<
         // 这条判定不依赖任何联动模组的分支细节，因此对 TaCZ 之外的枪械/消耗品联动同样成立。
         if (player.isUsingItem()) {
             ItemStack using = player.getUseItem();
-            if (isThrowable(using) && using.getUseAnimation() != UseAnim.EAT
-                    && using.getUseAnimation() != UseAnim.DRINK) {
+            ProneAction.Kind usingKind = actionForStack(using);
+            if (usingKind == ProneAction.Kind.GRENADE) {
                 ProneAction.noteThrowableCharge(player, using);
-                return ProneAction.Kind.GRENADE;
+                return usingKind;
             }
             if (!using.isEmpty()) {
                 ProneAction.cancelThrowableCharge(player);
             }
             // using 为空说明最后一件投掷物可能刚被消耗：保留快照给下面的脱手判定。
-            if (MEDICAL_CLASS.equals(InnerClassify.getClassify(using))
-                    || idLooksLike(using, MEDICAL_HINTS)) {
-                return ProneAction.Kind.MEDICAL;
+            if (usingKind != ProneAction.Kind.NONE) {
+                return usingKind;
             }
-            UseAnim useAnim = using.getUseAnimation();
-            if (useAnim == UseAnim.EAT || useAnim == UseAnim.DRINK) {
-                return ProneAction.Kind.OTHER;
+        }
+        // 输入回退：趴在场上按右键时 isUsingItem 并不总会成立（站着做同样操作却会）。
+        // 把动画判定挂在那条下游状态上，就会得到"趴着按不出来、得先站起来再趴下"的观感。
+        // 这里改看玩家自己的按键：按着使用键 + 主手仍是同一件投掷物/医疗品。
+        if (ProneUseIntent.isHolding(player)) {
+            ItemStack held = player.getMainHandItem();
+            ProneAction.Kind heldKind = actionForStack(held);
+            if (heldKind == ProneAction.Kind.GRENADE) {
+                ProneAction.noteThrowableCharge(player, held);
+                return heldKind;
+            }
+            if (heldKind != ProneAction.Kind.NONE) {
+                // 只有在"按着使用键、但游戏并没有进入使用状态"时才会走到这里；限流到每秒一条，
+                // 方便在实机日志里确认这条回退真的在起作用，而不是又一次猜测。
+                if (!player.isUsingItem() && player.tickCount % 20 == 0) {
+                    com.kinetic.Kinetic.LOGGER.debug(
+                            "[prone] use-key fallback engaged: {} while isUsingItem=false",
+                            heldKind);
+                }
+                return heldKind;
             }
         }
         // 投掷物：swing 频道只在 entity.swinging 的 6 tick 里换成 prone:throw，
@@ -141,7 +158,7 @@ public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<
         }
         // 兼容路径：不通过 isUsingItem 表达蓄力的模组，仍按频道动画名识别。
         String hold = currentAnimation(event, CONTROLLER_HOLD);
-        if (hold != null && hold.startsWith("tac:mainhand:grenade")) {
+        if (hold != null && hold.contains("grenade")) {
             return ProneAction.Kind.GRENADE;
         }
         // 投掷脱手后，主手可能已经空了、swinging 也已归零，但一次性随挥还没播完。
@@ -173,6 +190,29 @@ public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<
 
 
     /**
+     * 一件正被使用的物品属于哪种匍匐动作。
+     *
+     * <p>两个入口（{@code isUsingItem} 与按键回退）共用同一份分类，避免两处规则漂移——
+     * 之前正是因为判定散在多个分支里，"站着能用、趴着不能用"才会只在一半路径上被修好。
+     */
+    static ProneAction.Kind actionForStack(ItemStack stack) {
+        if (stack == null || stack.isEmpty()) {
+            return ProneAction.Kind.NONE;
+        }
+        UseAnim useAnim = stack.getUseAnimation();
+        if (isThrowable(stack) && useAnim != UseAnim.EAT && useAnim != UseAnim.DRINK) {
+            return ProneAction.Kind.GRENADE;
+        }
+        if (MEDICAL_CLASS.equals(InnerClassify.getClassify(stack)) || idLooksLike(stack, MEDICAL_HINTS)) {
+            return ProneAction.Kind.MEDICAL;
+        }
+        if (useAnim == UseAnim.EAT || useAnim == UseAnim.DRINK) {
+            return ProneAction.Kind.OTHER;
+        }
+        return ProneAction.Kind.NONE;
+    }
+
+    /**
      * 这个物品是不是"扔出去"的东西。
      *
      * <p>手雷与投掷药水各有一条 KINETIC 自己的标签；两条都不在时退到注册名关键词，
@@ -180,6 +220,10 @@ public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<
      */
     public static boolean isThrowable(ItemStack stack) {
         if (stack == null || stack.isEmpty()) {
+            return false;
+        }
+        // 枪械永远不是投掷物：注册名兜底不能把"弹道武器"误判成"要扔出去的东西"。
+        if (TACZCompat.isGun(stack) || SWarfareCompat.isGun(stack)) {
             return false;
         }
         return stack.is(com.kinetic.init.ModItemTags.GRENADE)

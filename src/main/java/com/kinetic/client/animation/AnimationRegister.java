@@ -85,7 +85,13 @@ public class AnimationRegister {
      *
      * <p>爬行速度约 0.03~0.1 格/tick，滑铲起步约 0.4~0.6。取 0.2 作分界，两侧都留足余量。
      */
-    private static boolean isFastGroundMovement(Player player) {
+    /**
+     * 水平速度是否已经快到只可能是"滑铲"而不是"爬行"。
+     *
+     * <p>爬行速度约 0.03~0.1 格/tick，滑铲起步约 0.4~0.6。取 0.2 作分界，两侧都留足余量。
+     * 匍匐动作的趴姿判定复用同一门槛，避免"模型认为是滑铲、动作却认为是爬行"的分裂。
+     */
+    public static boolean isFastGroundMovement(Player player) {
         return player.getDeltaMovement().horizontalDistanceSqr() > 0.04;
     }
 

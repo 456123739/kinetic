@@ -4,7 +4,7 @@
 
 ## 当前 TaCZ 调用链
 
-构建固定使用 Modrinth 官方发行 `maven.modrinth:timeless-and-classics-zero:1.2.0-hotfix`（版本 ID `4yAbMXbz`，Minecraft 1.20.1 Forge，2026-11-15 发布）；截至 2026-11-18，这是该项目针对本仓库 MC/loader 组合的最新发行。对应 CurseForge 文件为 `9623132`。本页的调用链已直接按该发行源码核验，不以其他 MC 版本或旧版本推断兼容性。
+构建固定使用官方发行 **1.2.0-hotfix**（Modrinth 版本 ID `4yAbMXbz`，Minecraft 1.20.1 Forge；对应 CurseForge 文件 `9623132`）。构建坐标为 `maven.modrinth:timeless-and-classics-zero:1.2.0-hotfix`（sha1 `32af2ec6ca6d30678e29fa8e632c35123a2971ac`）。构件 68 MB，不随仓库提交：联网时由 Modrinth maven 解析，受限网络下把同一构件放进 `local-m2` 补充仓库（已在 `init-local-m2.gradle` 注册）即可离线构建。本页的调用链已直接按该发行源码核验，不以其他 MC 版本或旧版本推断兼容性。
 
 在该 `1.2.0-hotfix` 发行中，`EntityKineticBullet.onBulletTick()` 先将子弹线段交给方块射线检测，再根据穿透/爆炸模式调用 `EntityUtil.findEntityOnPath()` 或 `findEntitiesOnPath()`。后者按子弹扫掠区域收集候选实体，逐个调用 `EntityUtil.getHitResult()`，再按线段起点到命中点的距离排序；`TacHitResult` 将实体、命中点和 headshot 布尔值交给子弹后续伤害流程。
 

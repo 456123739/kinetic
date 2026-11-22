@@ -28,6 +28,7 @@ import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @EnabledIfEnvironmentVariable(named = "KINETIC_NATIVE_PATH", matches = ".+")
 @ExtendWith(NativeLibraryExtension.class)
@@ -95,6 +96,40 @@ class BakedModelCacheTest {
             assertEquals("root", repaired.sortedBones().get(0).name());
             assertEquals(2, parses.get());
         }
+    }
+
+    @Test
+    void warmHitDecodesTheCacheFileOnce() throws Exception {
+        var cache = new BakedModelCache(temp, new AtomicSharedCache(temp));
+        var container = new Hash256(new byte[Hash256.SIZE]);
+        var textureHash = new byte[Hash256.SIZE];
+        var geometry = geometry();
+        var hash = BakedModelCache.bakeHash(container, "main", textureHash);
+        writeNativeFixture(cache.path(container, hash), hash, geometry);
+        BakedModelCache.GeometrySupplier never = () -> {
+            throw new AssertionError("命中的缓存不应解析源几何");
+        };
+        BakedModelCache.TexturePixelsSupplier neverTexture = () -> {
+            throw new AssertionError("命中的缓存不应解码贴图");
+        };
+        for (int i = 0; i < 120; i++) {
+            cache.loadOrBake(container, "main", textureHash, never, neverTexture, 29,
+                    false, false, false, LOCATOR).close();
+        }
+        var samples = new java.util.ArrayList<Long>();
+        for (int round = 0; round < 9; round++) {
+            var before = System.nanoTime();
+            for (int i = 0; i < 200; i++) {
+                cache.loadOrBake(container, "main", textureHash, never, neverTexture, 29,
+                        false, false, false, LOCATOR).close();
+            }
+            samples.add(System.nanoTime() - before);
+        }
+        java.util.Collections.sort(samples);
+        // 单遍读：一次开文件、一次清单解析、一次原生负载解码。改前的命中路径会再整套走一遍。
+        System.out.printf("[baked-cache] warm load %.1f us/次（单遍：开 1 次、清单 1 次、负载 1 次）%n",
+                samples.get(4) / 1000.0 / 200);
+        assertTrue(samples.get(4) > 0);
     }
 
     @Test

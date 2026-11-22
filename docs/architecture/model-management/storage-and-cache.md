@@ -104,6 +104,8 @@ Remote storage 只保留已验证 bytes，不携带 session authority。`RemoteM
 
 内置默认模型的动画集按需绑定：`AnimationStore` 只保留 proto 表，第一次取用某个动画时才解析 molang 并做契约校验。绑定成功后立即释放该条 proto（`AnimationSource.release`），否则"惰性绑定"省下的内存会以原文形式继续常驻一整轮会话。
 
+命中 baked cache 时**只开一次文件**：校验与解码合并成一遍（此前 `validate` 之后再 `read`，清单与原生负载各读两遍）。失效仍走带锁的重建路径，access 错误不会被当成"没有缓存"。
+
 普通 geometry load 先验证 baked cache，仅在缺失或损坏、需要重建时解析 source geometry；cache-only probe 不解析未使用的 source geometry。容器 definition 与引用 chunks 的既有验证门禁仍然执行，intrinsic default 仍在 startup 解析并 resident bake，不通过此优化跳过默认内容准备。
 
 Expression 不经过模型管理 cache：模型携带 Molang source，由客户端在加载与运行时本地解析和求值，因此本页的派生物 cache 不包含 expression 产物。

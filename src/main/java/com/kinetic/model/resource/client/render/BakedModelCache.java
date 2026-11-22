@@ -60,6 +60,12 @@ public final class BakedModelCache {
                                boolean forceTranslucent, boolean hasPbr, GeoLocatorType locatorType) throws IOException {
         var bakeHash = bakeHash(containerId, resourceName, textureHash);
         var target = path(containerId, bakeHash);
+        // 命中时只开一次文件：validate() 之后再 read() 会把清单和原生负载各读两遍，
+        // 而热启动/热切换几乎全是命中。失效（缺失、截断、哈希不符）仍走下面带锁的重建路径。
+        var cached = readIfValid(target, bakeHash, locatorType);
+        if (cached != null) {
+            return cached;
+        }
         try {
             cache.materialize("baked", containerId + "/" + bakeHash, target,
                     candidate -> validate(candidate, bakeHash),
@@ -78,10 +84,11 @@ public final class BakedModelCache {
                                  GeoLocatorType locatorType) throws IOException {
         var bakeHash = bakeHash(containerId, resourceName, textureHash);
         var target = path(containerId, bakeHash);
-        if (!validate(target, bakeHash)) {
+        var cached = readIfValid(target, bakeHash, locatorType);
+        if (cached == null) {
             throw AssetLoadException.access("Baked model cache is unavailable");
         }
-        return read(target, bakeHash, locatorType);
+        return cached;
     }
 
     Path path(Hash256 containerId, Hash256 bakeHash) {
@@ -166,6 +173,49 @@ public final class BakedModelCache {
             throw error;
         } catch (IOException | RuntimeException error) {
             throw AssetLoadException.content("Invalid baked model cache", error);
+        }
+    }
+
+    /**
+     * 打开一次就完成"校验 + 解码"。
+     *
+     * <p>返回 {@code null} 表示这份缓存不可用（缺失、截断、哈希不符、原生负载损坏），调用方应重建；
+     * 真正的 I/O 错误仍然抛出 {@link AssetLoadException}，不会被误当成"没有缓存"。
+     */
+    private static @Nullable GeoModel readIfValid(Path file, Hash256 expected,
+                                                  GeoLocatorType locatorType) throws IOException {
+        final FileChannel opened;
+        try {
+            opened = FileChannel.open(file, StandardOpenOption.READ);
+        } catch (NoSuchFileException missing) {
+            return null;
+        } catch (IOException error) {
+            throw AssetLoadException.access("Failed to open baked model cache", error);
+        }
+        try (var channel = opened) {
+            var view = new BakedModelView(channel);
+            if (!view.bakeHash().equals(expected)) {
+                return null;
+            }
+            try (var data = view.readModelData(channel)) {
+                if (data == null) {
+                    return null;
+                }
+                final NativeBakedModel.ReadResult nativeModel;
+                try {
+                    nativeModel = NativeBakedModel.read(data, view.model().bones().size());
+                } catch (RuntimeException error) {
+                    return null;
+                }
+                return new GeoModel(expected.toString(), view.model(), locatorType, nativeModel);
+            }
+        } catch (AssetLoadException error) {
+            if (error.reason() == AssetLoadException.Reason.ACCESS) {
+                throw error;
+            }
+            return null;
+        } catch (IOException | RuntimeException error) {
+            return null;
         }
     }
 

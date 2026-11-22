@@ -139,7 +139,9 @@ public final class BakedModelCache {
                      StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
             writer.setData(bakeHash.bytes(), source, result);
             writer.write(channel);
-            channel.force(true);
+            if (com.kinetic.model.storage.CacheDurability.FORCE_DERIVED_CACHE_WRITES) {
+                channel.force(true);
+            }
         }
     }
 

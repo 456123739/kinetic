@@ -104,6 +104,8 @@ Remote storage 只保留已验证 bytes，不携带 session authority。`RemoteM
 
 内置默认模型的动画集按需绑定：`AnimationStore` 只保留 proto 表，第一次取用某个动画时才解析 molang 并做契约校验。绑定成功后立即释放该条 proto（`AnimationSource.release`），否则"惰性绑定"省下的内存会以原文形式继续常驻一整轮会话。
 
+派生缓存写入不 fsync：几何与动画都走「临时文件 → 校验 → 原子改名」，最终文件名下要么不存在、要么完整且通过校验；掉电最多留下被删掉的临时文件。实测本机 256 KB 文件 `write+force` 为 4.3~5.0 ms/个，不 force 为 0.3~1.9 ms/个，冷启动按 target 与动画集数量累计。需要强持久性的远端缓存与用户导出不受影响，仍各自 fsync。
+
 命中 baked cache 时**只开一次文件**：校验与解码合并成一遍（此前 `validate` 之后再 `read`，清单与原生负载各读两遍）。失效仍走带锁的重建路径，access 错误不会被当成"没有缓存"。
 
 普通 geometry load 先验证 baked cache，仅在缺失或损坏、需要重建时解析 source geometry；cache-only probe 不解析未使用的 source geometry。容器 definition 与引用 chunks 的既有验证门禁仍然执行，intrinsic default 仍在 startup 解析并 resident bake，不通过此优化跳过默认内容准备。

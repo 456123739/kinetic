@@ -155,7 +155,9 @@ public final class BakedAnimationCache {
                      StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
             writer.setData(containerId, targetId, inputHash, animations);
             writer.write(channel);
-            channel.force(true);
+            if (com.kinetic.model.storage.CacheDurability.FORCE_DERIVED_CACHE_WRITES) {
+                channel.force(true);
+            }
         }
     }
 

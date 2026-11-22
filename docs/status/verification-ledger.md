@@ -8,9 +8,9 @@
 | 项 | 值 |
 | --- | --- |
 | jar | `kinetic-3.0-dev-forge+mc1.20.1.jar` |
-| 字节数 | 17,763,072 |
-| sha256 | `ad90a63fce97d3a6ebd18d3b90be20cf0def5d24212b6e18c3366b750e2e7220` |
-| 测试 | 830 tests / 0 failures / 0 errors / 11 skipped |
+| 字节数 | 17,764,080 |
+| sha256 | `0e60fa015d3e08e946558207f0599c8963bed96626649d71f44d0c970cbe553a` |
+| 测试 | 833 tests / 0 failures / 0 errors / 11 skipped |
 | 构建 | JDK 17：`./gradlew build --offline`（含全量测试）pass |
 | 文档自检 | `python3 docs/tools/check_docs.py` → OK |
 

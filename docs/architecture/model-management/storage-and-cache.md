@@ -102,6 +102,8 @@ Remote storage 只保留已验证 bytes，不携带 session authority。`RemoteM
 
 私有 baked cache 明确排除 `ModelId`。Geometry key 由 `ContainerId`、resource name、基础纹理 hash、序列化几何大小、bake 选项与 renderer/runtime profile 派生；animation key 由 `ContainerId`、definition hash、render target、animation set 与 animation ABI 派生。完整 `CACHE_ABI` 继续参与目录、profile 与 hash domain，不共享 stable patch namespace、不扫描旧 ABI 目录，也不迁移已有 cache。当前或候选 cache/schema qualifier 大小写不敏感地包含 `unstable`、`dev` 或 `snapshot` 时，复用前必须要求完整原始版本字符串严格相等；baked payload 重开时由相同 schema 门禁执行。路径和进程共享锁同样以 `ContainerId` 分区，因此同一 `ModelId` 的不同容器不会误复用派生物。Catalog activation 另按[representation 查找顺序](catalog-and-sources.md)执行；Ready content 的普通 Resource 查找仍按 memory/GPU、baked cache、verified content、remote chunk cache 和 server transfer 逐层取得。
 
+普通 geometry load 先验证 baked cache，仅在缺失或损坏、需要重建时解析 source geometry；cache-only probe 不解析未使用的 source geometry。容器 definition 与引用 chunks 的既有验证门禁仍然执行，intrinsic default 仍在 startup 解析并 resident bake，不通过此优化跳过默认内容准备。
+
 Expression 不经过模型管理 cache：模型携带 Molang source，由客户端在加载与运行时本地解析和求值，因此本页的派生物 cache 不包含 expression 产物。
 
 Remote catalog 的模型卡先查 Ready 或执行 exact cache-only probe：metadata prefix、目标 definition 和引用的 model chunks 必须全部按当前 publication identity 验证，才可建立 3D target。任一 model chunk 缺失、损坏或不可访问时先展示内嵌/独立/远端 preview；只有连续 hover 超过产品门槛才尝试离线 target，且不为 model body 发起网络请求。Cache-only Flight 不加入普通在线 Flight 的 interest，也不能把离线 miss 固化到后续正常请求。

@@ -69,12 +69,21 @@ public final class BakedModelCache {
                                byte[] textureHash, com.kinetic.proto.mixel.asset.model.data.GeoModel source,
                                TexturePixelsSupplier texture, int originVersion, boolean forceCulling,
                                boolean forceTranslucent, boolean hasPbr, GeoLocatorType locatorType) throws IOException {
+        return loadOrBake(containerId, resourceName, textureHash, () -> source, texture,
+                originVersion, forceCulling, forceTranslucent, hasPbr, locatorType);
+    }
+
+    /** Source geometry is decoded only when a verified cache entry must be rebuilt. */
+    public GeoModel loadOrBake(Hash256 containerId, String resourceName,
+                               byte[] textureHash, GeometrySupplier source,
+                               TexturePixelsSupplier texture, int originVersion, boolean forceCulling,
+                               boolean forceTranslucent, boolean hasPbr, GeoLocatorType locatorType) throws IOException {
         var bakeHash = bakeHash(containerId, resourceName, textureHash);
         var target = path(containerId, bakeHash);
         try {
             cache.materialize("baked", containerId + "/" + bakeHash, target,
                     candidate -> validate(candidate, bakeHash),
-                    candidate -> bake(candidate, bakeHash, source, texture, originVersion,
+                    candidate -> bake(candidate, bakeHash, source.get(), texture, originVersion,
                             forceCulling, forceTranslucent, hasPbr));
         } catch (AssetLoadException error) {
             throw error;
@@ -272,6 +281,11 @@ public final class BakedModelCache {
 
     private static String sanitize(String value) {
         return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9._-]", "_");
+    }
+
+    @FunctionalInterface
+    public interface GeometrySupplier {
+        com.kinetic.proto.mixel.asset.model.data.GeoModel get() throws IOException;
     }
 
     @FunctionalInterface

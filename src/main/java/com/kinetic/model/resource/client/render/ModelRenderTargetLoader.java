@@ -246,11 +246,11 @@ public final class ModelRenderTargetLoader {
                         var bakeTextureHash = maskedTextureHash(textureHash);
                         main = resources.own(bakeModel(representation,
                                 targetId + "/" + selectedTexture + "/main",
-                                bakeTextureHash, geoModel(definition, "main"), masked, target,
+                                bakeTextureHash, () -> geoModel(definition, "main"), masked, target,
                                 textureProto, defaultModel, cacheOnly));
                         arm = resources.own(bakeModel(representation,
                                 targetId + "/" + selectedTexture + "/arm",
-                                bakeTextureHash, geoModel(definition, "arm"), masked, target,
+                                bakeTextureHash, () -> geoModel(definition, "arm"), masked, target,
                                 textureProto, defaultModel, cacheOnly));
                     }
                     var mainFiles = new ArrayList<Map.Entry<String, AnimationFile>>();
@@ -271,7 +271,7 @@ public final class ModelRenderTargetLoader {
                 }
                 case RENDER_TARGET_KIND_PROJECTILE, RENDER_TARGET_KIND_VEHICLE -> {
                     var baked = resources.own(bakeModel(representation, targetId + "/" + selectedTexture,
-                            textureHash, geoModel(definition, "main"), textures, target, textureProto,
+                            textureHash, () -> geoModel(definition, "main"), textures, target, textureProto,
                             defaultModel, cacheOnly));
                     var animations = resources.own(loadAnimations(representation, target.descriptor(), targetId,
                             "main", definitionHash, animationFiles,
@@ -350,13 +350,13 @@ public final class ModelRenderTargetLoader {
         }
 
         private GeoModel bakeModel(ModelRepresentation representation, String resourceName, byte[] textureHash,
-                                   com.kinetic.proto.mixel.asset.model.data.GeoModel geo,
+                                   BakedModelCache.GeometrySupplier geo,
                                    BakedModelCache.TexturePixelsSupplier texturePixels,
                                    RenderTargetView target,
                                    PBRTextureSet textureProto,
                                    boolean defaultModel, boolean cacheOnly) throws IOException {
             if (defaultModel) {
-                return BakedModelCache.bakeResident(geo, resourceName, texturePixels,
+                return BakedModelCache.bakeResident(geo.get(), resourceName, texturePixels,
                         CURRENT_RAW_UV_VERSION,
                         target.descriptor().settings().forceCulling(),
                         false, hasPbr(textureProto), PlayerLocator.get());

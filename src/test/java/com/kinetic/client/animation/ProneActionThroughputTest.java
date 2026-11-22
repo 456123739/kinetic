@@ -28,16 +28,27 @@ class ProneActionThroughputTest {
         }
 
         // 与测量段完全相同的输入形状：进入动作、趴着。
+        var bean = (com.sun.management.ThreadMXBean) java.lang.management.ManagementFactory
+                .getThreadMXBean();
+        bean.setThreadAllocatedMemoryEnabled(true);
+        var thread = Thread.currentThread().getId();
+        var beforeBytes = bean.getThreadAllocatedBytes(thread);
         long start = System.nanoTime();
         for (int i = 0; i < MEASURED; i++) {
             t += 1.0f / 3.0f;
             ProneAction.advance(state, t, true, true, ProneAction.Kind.MEDICAL);
         }
         long elapsed = System.nanoTime() - start;
+        var allocated = bean.getThreadAllocatedBytes(thread) - beforeBytes;
 
         double nanosPerCall = (double) elapsed / MEASURED;
-        System.out.printf("[perf] ProneAction.advance = %.1f ns/call (%d calls in %d ms)%n",
-                nanosPerCall, MEASURED, elapsed / 1_000_000L);
+        double bytesPerCall = (double) allocated / MEASURED;
+        System.out.printf("[perf] ProneAction.advance = %.1f ns/call, %.3f B/call "
+                        + "(%d calls in %d ms)%n",
+                nanosPerCall, bytesPerCall, MEASURED, elapsed / 1_000_000L);
+        // 方法名一直声称"无分配"，但此前只量了时间。给一个宽松上限把这件事钉住：
+        // 每帧每玩家都跑一次的路径一旦开始分配，GC 压力会随在线人数线性上涨。
+        assertTrue(bytesPerCall < 1.0, "单次推进分配了 " + bytesPerCall + " B，这条每帧路径必须无分配");
         assertTrue(nanosPerCall < MAX_NANOS_PER_CALL,
                 "单次推进 " + nanosPerCall + " ns 超过上限 " + MAX_NANOS_PER_CALL
                         + " ns，说明这条每帧路径上出现了分配或哈希查找级别的退化");

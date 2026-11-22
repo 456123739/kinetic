@@ -8,9 +8,9 @@
 | 项 | 值 |
 | --- | --- |
 | jar | `kinetic-3.0-dev-forge+mc1.20.1.jar` |
-| 字节数 | 17,754,904 |
-| sha256 | `42ff7e6ee82e7c030fd01c1cf27c99176f1a1fdb4b85c8332b6ca3a8d2bf7438` |
-| 测试 | 814 tests / 0 failures / 0 errors / 11 skipped |
+| 字节数 | 17,761,560 |
+| sha256 | `6b7f2fb800961e4976658a4f57b841113e5260e14174832998e64179c5b781aa` |
+| 测试 | 823 tests / 0 failures / 0 errors / 11 skipped |
 | 构建 | JDK 17：`./gradlew build --offline`（含全量测试）pass |
 | 文档自检 | `python3 docs/tools/check_docs.py` → OK |
 
@@ -123,7 +123,8 @@ find todo/gun-lod/src -name "*.java" -exec cat {} + | wc -l                     
 
 其余性能结论（无新增逐帧分配）：
 
-- `PronePredicate.detect` 的物品分类只在 `isUsingItem()` 为真时执行；
+- `PronePredicate.detect` 的物品分类有两条入口：`isUsingItem()` 为真时，以及"按着使用键且主手未变"的输入回退（`ProneUseIntent`）。两条入口共用 `actionForStack`，且回退本身只是一次 `ConcurrentHashMap` 查表；未按使用键时不会进入分类。
+- `PronePredicate.idLooksLike` 原先把注册名 `toLowerCase()` **每次调用都新建字符串**，而它每帧、每个可见玩家都会被问一次。改为按 `Item` 缓存小写 path（表项上限即物品注册表，常驻对象，不会泄漏），热路径上不再产生该分配。
 - `PlayerAnimatableCapability` 的皮肤变体判定已从"每帧轮询"改为"事件 + 失效集合驱动"（提交 `987d98e` 之前的工作）。
 
 ### 本次 CPU 基线

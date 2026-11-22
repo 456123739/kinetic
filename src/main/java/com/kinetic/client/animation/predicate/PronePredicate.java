@@ -247,15 +247,38 @@ public class PronePredicate implements IAnimationPredicate<CustomHumanoidEntity<
     }
 
     /** 物品注册名里是否含有关键词（不依赖任何联动模组）。 */
+    /**
+     * 物品注册名的小写 path，按 {@link Item} 缓存。
+     *
+     * <p>这里每帧、每个可见玩家都会问一次"是不是医疗品/投掷物"，而 {@code toLowerCase}
+     * 每次都会新建字符串；在渲染热路径上这是纯粹的白给分配。物品本身是单例且常驻，
+     * 表项数量以物品注册表为上限，不会泄漏。
+     */
+    private static final java.util.Map<net.minecraft.world.item.Item, String> ITEM_PATHS =
+            new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static @Nullable String itemPathLower(net.minecraft.world.item.Item item) {
+        String cached = ITEM_PATHS.get(item);
+        if (cached != null) {
+            return cached;
+        }
+        var key = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(item);
+        if (key == null) {
+            return null;
+        }
+        String path = key.getPath().toLowerCase(java.util.Locale.ROOT);
+        ITEM_PATHS.put(item, path);
+        return path;
+    }
+
     static boolean idLooksLike(ItemStack stack, String[] hints) {
         if (stack == null || stack.isEmpty()) {
             return false;
         }
-        var key = net.minecraftforge.registries.ForgeRegistries.ITEMS.getKey(stack.getItem());
-        if (key == null) {
+        String path = itemPathLower(stack.getItem());
+        if (path == null) {
             return false;
         }
-        String path = key.getPath().toLowerCase(java.util.Locale.ROOT);
         for (String hint : hints) {
             if (path.contains(hint)) {
                 return true;

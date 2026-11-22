@@ -54,6 +54,39 @@ class AnimationStoreTest {
     }
 
     @Test
+    void releasedSourceDropsBoundProtosAndKeepsTheRestLoadable() {
+        // 默认模型的 352 个动画以 proto 常驻；绑定成功后必须能把原文丢掉，
+        // 否则"惰性绑定"省下的内存会以另一份形式继续占着。
+        var protos = new java.util.LinkedHashMap<String,
+                com.kinetic.proto.mixel.asset.model.data.Animation>();
+        for (var name : List.of("walk", "idle")) {
+            protos.put(name, com.kinetic.proto.mixel.asset.model.data.Animation.newBuilder()
+                    .setName(name).setLength(0)
+                    .setLoop(com.kinetic.proto.mixel.asset.model.data.LoopType.LOOP_TYPE_LOOP)
+                    .build());
+        }
+        var store = AnimationStore.lazy(protos.keySet(), new AnimationStore.AnimationSource() {
+            @Override
+            public com.kinetic.proto.mixel.asset.model.data.Animation load(String name) {
+                return protos.get(name);
+            }
+
+            @Override
+            public void release(String name) {
+                protos.remove(name);
+            }
+        }, source -> animation(source.name()));
+
+        assertEquals("walk", store.get("walk").name);
+        assertEquals(List.of("idle"), List.copyOf(protos.keySet()),
+                "绑定完成后只剩还没被取用的动画");
+        assertEquals("idle", store.get("idle").name);
+        assertTrue(protos.isEmpty(), "全部绑定后不应再保留任何 proto");
+        assertEquals(AnimationStore.State.READY, store.state("walk"));
+        assertSame(store.get("walk"), store.get("walk"), "释放原文不影响已绑定结果");
+    }
+
+    @Test
     void concurrentReadersBindEachAnimationExactlyOnce() throws Exception {
         var binds = new java.util.concurrent.ConcurrentHashMap<String, AtomicInteger>();
         var store = AnimationStore.lazy(List.of("walk", "idle", "run", "jump"),

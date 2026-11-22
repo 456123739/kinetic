@@ -82,7 +82,17 @@ public final class BakedAnimationCache {
         for (var animation : flatten(animationFiles)) {
             protos.put(animation.name(), animation);
         }
-        return AnimationStore.lazy(protos.keySet(), protos::get, animation -> {
+        return AnimationStore.lazy(protos.keySet(), new AnimationStore.AnimationSource() {
+            @Override
+            public com.kinetic.proto.mixel.asset.model.data.Animation load(String animationName) {
+                return protos.get(animationName);
+            }
+
+            @Override
+            public void release(String animationName) {
+                protos.remove(animationName);
+            }
+        }, animation -> {
             final com.kinetic.geckolib3.core.builder.Animation value;
             try {
                 value = AnimationProtoMapper.animation(animation);

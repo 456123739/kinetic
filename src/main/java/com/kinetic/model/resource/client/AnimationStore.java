@@ -124,6 +124,8 @@ public final class AnimationStore extends Object2ReferenceOpenHashMap<String, An
             var value = Objects.requireNonNull(binder.bind(proto), "bound animation");
             super.put(name, value);
             slots.put(name, new Slot(State.READY, value));
+            // 绑定（含契约校验）已经完成，原始 proto 不再需要；留着就是把懒加载省下的内存又占回去。
+            source.release(name);
             return value;
         } catch (Exception error) {
             failureGate.fail(error);
@@ -186,6 +188,16 @@ public final class AnimationStore extends Object2ReferenceOpenHashMap<String, An
     @FunctionalInterface
     public interface AnimationSource {
         com.kinetic.proto.mixel.asset.model.data.Animation load(String animationName) throws Exception;
+
+        /**
+         * 绑定成功后释放该动画的原始 proto。
+         *
+         * <p>默认模型的 352 个动画以 proto 形式常驻，只有真正绑定过的那几个才需要留下解析结果；
+         * 但惰性绑定会把整张 proto 表一直挂在 source 上，等于"懒加载省下的内存又按原样留着"。
+         * 成功绑定后就不再需要原文，可以整条丢掉。落盘缓存那种按需读文件的 source 是空实现。
+         */
+        default void release(String animationName) {
+        }
     }
 
     @FunctionalInterface

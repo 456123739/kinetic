@@ -8,9 +8,9 @@
 | 项 | 值 |
 | --- | --- |
 | jar | `kinetic-3.0-dev-forge+mc1.20.1.jar` |
-| 字节数 | 17,761,560 |
-| sha256 | `6b7f2fb800961e4976658a4f57b841113e5260e14174832998e64179c5b781aa` |
-| 测试 | 823 tests / 0 failures / 0 errors / 11 skipped |
+| 字节数 | 17,762,780 |
+| sha256 | `35c9f14806802a52c75b4c57c008649abde7ea7c45cdefb83c2897fddb2d79f3` |
+| 测试 | 827 tests / 0 failures / 0 errors / 11 skipped |
 | 构建 | JDK 17：`./gradlew build --offline`（含全量测试）pass |
 | 文档自检 | `python3 docs/tools/check_docs.py` → OK |
 
@@ -126,6 +126,9 @@ find todo/gun-lod/src -name "*.java" -exec cat {} + | wc -l                     
 - `PronePredicate.detect` 的物品分类有两条入口：`isUsingItem()` 为真时，以及"按着使用键且主手未变"的输入回退（`ProneUseIntent`）。两条入口共用 `actionForStack`，且回退本身只是一次 `ConcurrentHashMap` 查表；未按使用键时不会进入分类。
 - `PronePredicate.idLooksLike` 原先把注册名 `toLowerCase()` **每次调用都新建字符串**，而它每帧、每个可见玩家都会被问一次。改为按 `Item` 缓存小写 path（表项上限即物品注册表，常驻对象，不会泄漏），热路径上不再产生该分配。
 - `PlayerAnimatableCapability` 的皮肤变体判定已从"每帧轮询"改为"事件 + 失效集合驱动"（提交 `987d98e` 之前的工作）。
+- `LocalPlayerStateReporter` 原先每次 tick 都先复制、转换整份 roaming 变量，再由 `PlayerStateReportPlanner` 判断这一刻能不能发。改为传供给器：只有通过会话/权威/最小间隔/是否需要该 section 的判断后才采样；无变化的 DELTA 也不再构造 `RoamingState`。
+- `ModelRenderTargetLoader` 原先在判断烘焙缓存命中**之前**就 `geoModel(...)` 解析整份源几何，热启动与热切换白付一次 protobuf 解析。改为传几何供给器后，命中路径与 cache-only 探测都不再解析。计数回归见 `BakedModelCacheTest`：冷缺失解析 1 次、热命中 0 次、损坏重建 1 次。
+- 枪械 LOD 移除后遗留的 `BakedModelCache.shared/installShared/bakeOnly/profileRoot/resolveCachePath/isCached` 没有调用方，其中静态入口还会在启动失败后继续持有烘焙根引用，整组删除。
 
 ### 本次 CPU 基线
 

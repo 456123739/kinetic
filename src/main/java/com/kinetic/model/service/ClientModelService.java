@@ -140,9 +140,6 @@ public final class ClientModelService implements AutoCloseable {
                     previews::export);
             candidateCatalog.setListener(candidateTargets::catalogChanged);
             var required = candidateTargets.startRequired(candidateCatalog.initialize());
-            // 枪械 LOD 的构建入口在 worker 线程、拿不到这个对象，所以把实例登记成进程级引用，
-            // 让两边共用同一个烘焙缓存根目录与同一套 capabilityKey（磁盘缓存因此天然互通）。
-            BakedModelCache.installShared(bakedModelCache);
             return new BootstrapCandidate(new ClientModelService(
                     candidateWorkers, candidateCatalog, candidateAssets, candidateTargets,
                     candidatePreviews, candidateExportRegistration,

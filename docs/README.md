@@ -21,9 +21,10 @@
   - [模组动画联动](future/mod-animation-integration.md)
   - [GPU Compute Renderer](future/gpu-compute-renderer.md)
   - [枪械 LOD 裁决材料](future/gun-lod-decision.md)
+  - [TaCZ 渲染优化实验与验收](future/tacz-render-optimization.md)
 
 <a id="subsystem-overviews"></a>
 
 ## 文档检查
 
-修改文档后运行 `python tools/check_docs.py`。
+修改文档后运行 `python3 docs/tools/check_docs.py`（从仓库根目录执行）。

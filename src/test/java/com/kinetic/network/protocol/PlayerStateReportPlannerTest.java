@@ -125,6 +125,43 @@ class PlayerStateReportPlannerTest {
         assertEquals(2F, delta.roamingUnsafe().variables().get(0).value_());
     }
 
+    @Test
+    void roamingIsSampledOnlyAtEligibleOpportunities() {
+        var planner = new PlayerStateReportPlanner();
+        planner.beginSession(PlayerStateReportPolicy.gameServer(true));
+        var calls = new AtomicInteger();
+        java.util.function.Supplier<PlayerStateReportPlanner.RoamingSample> sampler =
+                () -> sample(11, Map.of("speed", (float) calls.incrementAndGet()));
+
+        assertTrue(planner.observe(1, 3, sampler).isEmpty());
+        planner.acceptAuthority(hash(1), 11);
+        assertEquals(1F, planner.observe(1, 3, sampler).orElseThrow()
+                .roamingUnsafe().variables().get(0).value_());
+        assertTrue(planner.observe(DELTA_INTERVAL_NANOS, 3, sampler).isEmpty());
+        assertEquals(2F, planner.observe(1 + DELTA_INTERVAL_NANOS, 3, sampler).orElseThrow()
+                .roamingUnsafe().variables().get(0).value_());
+        assertEquals(2, calls.get());
+
+        assertFalse(planner(false).observe(1, 3, sampler).orElseThrow().hasRoaming());
+        assertEquals(2, calls.get());
+    }
+
+    @Test
+    void fullAndNamespaceChangesStillCarryEmptyRoamingSections() {
+        var planner = planner(true);
+        var full = planner.observe(1, 3, sample(1, Map.of())).orElseThrow();
+        assertTrue(full.hasRoaming());
+        assertTrue(full.roamingUnsafe().variables().isEmpty());
+
+        var changed = planner.observe(1 + DELTA_INTERVAL_NANOS, 3,
+                sample(11, Map.of())).orElseThrow();
+        assertEquals(StateWriteMode.STATE_WRITE_MODE_DELTA, changed.mode());
+        assertEquals(11, changed.roamingUnsafe().modelKey());
+        assertTrue(changed.roamingUnsafe().variables().isEmpty());
+        assertTrue(planner.observe(1 + 2 * DELTA_INTERVAL_NANOS, 3,
+                sample(11, Map.of())).isEmpty());
+    }
+
     private static PlayerStateReportPlanner planner(boolean syncRoaming) {
         var planner = new PlayerStateReportPlanner();
         planner.beginSession(PlayerStateReportPolicy.gameServer(syncRoaming));

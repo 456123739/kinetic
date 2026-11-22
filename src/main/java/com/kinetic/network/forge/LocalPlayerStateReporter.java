@@ -4,9 +4,7 @@ import com.kinetic.capability.PlayerAnimatableCapability;
 import com.kinetic.geckolib3.core.molang.util.StringPool;
 import com.kinetic.model.domain.Hash256;
 import com.kinetic.network.NetworkHandler;
-import com.kinetic.network.protocol.NegotiatedSessionPolicy;
 import com.kinetic.network.protocol.PlayerStateReportPlanner;
-import com.kinetic.network.protocol.PlayerStateSection;
 import com.kinetic.network.protocol.ProtocolLimits;
 import it.unimi.dsi.fastutil.ints.Int2FloatMap;
 import java.nio.charset.StandardCharsets;
@@ -17,7 +15,6 @@ import net.minecraft.client.player.LocalPlayer;
 final class LocalPlayerStateReporter {
     private final PlayerStateReportPlanner planner = new PlayerStateReportPlanner();
     private ClientSessionRuntime.BusinessSession boundSession;
-    private NegotiatedSessionPolicy policy;
 
     synchronized void setAnimation(String animationId) {
         planner.setAnimation(animationId);
@@ -39,7 +36,7 @@ final class LocalPlayerStateReporter {
         if (!bindCurrentSession()) {
             return;
         }
-        planner.observe(System.nanoTime(), player.getId(), roamingSample(capability))
+        planner.observe(System.nanoTime(), player.getId(), () -> roamingSample(capability))
                 .ifPresent(report -> {
                     try {
                         NetworkHandler.sendToServer(report);
@@ -55,9 +52,6 @@ final class LocalPlayerStateReporter {
      */
     private PlayerStateReportPlanner.RoamingSample roamingSample(
             PlayerAnimatableCapability capability) {
-        if (!policy.stateReportPolicy().requestedSections().contains(PlayerStateSection.ROAMING)) {
-            return PlayerStateReportPlanner.RoamingSample.absent();
-        }
         var namespace = planner.authoritativeRoamingKey();
         if (namespace == null) {
             namespace = capability.localRoamingKey();
@@ -71,11 +65,10 @@ final class LocalPlayerStateReporter {
     }
 
     synchronized void resetSession() {
-        if (boundSession == null && policy == null) {
+        if (boundSession == null) {
             return;
         }
         boundSession = null;
-        policy = null;
         planner.endSession();
     }
 
@@ -89,8 +82,7 @@ final class LocalPlayerStateReporter {
             return true;
         }
         boundSession = currentSession;
-        policy = currentSession.policy();
-        planner.beginSession(policy.stateReportPolicy());
+        planner.beginSession(currentSession.policy().stateReportPolicy());
         return true;
     }
 

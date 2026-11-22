@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /** Owns client report observations and commits each eligible send opportunity. */
 public final class PlayerStateReportPlanner {
@@ -114,6 +115,11 @@ public final class PlayerStateReportPlanner {
 
     public Optional<PlayerStateReport> observe(
             long nowNanos, int entityId, RoamingSample roaming) {
+        return observe(nowNanos, entityId, () -> roaming);
+    }
+
+    public Optional<PlayerStateReport> observe(
+            long nowNanos, int entityId, Supplier<RoamingSample> roaming) {
         if (policy == null || !authorityKnown) {
             return Optional.empty();
         }
@@ -126,14 +132,14 @@ public final class PlayerStateReportPlanner {
                 && nowNanos - lastFullOpportunityNanos >= fullInterval;
         var animationChanged = policy.requestedSections().contains(PlayerStateSection.ANIMATION)
                 && (full || !animationId.equals(observedAnimationId));
-        var sampled = policy.requestedSections().contains(PlayerStateSection.ROAMING)
-                && roaming.present() ? roaming : null;
+        var sample = policy.requestedSections().contains(PlayerStateSection.ROAMING)
+                ? roaming.get() : RoamingSample.absent();
+        var sampled = sample.present() ? sample : null;
         var currentRoaming = sampled == null ? Map.<String, Float>of() : sampled.values();
         var roamingKeyChanged = sampled != null && sampled.modelKey() != observedRoamingKey;
         var roamingSection = sampled == null ? null : roamingDelta(sampled.modelKey(), currentRoaming,
-                full || roamingKeyChanged ? Map.of() : observedRoaming);
-        if (!full && !animationChanged && (roamingSection == null
-                || !roamingKeyChanged && roamingSection.variables().isEmpty())) {
+                full || roamingKeyChanged ? Map.of() : observedRoaming, full || roamingKeyChanged);
+        if (!full && !animationChanged && roamingSection == null) {
             return Optional.empty();
         }
 
@@ -148,8 +154,7 @@ public final class PlayerStateReportPlanner {
                     : AnimationState.newBuilder()
                     .setAnimationId(animationId).build());
         }
-        if (roamingSection != null
-                && (full || roamingKeyChanged || !roamingSection.variables().isEmpty())) {
+        if (roamingSection != null) {
             report.setRoaming(roamingSection);
         }
 
@@ -173,15 +178,18 @@ public final class PlayerStateReportPlanner {
     }
 
     private static RoamingState roamingDelta(
-            int modelKey, Map<String, Float> current, Map<String, Float> previous) {
-        var result = RoamingState.newBuilder()
-                .setModelKey(modelKey);
-        current.forEach((name, value) -> {
-            if (!value.equals(previous.get(name))) {
+            int modelKey, Map<String, Float> current, Map<String, Float> previous,
+            boolean includeEmpty) {
+        RoamingState.Builder result = includeEmpty ? RoamingState.newBuilder().setModelKey(modelKey) : null;
+        for (var entry : current.entrySet()) {
+            if (!entry.getValue().equals(previous.get(entry.getKey()))) {
+                if (result == null) {
+                    result = RoamingState.newBuilder().setModelKey(modelKey);
+                }
                 result.addVariables(MolangVariable.newBuilder()
-                        .setName(name).setValue(value).build());
+                        .setName(entry.getKey()).setValue(entry.getValue()).build());
             }
-        });
-        return result.build();
+        }
+        return result == null ? null : result.build();
     }
 }

@@ -129,6 +129,8 @@ find todo/gun-lod/src -name "*.java" -exec cat {} + | wc -l                     
 - `LocalPlayerStateReporter` 原先每次 tick 都先复制、转换整份 roaming 变量，再由 `PlayerStateReportPlanner` 判断这一刻能不能发。改为传供给器：只有通过会话/权威/最小间隔/是否需要该 section 的判断后才采样；无变化的 DELTA 也不再构造 `RoamingState`。
 - `ModelRenderTargetLoader` 原先在判断烘焙缓存命中**之前**就 `geoModel(...)` 解析整份源几何，热启动与热切换白付一次 protobuf 解析。改为传几何供给器后，命中路径与 cache-only 探测都不再解析。计数回归见 `BakedModelCacheTest`：冷缺失解析 1 次、热命中 0 次、损坏重建 1 次。
 - 枪械 LOD 移除后遗留的 `BakedModelCache.shared/installShared/bakeOnly/profileRoot/resolveCachePath/isCached` 没有调用方，其中静态入口还会在启动失败后继续持有烘焙根引用，整组删除。
+- 内置默认模型的 352 个动画原先只做到"按需解析"，proto 原文仍被 `AnimationSource` 捕获并常驻整轮会话。现在绑定并完成契约校验后立即 `release` 该条（落盘来源为空实现，绑定失败仍保留原文），回归见 `AnimationStoreTest#releasedSourceDropsBoundProtosAndKeepsTheRestLoadable`。
+- 新增 TaCZ 整棵骨骼树的逐帧 CPU 基线（`TaczModelRenderBenchmarkTest`）：57 cube / 1368 顶点 = 19.8 µs/帧、4,816 B/帧，折算 0.347 µs/cube。三个"少建临时对象"的候选实测为负优化（374→486/389/478 ns），已淘汰并记录。
 
 ### 本次 CPU 基线
 

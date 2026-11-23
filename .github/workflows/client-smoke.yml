@@ -69,7 +69,7 @@ jobs:
           # timeout 的 124 是"跑够了"，其余非零都要查。
           set +e
           timeout --signal=TERM 600 xvfb-run -a -s "-screen 0 1280x720x24" \
-            ./gradlew runClient --console=plain 2>&1 | tee client.log
+            ./gradlew runClient -PkineticSmoke --console=plain 2>&1 | tee client.log
           code=${PIPESTATUS[0]}
           set -e
           if [ "$code" -ne 0 ] && [ "$code" -ne 124 ] && [ "$code" -ne 143 ]; then

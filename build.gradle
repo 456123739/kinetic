@@ -330,6 +330,9 @@ dependencies {
     collabImplementation "maven.modrinth:jei:15.20.0.112-forge"
     collabImplementation "maven.modrinth:emi:1.1.22+1.20.1+forge"
 
+    // CI 无头冒烟（-PkineticSmoke）时剔除在开发环境里跑不起来的可选联动模组。
+    // EMI 的 MinecraftClientMixin 在命名映射下 @Shadow 不到 f_91073_，会直接把客户端打死；
+    // 冒烟只证明 KINETIC 自身的 mixin 能应用、客户端能起到主菜单，不需要这些模组在场。
     collabRuntimeOnly "maven.modrinth:moonlight:1.20-2.16.19-forge"
     collabRuntimeOnly "maven.modrinth:mmmmmmmmmmmm:1.20-2.0.9-forge"
 
@@ -991,5 +994,12 @@ idea {
     module {
         downloadSources = true
         downloadJavadoc = true
+    }
+}
+
+if (project.hasProperty('kineticSmoke')) {
+    configurations.configureEach {
+        exclude group: 'maven.modrinth', module: 'emi'
+        exclude group: 'maven.modrinth', module: 'jei'
     }
 }

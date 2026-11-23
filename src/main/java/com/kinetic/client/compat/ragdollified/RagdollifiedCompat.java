@@ -71,9 +71,13 @@ public final class RagdollifiedCompat {
     /**
      * 姿态重写的存活窗口。
      *
-     * <p>只覆盖"布娃娃还没出现"的那段时间。原来是 20 秒，而提供方的采用窗口是 50ms ——
-     * 一旦存活判定失灵（比如按布娃娃 id 查询却传了玩家 id），这 20 秒内就变成**每 tick 把死亡姿态
-     * 重新写回去**：尸体被钉成站立死姿、推不动、只在物理与重写之间抖。2 秒足够跨过生成延迟。
+     * <p>提供方只在**生成布娃娃时**读一次姿态（{@code ClientRagdollManager} 与
+     * {@code RagdollSpawnPacket} 各一处 {@code MobPoseCapture.getPose}），采用窗口 50ms。
+     * 续写的作用是把新鲜度拖过"服务器包在路上"的那段时间；一旦布娃娃真的出现，续写就没有意义了。
+     *
+     * <p>{@code hasRagdoll(int)} 查的是按布娃娃实体 id 索引的表，传玩家 id 恒为 false，
+     * 所以这里必须有独立的停止条件（渲染路径上报的存活事实），否则会一直续写到窗口结束。
+     * 那不会改变已有尸体的物理，但会白白占用姿态表并让 {@code cleanup} 反复扫描。
      */
     private static final long PENDING_POSE_TTL_MS = 2_000L;
 

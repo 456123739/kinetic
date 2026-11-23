@@ -366,7 +366,7 @@ public final class KineticRagdollRenderer {
             dropState(ragdollId);
             return;
         }
-        dumpDiagnostics(ragdollId, state, positions, rotations, camera);
+        dumpDiagnostics(ragdollId, state, positions, rotations, camera, settled);
         draw(state, ragdollId, texture, poseStack, buffers, camera, torso);
     }
 
@@ -387,24 +387,34 @@ public final class KineticRagdollRenderer {
     private static void dumpDiagnostics(int ragdollId, KineticRagdollState state,
                                         org.joml.Vector3f[] positions,
                                         org.joml.Quaternionf[] rotations,
-                                        net.minecraft.world.phys.Vec3 camera) {
+                                        net.minecraft.world.phys.Vec3 camera, boolean settled) {
         if (!DIAGNOSTICS) {
             return;
         }
         if ((DIAGNOSTIC_COUNTER++ % 20) != 0) {
             return;
         }
+        var parts = com.raiiiden.ragdollified.RagdollPart.values();
         var torso = rotations[com.raiiiden.ragdollified.RagdollPart.TORSO.index];
         var torsoPosition = positions[com.raiiiden.ragdollified.RagdollPart.TORSO.index];
-        Kinetic.LOGGER.info("[Ragdollified][diag] id={} asleep={} torsoPos=({}, {}, {}) "
-                        + "torsoRot=({}, {}, {}, {}) hips=({}, {}, {}) pivot=({}, {}, {}) "
-                        + "scale=({}, {}) camY={}",
-                ragdollId, state.isAsleep(),
-                torsoPosition.x, torsoPosition.y, torsoPosition.z,
+        var detail = new StringBuilder();
+        for (var part : parts) {
+            var position = positions[part.index];
+            detail.append(part.name()).append("=(")
+                    .append(String.format(java.util.Locale.ROOT, "%.3f,%.3f,%.3f",
+                            position.x, position.y, position.z))
+                    .append(") ");
+        }
+        // 判别用：躯干是否在动、各刚体是否在动、以及本帧是否走了"静止复用"快路径。
+        // 若躯干与四肢位置几乎不变而画面立着，说明提供方的物理没有推进；
+        // 若位置在变但画面不动，则是 KINETIC 的映射或跳过逻辑把姿态冻住了。
+        Kinetic.LOGGER.info("[Ragdollified][diag] id={} asleep={} settled={} torsoRot=({}, {}, {}, {}) "
+                        + "hips=({}, {}, {}) pivot=({}, {}, {}) scale=({}, {}) camY={} | {}",
+                ragdollId, state.isAsleep(), settled,
                 torso.x, torso.y, torso.z, torso.w,
                 state.hipsX(), state.hipsY(), state.hipsZ(),
                 state.rootPivotX(), state.rootPivotY(), state.rootPivotZ(),
-                state.widthScale(), state.heightScale(), camera.y);
+                state.widthScale(), state.heightScale(), camera.y, detail.toString().trim());
     }
 
     @Nullable

@@ -61,6 +61,11 @@ public class MixinTweaker implements IMixinConfigPlugin {
                 list.add("client.embeddium.SodiumBufferBuilderMixin");
             }
 
+            // TaCZ 是可选联动：它的类不存在时这条 mixin 连加载都不该尝试。
+            if (net.minecraftforge.fml.ModList.get().isLoaded("tacz")) {
+                list.add("client.tacz.BedrockGunModelMixin");
+            }
+
             if (CreateCompat.isInstalled()) {
                 list.add("client.create.PlayerSkyhookRendererAccessor");
             }

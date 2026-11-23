@@ -41,6 +41,18 @@ public class MixinTweaker implements IMixinConfigPlugin {
 
     @Override
     public List<String> getMixins() {
+        try {
+            return collectMixins();
+        } catch (Throwable failure) {
+            // 整份配置失效会让客户端在启动阶段直接崩（"kinetic.mixins.json was invalid"）。
+            // 任何一个联动模组的判定出问题，都只能丢掉它自己的 mixin，不能牵连全部。
+            org.apache.logging.log4j.LogManager.getLogger("kinetic")
+                    .error("Failed to collect conditional mixins; continuing with the static list only", failure);
+            return null;
+        }
+    }
+
+    private List<String> collectMixins() {
         if (FMLEnvironment.dist == Dist.CLIENT) {
             List<String> list = Lists.newArrayList();
 

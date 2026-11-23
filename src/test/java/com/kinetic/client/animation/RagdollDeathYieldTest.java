@@ -39,9 +39,12 @@ class RagdollDeathYieldTest {
         // 1.2.2 的 ClientDeathHandler 会按模型类型判定能不能生成布娃娃；KINETIC 换过渲染器，
         // 判定为不支持 → 提供方不会生成。此时若还"按配置"让出死亡动画，尸体就凭空消失。
         String compat = Files.readString(COMPAT.toPath(), StandardCharsets.UTF_8);
-        int rule = compat.indexOf("isPlayerRagdollEnabled() && hasRagdollById(id)");
+        int rule = compat.indexOf("isPlayerRagdollEnabled() && ragdollExistsFor(id)");
         assertTrue(rule > 0,
                 "让出死亡动画必须要求布娃娃真的存在（或我们自己排过队），不能只看配置");
+        assertTrue(compat.contains("RAGDOLL_PRESENT"),
+                "存在判定必须以渲染路径的一手事实为准：hasRagdoll(int) 查的是布娃娃实体 id，"
+                        + "传玩家 id 恒为 false");
         assertTrue(compat.contains("setEntityHidden"),
                 "1.2.2 会隐藏尸体；回退时必须能把它放出来");
         assertTrue(compat.contains("unhideEntity"), "回退路径必须恢复可见性");
@@ -59,10 +62,12 @@ class RagdollDeathYieldTest {
         int flushEnd = compat.indexOf("public static void forgetEntity(", flushStart);
         assertTrue(flushStart >= 0 && flushEnd > flushStart, "必须存在独立的延迟兜底处理器");
         String flush = compat.substring(flushStart, flushEnd);
-        int wait = flush.indexOf("hasRagdollById(entityId)");
+        int wait = flush.indexOf("ragdollExistsFor(entityId)");
         int spawn = flush.indexOf("spawnRagdoll(living", wait);
         assertTrue(wait > 0 && spawn > wait,
                 "必须先查服务端那份是否存在，再决定自己补");
+        assertTrue(!flush.contains("hasRagdollById(entityId)"),
+                "不能用按布娃娃 id 的查询判断玩家那份是否存在");
     }
 
     @Test

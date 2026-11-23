@@ -57,7 +57,14 @@ public final class RagdollifiedCompat {
     /** 排队后等多久（tick）确认布娃娃真的出现；超时就回退到 KINETIC 自己的死亡动画。 */
     static final int RAGDOLL_VERIFY_TICKS = 20;
     /** 等服务端那份布娃娃多久（tick）；等不到再自己补一个客户端布娃娃。 */
-    static final int DEFERRED_SPAWN_TICKS = 6;
+    /**
+     * 等待服务端布娃娃的 tick 数。
+     *
+     * <p>原来 6 tick（0.3 秒）太短：服务器死亡处理 + spawn 包 + 客户端构造经常超过这个窗口，
+     * 于是"服务端还没来"被当成"服务端不会来"，客户端再补一份，同一具尸体就有两份布娃娃。
+     * 1 秒足够覆盖正常延迟，且死亡动画的让出由 {@link #shouldYieldDeathAnimation(Entity)} 单独控制。
+     */
+    static final int DEFERRED_SPAWN_TICKS = 20;
     private static final String API_CLASS = "com.raiiiden.ragdollified.api.RagdollifiedApi";
     private static final String CONFIG_CLASS = "com.raiiiden.ragdollified.config.RagdollifiedConfig";
     private static final String MANAGER_CLASS = "com.raiiiden.ragdollified.client.ClientRagdollManager";
@@ -580,7 +587,7 @@ public final class RagdollifiedCompat {
         // 1.2.2 的 ClientDeathHandler 会先用模型类型判定能不能生成布娃娃，而 KINETIC 换过渲染器，
         // 判定为不支持 → 提供方根本不生成。此时若还让出死亡动画，尸体就既没有布娃娃也没有
         // 死亡姿势——玩家看到的就是"死了直接消失"。
-        return isPlayerRagdollEnabled() && hasRagdollById(id);
+        return isPlayerRagdollEnabled() && ragdollExistsFor(id);
     }
 
     /**
@@ -598,7 +605,7 @@ public final class RagdollifiedCompat {
         while (it.hasNext()) {
             var entry = it.next();
             int entityId = entry.getKey();
-            if (hasRagdollById(entityId)) {
+            if (ragdollExistsFor(entityId)) {
                 it.remove();
                 continue;
             }
@@ -628,7 +635,7 @@ public final class RagdollifiedCompat {
         while (it.hasNext()) {
             var entry = it.next();
             int entityId = entry.getKey();
-            if (hasRagdollById(entityId)) {
+            if (ragdollExistsFor(entityId)) {
                 it.remove();
                 continue;
             }
@@ -691,6 +698,21 @@ public final class RagdollifiedCompat {
         } catch (ReflectiveOperationException | RuntimeException ignored) {
             // 放不出来也不影响死亡动画
         }
+    }
+
+    /**
+     * 该**玩家实体 id** 是否已经有布娃娃在画。
+     *
+     * <p>{@code RagdollifiedApi.hasRagdoll(int)} 查的是按**布娃娃实体 id** 索引的表
+     * （提供方的冲量队列也按那个 id 查），传玩家 id 恒为 false。用它判断"服务端布娃娃来了没有"
+     * 会让三条路径同时出错：到期后又 spawn 一份客户端布娃娃、把已存在的布娃娃登记成回退、
+     * 于是死亡动画和布娃娃同时画。这里以渲染路径的一手事实（本帧确实画到了这具布娃娃）为准，
+     * 再叠加提供方按 id 的查询（万一调用方传的本来就是布娃娃 id）。
+     */
+    private static boolean ragdollExistsFor(int entityId) {
+        return RAGDOLL_PRESENT.contains(entityId)
+                || hasPendingOrActive(entityId)
+                || hasRagdollById(entityId);
     }
 
     private static boolean hasRagdollById(int entityId) {

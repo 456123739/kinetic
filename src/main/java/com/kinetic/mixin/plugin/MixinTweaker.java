@@ -15,8 +15,9 @@ public class MixinTweaker implements IMixinConfigPlugin {
     private static final String RAGDOLLIFIED_MOD_ID = "ragdollified";
 
     public MixinTweaker() {
-        ParCoolCompat.init();
-        CreateCompat.init();
+        // 不要在这里直接调用联动模组的 compat 类：插件类一加载就会把它们连带的类型一起加载，
+        // 模组缺席时抛 NoClassDefFoundError，Mixin 只会报"kinetic.mixins.json was invalid"。
+        // 初始化推迟到确定模组存在之后（见 getMixins）。
     }
 
     @Override
@@ -55,6 +56,7 @@ public class MixinTweaker implements IMixinConfigPlugin {
             List<String> list = Lists.newArrayList();
 
             if (net.minecraftforge.fml.ModList.get().isLoaded("parcool")) {
+                com.kinetic.client.compat.parcool.ParCoolCompat.init();
                 list.add("client.parcool.AnimationAccessor");
                 list.add("client.parcool.DodgeAnimatorAccessor");
                 list.add("client.parcool.ExaggeratedSideDodgeAnimatorAccessor");
@@ -77,6 +79,7 @@ public class MixinTweaker implements IMixinConfigPlugin {
             }
 
             if (net.minecraftforge.fml.ModList.get().isLoaded("create")) {
+                com.kinetic.client.compat.create.CreateCompat.init();
                 list.add("client.create.PlayerSkyhookRendererAccessor");
             }
 

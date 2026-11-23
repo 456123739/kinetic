@@ -1,0 +1,71 @@
+name: client-smoke
+
+# 无头客户端冒烟：xvfb + Mesa 软件渲染下真正启动一次 1.20.1 客户端。
+#
+# 目的不是帧率（软件渲染只有个位数 FPS，测不了性能），而是"改动有没有让客户端崩"：
+# Mixin 是否应用、模组是否加载完成、窗口是否建起来。对渲染类改动，这能把"启动即崩"
+# 这一档问题挡在合并之前；画面是否正确仍然需要实机看。
+#
+# 现在用 continue-on-error 观察稳定性：先让它跑几轮都是绿的，再去掉这一行当门禁。
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [test/prone-anim-rework]
+
+concurrency:
+  group: client-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  boot:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install headless GL stack
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            xvfb libgl1-mesa-dri libgl1 libglu1-mesa mesa-utils
+
+      - name: Boot client until the main menu
+        run: |
+          set -o pipefail
+          mkdir -p run/client_a
+          # 客户端不会自己退出：跑到出现窗口与 OpenAL 初始化后由 timeout 结束。
+          timeout --signal=TERM 600 xvfb-run -a -s "-screen 0 1280x720x24" \
+            ./gradlew runClient --console=plain 2>&1 | tee client.log || true
+
+      - name: Fail on crash, require a started client
+        run: |
+          echo '--- 关键日志 ---'
+          grep -E 'Backend library|OpenAL initialized|Created:|LWJGL|Minecraft has crashed|Minecraft Crash Report|Mixin' \
+            client.log | tail -40 || true
+          if grep -qE 'Minecraft has crashed|---- Minecraft Crash Report ----' client.log; then
+            echo '::error::客户端崩溃'
+            exit 1
+          fi
+          if ! grep -qE 'OpenAL initialized|Created: [0-9]+x[0-9]+' client.log; then
+            echo '::error::客户端未到达主菜单（没有窗口/音频初始化日志）'
+            exit 1
+          fi
+
+      - name: Upload client log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-smoke-log
+          path: |
+            client.log
+            run/client_a/logs/**
+          if-no-files-found: warn

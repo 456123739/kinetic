@@ -22,6 +22,7 @@
   - [GPU Compute Renderer](future/gpu-compute-renderer.md)
   - [枪械 LOD 裁决材料](future/gun-lod-decision.md)
   - [TaCZ 渲染优化实验与验收](future/tacz-render-optimization.md)
+  - [TaCZ 静态网格补丁：实机验证清单](future/tacz-mesh-handoff.md)
 
 <a id="subsystem-overviews"></a>
 

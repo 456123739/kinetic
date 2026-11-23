@@ -15,7 +15,10 @@ import tempfile
 import zipfile
 
 SIGNATURE = re.compile(r"^META-INF/[^/]+\.(SF|RSA|DSA)$", re.IGNORECASE)
-ROOT = os.path.expanduser("~/.gradle/caches/modules-2")
+ROOTS = [
+    os.path.expanduser("~/.gradle/caches/modules-2"),
+    os.path.join("build", "moddev", "artifacts"),
+]
 
 
 def strip(path):
@@ -39,9 +42,12 @@ def strip(path):
 
 def main():
     changed = 0
-    for path in glob.glob(os.path.join(ROOT, "**", "*.jar"), recursive=True):
+    candidates = []
+    for root in ROOTS:
+        candidates.extend(glob.glob(os.path.join(root, "**", "*.jar"), recursive=True))
+    for path in candidates:
         name = os.path.basename(path)
-        if "forge" not in name:
+        if "forge" not in name and "minecraft" not in name:
             continue
         try:
             if strip(path):

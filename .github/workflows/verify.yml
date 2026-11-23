@@ -43,7 +43,8 @@ jobs:
       # 不这么做的话，任何加载 net.minecraftforge.* 的 JVM（代码生成、JUnit）都可能
       # 抛 "SHA-384 digest error"——CI 上实际发生过两次。
       - name: Prefetch dependencies
-        run: ./gradlew --no-daemon -q dependencies --configuration runtimeClasspath > /dev/null 2>&1 || true
+        # dependencies 只解析元数据，必须真的跑一次编译/取产物，jar 才会落进缓存。
+        run: ./gradlew --no-daemon -q compileJava > /dev/null 2>&1 || true
 
       - name: Strip jar signatures from Gradle cache
         run: python3 .github/scripts/strip-cache-signatures.py

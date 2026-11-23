@@ -90,6 +90,16 @@ public final class KineticRagdollRenderer {
     private static final boolean DIAGNOSTICS =
             Boolean.getBoolean("kinetic.debug.ragdoll");
     private static long DIAGNOSTIC_COUNTER;
+    /** 本帧已经画过的原实体 id，用来发现"同一具尸体两份布娃娃"。 */
+    private static final java.util.Set<Integer> DRAWN_THIS_FRAME = new java.util.HashSet<>();
+    /** 已经就重复问题告过警的实体，避免每帧刷屏。 */
+    private static final java.util.Set<Integer> DUPLICATE_FRAMES =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+    /** 停滞判定用的上一帧躯干位置与连续不变计数。 */
+    private static org.joml.Vector3f STALL_LAST_TORSO;
+    private static int STALL_SAMPLES;
+    private static final java.util.Set<Integer> STALL_WARNED =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     private KineticRagdollRenderer() {
     }
@@ -187,6 +197,7 @@ public final class KineticRagdollRenderer {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_ENTITIES) {
             return;
         }
+        DRAWN_THIS_FRAME.clear();
         var minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) {
             // 退出世界 / 换维度：这里既不会绘制，也等不到 pruneStates，所以必须主动放掉
@@ -267,6 +278,16 @@ public final class KineticRagdollRenderer {
             return;
         }
         AbstractClientPlayer player = findPlayer(ragdoll.getPlayerUUID());
+        // 同一具尸体被画了两次 = 至少有两份布娃娃在跑（客户端兜底那份没有服务端权威，
+        // 冲量打不到它，表现就是"推不动、只偶尔抖一下"）。这条日志把那种状态直接暴露出来。
+        int originalId = ragdoll.getOriginalEntityId();
+        if (!DRAWN_THIS_FRAME.add(originalId)) {
+            if (DUPLICATE_FRAMES.add(originalId)) {
+                Kinetic.LOGGER.warn("[Ragdollified] entity {} is being drawn by more than one ragdoll "
+                        + "in the same frame; expect the corpse to ignore impulses", originalId);
+            }
+        }
+
         // 本帧确实画到了这具布娃娃：告诉兼容层"别再给提供方喂死亡姿态了"。
         RagdollifiedCompat.noteRagdollPresent(ragdoll.getOriginalEntityId());
         var captured = CAPTURED.get(ragdoll.getOriginalEntityId());
@@ -405,6 +426,24 @@ public final class KineticRagdollRenderer {
                             position.x, position.y, position.z))
                     .append(") ");
         }
+        // 物理是否真的在推进：我们每帧都在重建（settled=false），但躯干位置一直没变。
+        // 这时画面是"立着的死姿"，而问题不在 KINETIC 的绘制，而是提供方的刚体没被推进。
+        var torsoPositionNow = positions[com.raiiiden.ragdollified.RagdollPart.TORSO.index];
+        if (!settled && STALL_LAST_TORSO != null
+                && STALL_LAST_TORSO.distanceSquared(torsoPositionNow) < 1.0e-8f) {
+            if (++STALL_SAMPLES == 40 && STALL_WARNED.add(ragdollId)) {
+                Kinetic.LOGGER.warn("[Ragdollified] ragdoll {}: torso has not moved for ~2s while we were "
+                        + "rebuilding every frame; the provider's bodies are not being advanced",
+                        ragdollId);
+            }
+        } else {
+            STALL_SAMPLES = 0;
+        }
+        if (STALL_LAST_TORSO == null) {
+            STALL_LAST_TORSO = new org.joml.Vector3f();
+        }
+        STALL_LAST_TORSO.set(torsoPositionNow);
+
         // 判别用：躯干是否在动、各刚体是否在动、以及本帧是否走了"静止复用"快路径。
         // 若躯干与四肢位置几乎不变而画面立着，说明提供方的物理没有推进；
         // 若位置在变但画面不动，则是 KINETIC 的映射或跳过逻辑把姿态冻住了。

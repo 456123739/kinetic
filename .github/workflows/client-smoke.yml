@@ -36,6 +36,15 @@ jobs:
           # 构建时间换正确性，等确认稳定后再开回。
           cache-disabled: true
 
+      # moddev 在全新 runner 上可能不产出 MCP 映射包，SRG 重命名工具会直接崩。
+      # 在 Gradle 启动前就位，配置阶段就已经能看到它。
+      - name: Seed MCP mappings
+        run: |
+          mkdir -p build/moddev/artifacts
+          if [ ! -f build/moddev/artifacts/intermediateToNamed.zip ]; then
+            cp gradle/mcp/intermediateToNamed.zip build/moddev/artifacts/
+          fi
+
       - name: Install headless GL stack
         run: |
           sudo apt-get update

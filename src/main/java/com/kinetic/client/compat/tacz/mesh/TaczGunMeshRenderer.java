@@ -10,7 +10,6 @@ import com.mojang.blaze3d.vertex.VertexBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
 
 /**
@@ -40,7 +39,7 @@ public final class TaczGunMeshRenderer {
     }
 
     /** 上传（首次或光照变化后）。返回是否可用。 */
-    public static boolean upload(BakedMeshes meshes, ResourceLocation texture) {
+    public static boolean upload(BakedMeshes meshes) {
         if (disabled) {
             return false;
         }
@@ -54,8 +53,11 @@ public final class TaczGunMeshRenderer {
         }
     }
 
-    /** 每帧绘制。{@code pose} 是模型空间的当前姿态。 */
-    public static boolean draw(BakedMeshes meshes, PoseStack pose, int light, ResourceLocation texture) {
+    /**
+     * 每帧绘制。{@code pose} 是模型空间的当前姿态，{@code renderType} 直接用 TaCZ 传进来的那个——
+     * 贴图、混合、剔除全都由它决定，这边不需要（也不应该）自己去解析枪械贴图。
+     */
+    public static boolean draw(BakedMeshes meshes, PoseStack pose, int light, RenderType renderType) {
         if (disabled || !meshes.ready()) {
             return false;
         }
@@ -67,7 +69,6 @@ public final class TaczGunMeshRenderer {
             if (meshes.light() != light) {
                 meshes.reuploadForLight(light);
             }
-            var renderType = RenderType.entityCutoutNoCull(texture);
             var matrix = pose.last().pose();
             renderType.setupRenderState();
             for (var chunk : meshes.buffers) {

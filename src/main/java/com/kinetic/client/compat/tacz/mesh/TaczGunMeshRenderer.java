@@ -102,6 +102,20 @@ public final class TaczGunMeshRenderer {
             this.mesh = mesh;
         }
 
+        public long bytes() {
+            return mesh.bytes();
+        }
+
+        /** 释放显存。淘汰或退出世界时必须调用，否则 VertexBuffer 会一直留着。 */
+        public void close() {
+            for (var chunk : buffers) {
+                chunk.buffer.close();
+            }
+            buffers.clear();
+            uploaded = false;
+            uploadedBytes -= mesh.bytes();
+        }
+
         public boolean ready() {
             return uploaded;
         }
@@ -124,6 +138,7 @@ public final class TaczGunMeshRenderer {
             if (uploaded) {
                 return;
             }
+            light = Integer.MIN_VALUE;
             for (var chunk : mesh.chunks()) {
                 var buffer = new VertexBuffer(VertexBuffer.Usage.STATIC);
                 uploadChunk(buffer, chunk.vertices());

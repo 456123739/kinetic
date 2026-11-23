@@ -46,6 +46,7 @@ public final class TaczGunMeshHook {
             }
             meshes = new TaczGunMeshRenderer.BakedMeshes(baked);
             MESHES.put(model, meshes);
+            enforceBudget();
         }
         if (!TaczGunMeshRenderer.upload(meshes)) {
             return false;
@@ -59,7 +60,27 @@ public final class TaczGunMeshHook {
         return drawn;
     }
 
+    /**
+     * 显存上限：超过预算就把整张表清掉（连同 VertexBuffer）。
+     *
+     * <p>不做逐条 LRU 是有意的：枪只有几十把、缓存又只在渲染线程访问，整表清空最多让下一次持枪
+     * 重新分帧烘一遍（11~16 帧），比起"为了省几把枪而维护一套淘汰顺序"更不容易出错。
+     * 不清空才是真问题——那样每把见过的枪都会把显存一直占着。
+     */
+    private static void enforceBudget() {
+        long used = 0;
+        for (var entry : MESHES.values()) {
+            used += entry.bytes();
+        }
+        if (used > TaczGunMeshCache.BUDGET_BYTES) {
+            clear();
+        }
+    }
+
     public static void clear() {
+        for (var entry : MESHES.values()) {
+            entry.close();
+        }
         MESHES.clear();
         PENDING.clear();
     }

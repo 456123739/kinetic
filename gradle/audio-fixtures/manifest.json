@@ -1,0 +1,70 @@
+{
+  "cases": [
+    {
+      "id": "opus-origin",
+      "encoded": "opus-origin.ogg",
+      "reference": "opus-origin.s16le",
+      "codec": "opus",
+      "source_channels": 1,
+      "sample_rate": 48000,
+      "frames": 60001,
+      "pre_skip": 312,
+      "short_eligible": true
+    },
+    {
+      "id": "opus-input-rate",
+      "encoded": "opus-input-rate.ogg",
+      "reference": "opus-input-rate.s16le",
+      "codec": "opus",
+      "source_channels": 1,
+      "sample_rate": 48000,
+      "frames": 60001,
+      "pre_skip": 312,
+      "short_eligible": true
+    },
+    {
+      "id": "opus-under",
+      "encoded": "opus-under.ogg",
+      "reference": "opus-under.s16le",
+      "codec": "opus",
+      "source_channels": 2,
+      "sample_rate": 48000,
+      "frames": 191999,
+      "pre_skip": 312,
+      "short_eligible": true
+    },
+    {
+      "id": "opus-long",
+      "encoded": "opus-long.ogg",
+      "reference": "opus-long.s16le",
+      "codec": "opus",
+      "source_channels": 1,
+      "sample_rate": 48000,
+      "frames": 240000,
+      "pre_skip": 312,
+      "short_eligible": false
+    },
+    {
+      "id": "vorbis-under",
+      "encoded": "vorbis-under.ogg",
+      "reference": "vorbis-under.s16le",
+      "codec": "vorbis",
+      "source_channels": 1,
+      "sample_rate": 44100,
+      "frames": 176399,
+      "pre_skip": 0,
+      "short_eligible": true
+    },
+    {
+      "id": "vorbis-exact",
+      "encoded": "vorbis-exact.ogg",
+      "reference": "vorbis-exact.s16le",
+      "codec": "vorbis",
+      "source_channels": 1,
+      "sample_rate": 44100,
+      "frames": 176400,
+      "pre_skip": 0,
+      "short_eligible": false
+    }
+  ]
+}

@@ -55,6 +55,7 @@ jobs:
       - name: Build and test
         env:
           KINETIC_NATIVE_PATH: ${{ github.workspace }}/src/main/resources/META-INF/native/libkinetic.so
+          KINETIC_AUDIO_FIXTURE_DIR: ${{ github.workspace }}/gradle/audio-fixtures
           LANG: C.UTF-8
           LC_ALL: C.UTF-8
         run: ./gradlew build --console=plain

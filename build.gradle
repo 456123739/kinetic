@@ -67,7 +67,9 @@ legacyForge {
     version = "1.20.1-47.4.3"
 
     parchment {
-        mappingsVersion = '+'
+        // 固定版本：'+' 会让每台机器/每次 CI 解析到不同的参数名映射，
+        // 从而出现"本机能编、CI 编不过"这种不可复现的差异。
+        mappingsVersion = '2023.09.03'
         minecraftVersion = '1.20.1'
     }
 

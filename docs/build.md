@@ -110,3 +110,7 @@ curl -s https://api.github.com/repos/456123739/kinetic-releases/releases/tags/v3
 任何字节），文件内的 SONAME 与库名同步改写。**其余 `ysm::` 拼写是编译进符号表与 RTTI 的 C++ 命名
 空间**（以及 iguana 反射类型名、legacy `.ysm` 扩展名），改动它们会破坏动态链接与 legacy 导入，
 因此保持不变；它们不可见于任何 Mod 界面、配置或日志。
+
+## protoc 与离线构建
+
+`generateProto` 需要 protoc 3.21.12。仓库在 `libs/protoc-3.21.12-linux-x86_64.exe` 放了一份（flatDir 仓库会按 `名称-版本-分类器.扩展名` 解析到它），因此没有网络也能构建；删掉这个文件则回退到插件默认行为——从 mavenCentral 下载对应平台的可执行文件。

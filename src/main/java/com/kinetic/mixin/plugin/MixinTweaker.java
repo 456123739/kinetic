@@ -55,6 +55,12 @@ public class MixinTweaker implements IMixinConfigPlugin {
                 list.add("client.parcool.WallJumpAnimatorAccessor");
             }
 
+            // Embeddium 是可选的渲染联动。它的 mixin 目标类只在该模组存在时才加载得进来，
+            // 静态写在配置里会让"没装 Embeddium"的客户端在启动阶段就崩在 Mixin 初始化。
+            if (LoadingModList.get().getModFileById("embeddium") != null) {
+                list.add("client.embeddium.SodiumBufferBuilderMixin");
+            }
+
             if (CreateCompat.isInstalled()) {
                 list.add("client.create.PlayerSkyhookRendererAccessor");
             }

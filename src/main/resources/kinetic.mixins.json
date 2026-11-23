@@ -25,8 +25,7 @@
     "client.SoundEngineAccessor",
     "client.SoundManagerAccessor",
     "client.ThrowableItemProjectileAccessor",
-    "client.LevelRendererMixin",
-    "client.embeddium.SodiumBufferBuilderMixin"
+    "client.LevelRendererMixin"
   ],
   "mixins": [
     "AbstractArrowEntityMixin",

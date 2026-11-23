@@ -453,9 +453,20 @@ public final class RagdollifiedCompat {
      * 于是它会退回自行捕获——而 KINETIC 替换了渲染器，那条路必然失败。这里在客户端每 tick 重写
      * 同一份姿态，把新鲜度窗口续上，确保它最终仍会采用我们的死亡姿态。
      */
-    /** 渲染路径调用的存活上报：本帧确实画到了该实体对应的布娃娃。 */
+    /**
+     * 渲染路径调用的存活上报：本帧确实画到了该实体对应的布娃娃。
+     *
+     * <p>这条事实同时会**纠正**先前的误判：如果验证窗口内没看到布娃娃，我们曾把它登记成
+     * {@code FALLBACK_DEATHS}（死亡动画继续画）。那只说明"当时没画到"——比如尸体在绘制距离外、
+     * 或者包晚到了。一旦真的画到，就必须撤销那条登记，否则玩家走近时会同时看到死亡姿势和布娃娃。
+     */
     public static void noteRagdollPresent(int originalEntityId) {
         RAGDOLL_PRESENT.add(originalEntityId);
+        if (FALLBACK_DEATHS.remove(originalEntityId) != null) {
+            Kinetic.LOGGER.debug("[Ragdollified] ragdoll {} turned up after being marked as a fallback; "
+                    + "the death animation yields again", originalEntityId);
+        }
+        PENDING_VERIFY.remove(originalEntityId);
     }
 
     public static void refreshPendingDeathPoses() {

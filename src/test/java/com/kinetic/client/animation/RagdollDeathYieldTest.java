@@ -51,6 +51,20 @@ class RagdollDeathYieldTest {
     }
 
     @Test
+    void seeingTheRagdollUndoesAnEarlierFallbackMark() throws Exception {
+        // 验证窗口内没画到，只说明"当时没画到"（距离外 / 包晚到），不等于"没有布娃娃"。
+        // 一旦真的画到，必须撤销回退登记，否则走近时死亡姿势会和布娃娃同时出现。
+        String compat = Files.readString(COMPAT.toPath(), StandardCharsets.UTF_8);
+        int note = compat.indexOf("public static void noteRagdollPresent(int originalEntityId)");
+        int end = compat.indexOf("public static void refreshPendingDeathPoses", note);
+        assertTrue(note > 0 && end > note, "必须存在渲染侧的存活上报");
+        String body = compat.substring(note, end);
+        assertTrue(body.contains("FALLBACK_DEATHS.remove("),
+                "存活上报必须撤销先前的回退登记，否则尸体会同时画死亡姿势和布娃娃");
+        assertTrue(body.contains("PENDING_VERIFY.remove("), "存活后不必再等待验证");
+    }
+
+    @Test
     void theServerOwnsTheRagdollAndTheClientOnlyBacksUp() throws Exception {
         // 1.2.2 反编译确认：PhysicsHooks.spawnRagdoll 只在服务端跑，玩家的 modelType 写死
         // HUMANOID_STANDARD（不看客户端渲染器）；客户端只负责渲染同步过来的布娃娃。

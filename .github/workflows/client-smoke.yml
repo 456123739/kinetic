@@ -6,7 +6,7 @@ name: client-smoke
 # Mixin 是否应用、模组是否加载完成、窗口是否建起来。对渲染类改动，这能把"启动即崩"
 # 这一档问题挡在合并之前；画面是否正确仍然需要实机看。
 #
-# 现在用 continue-on-error 观察稳定性：先让它跑几轮都是绿的，再去掉这一行当门禁。
+# 现在它是硬门禁：构建失败、客户端崩溃、没到主菜单都算失败。
 
 on:
   workflow_dispatch:
@@ -21,7 +21,6 @@ jobs:
   boot:
     runs-on: ubuntu-22.04
     timeout-minutes: 45
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -43,14 +42,26 @@ jobs:
           set -o pipefail
           mkdir -p run/client_a
           # 客户端不会自己退出：跑到出现窗口与 OpenAL 初始化后由 timeout 结束。
+          # timeout 的 124 是"跑够了"，其余非零都要查。
+          set +e
           timeout --signal=TERM 600 xvfb-run -a -s "-screen 0 1280x720x24" \
-            ./gradlew runClient --console=plain 2>&1 | tee client.log || true
+            ./gradlew runClient --console=plain 2>&1 | tee client.log
+          code=${PIPESTATUS[0]}
+          set -e
+          if [ "$code" -ne 0 ] && [ "$code" -ne 124 ] && [ "$code" -ne 143 ]; then
+            echo "::error::runClient 退出码 $code"
+            exit 1
+          fi
 
       - name: Fail on crash, require a started client
         run: |
           echo '--- 关键日志 ---'
           grep -E 'Backend library|OpenAL initialized|Created:|LWJGL|Minecraft has crashed|Minecraft Crash Report|Mixin' \
             client.log | tail -40 || true
+          if grep -qE 'BUILD FAILED' client.log; then
+            echo '::error::构建失败（客户端根本没起来）'
+            exit 1
+          fi
           if grep -qE 'Minecraft has crashed|---- Minecraft Crash Report ----' client.log; then
             echo '::error::客户端崩溃'
             exit 1

@@ -34,7 +34,15 @@ def builtinToolLauncher = javaToolchains.launcherFor {
 
 def configureBuiltinToolTask = { BuiltinModelToolTask task, String command ->
     task.command.set(command)
-    task.toolClasspath.from(sourceSets.builtinIndexTool.runtimeClasspath)
+    // forge-*-universal.jar 是带签名的原始发行包，而 moddev 已经把打过补丁、去掉签名的
+    // forge 构件放进了 runtimeClasspath。两个都在时，JVM 会为前者做 jar 摘要校验，
+    // 一旦环境差异导致摘要不符就抛 "SHA-384 digest error" 把工具进程直接打死（CI 复现过）。
+    // 工具只需要类，这里把带签名的原始 universal 包排除掉。
+    task.toolClasspath.from(providers.provider {
+        sourceSets.builtinIndexTool.runtimeClasspath.files.findAll {
+            !it.name.endsWith('-universal.jar')
+        }
+    })
     task.nativeLibrary.set(kineticNativeLibraryFile)
     task.operatingSystem.set(providers.systemProperty('os.name'))
     task.architecture.set(providers.systemProperty('os.arch'))

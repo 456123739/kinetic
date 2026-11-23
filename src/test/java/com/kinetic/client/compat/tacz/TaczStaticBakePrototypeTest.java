@@ -89,8 +89,20 @@ class TaczStaticBakePrototypeTest {
                 }
             });
 
-            // 口径 C：烘焙后矩阵 + 顶点回放（无 VBO 的兜底路径）
+            // 口径 C：烘焙后矩阵 + 顶点回放**写进真实缓冲**（无 VBO 的兜底路径）。
+            // 用只计数的 sink 会低估回放成本——真正的 BufferBuilder 要把每个顶点写进字节数组，
+            // 那一份内存写入才是这条路的真实代价。
+            var buffer = new WritingSink(vertices * 8);
             double withReplay = measure(() -> {
+                var stack = pose();
+                buffer.reset();
+                for (var chunk : chunks) {
+                    chunk.replay(stack.last().pose(), buffer);
+                }
+            });
+
+            // 口径 D：同上但 sink 只计数，用来量化"写入本身"占多少
+            double replayCounting = measure(() -> {
                 var stack = pose();
                 var target = new CountingSink();
                 for (var chunk : chunks) {
@@ -104,6 +116,9 @@ class TaczStaticBakePrototypeTest {
                     file.getFileName().toString().replace("_geo.json", ""), chunks.size(), vertices,
                     immediate / 1000.0, matrixOnly / 1000.0, withReplay / 1000.0,
                     immediate / Math.max(1.0, matrixOnly), immediate / Math.max(1.0, withReplay)));
+            report.append(String.format(java.util.Locale.ROOT,
+                    "%-10s 其中：空 sink 回放 %6.1f µs / 真实写入 %7.1f µs%n",
+                    "", replayCounting / 1000.0, withReplay / 1000.0));
             assertTrue(immediateVertices > 0, "即时模式必须真的发射了顶点");
         }
         System.out.println("\n=== 静态烘焙原型：同一批真实模型的每帧 CPU 对比 ===\n" + report);
@@ -329,6 +344,90 @@ class TaczStaticBakePrototypeTest {
         @Override
         public void endVertex() {
             push();
+        }
+
+        @Override
+        public void defaultColor(int r, int g, int b, int a) {
+        }
+
+        @Override
+        public void unsetDefaultColor() {
+        }
+    }
+
+    /** 模拟 BufferBuilder 的写入：把每个顶点写进预分配的 float 数组。 */
+    private static final class WritingSink implements VertexConsumer {
+        private final float[] data;
+        private int cursor;
+        private float x;
+        private float y;
+        private float z;
+        private float u;
+        private float v;
+        private float nx;
+        private float ny;
+        private float nz;
+
+        WritingSink(int capacity) {
+            this.data = new float[Math.max(64, capacity)];
+        }
+
+        void reset() {
+            cursor = 0;
+        }
+
+        @Override
+        public VertexConsumer vertex(double px, double py, double pz) {
+            x = (float) px;
+            y = (float) py;
+            z = (float) pz;
+            return this;
+        }
+
+        @Override
+        public VertexConsumer color(int r, int g, int b, int a) {
+            return this;
+        }
+
+        @Override
+        public VertexConsumer uv(float uu, float vv) {
+            u = uu;
+            v = vv;
+            return this;
+        }
+
+        @Override
+        public VertexConsumer overlayCoords(int uu, int vv) {
+            return this;
+        }
+
+        @Override
+        public VertexConsumer uv2(int uu, int vv) {
+            return this;
+        }
+
+        @Override
+        public VertexConsumer normal(float ax, float ay, float az) {
+            nx = ax;
+            ny = ay;
+            nz = az;
+            return this;
+        }
+
+        @Override
+        public void endVertex() {
+            int at = cursor;
+            if (at + 8 <= data.length) {
+                data[at] = x;
+                data[at + 1] = y;
+                data[at + 2] = z;
+                data[at + 3] = u;
+                data[at + 4] = v;
+                data[at + 5] = nx;
+                data[at + 6] = ny;
+                data[at + 7] = nz;
+                cursor = at + 8;
+            }
         }
 
         @Override

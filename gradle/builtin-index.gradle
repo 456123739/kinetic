@@ -1,5 +1,27 @@
 import com.kinetic.gradle.BuiltinModelToolTask
 
+// CI 的 moddev 流水线在全新 runner 上偶尔不产出 MCP 映射包，SRG 重命名工具随即报
+// "Missing required MCP data: intermediateToNamed.zip"。仓库里带了一份同版本产物，
+// 缺失时补上；已存在则不覆盖（正常流水线优先）。
+tasks.register('ensureMcpData') {
+    def bundled = layout.projectDirectory.file('gradle/mcp/intermediateToNamed.zip')
+    def target = layout.buildDirectory.file('moddev/artifacts/intermediateToNamed.zip')
+    inputs.file(bundled)
+    outputs.file(target)
+    doLast {
+        def destination = target.get().asFile
+        if (destination.isFile()) {
+            return
+        }
+        destination.parentFile.mkdirs()
+        java.nio.file.Files.copy(bundled.asFile.toPath(), destination.toPath())
+    }
+}
+
+tasks.matching { it.name == 'createMinecraftArtifacts' }.configureEach {
+    dependsOn tasks.named('ensureMcpData')
+}
+
 sourceSets {
     builtinIndexTool {
         java.srcDir 'src/builtinIndexTool/java'

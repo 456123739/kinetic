@@ -598,7 +598,7 @@ public final class RagdollifiedCompat {
         // 1.2.2 的 ClientDeathHandler 会先用模型类型判定能不能生成布娃娃，而 KINETIC 换过渲染器，
         // 判定为不支持 → 提供方根本不生成。此时若还让出死亡动画，尸体就既没有布娃娃也没有
         // 死亡姿势——玩家看到的就是"死了直接消失"。
-        return isPlayerRagdollEnabled() && ragdollExistsFor(id);
+        return isPlayerRagdollEnabled() && ragdollPresent(id);
     }
 
     /**
@@ -616,7 +616,7 @@ public final class RagdollifiedCompat {
         while (it.hasNext()) {
             var entry = it.next();
             int entityId = entry.getKey();
-            if (ragdollExistsFor(entityId)) {
+            if (ragdollPresent(entityId)) {
                 it.remove();
                 continue;
             }
@@ -646,7 +646,8 @@ public final class RagdollifiedCompat {
         while (it.hasNext()) {
             var entry = it.next();
             int entityId = entry.getKey();
-            if (ragdollExistsFor(entityId)) {
+            // 在途的生成也算数：服务端那份已经在排队时再补一份，就是同一具尸体两份布娃娃。
+            if (ragdollPresentOrPending(entityId)) {
                 it.remove();
                 continue;
             }
@@ -720,10 +721,24 @@ public final class RagdollifiedCompat {
      * 于是死亡动画和布娃娃同时画。这里以渲染路径的一手事实（本帧确实画到了这具布娃娃）为准，
      * 再叠加提供方按 id 的查询（万一调用方传的本来就是布娃娃 id）。
      */
-    private static boolean ragdollExistsFor(int entityId) {
-        return RAGDOLL_PRESENT.contains(entityId)
-                || hasPendingOrActive(entityId)
-                || hasRagdollById(entityId);
+    /**
+     * 布娃娃**真的存在**（本帧画到了，或提供方按 id 能查到）。
+     *
+     * <p>用于"能不能让出死亡动画"与"验证是否成功"：这两件事都必须基于既成事实。
+     * 把"排队中"也算作存在会让永久卡在队列里的生成永远验证不过，尸体既不画布娃娃也不画死亡动画。
+     */
+    private static boolean ragdollPresent(int entityId) {
+        return RAGDOLL_PRESENT.contains(entityId) || hasRagdollById(entityId);
+    }
+
+    /**
+     * 布娃娃存在**或正在排队**。
+     *
+     * <p>只用于"要不要再补一份"：在途的生成也算数，否则客户端会在服务端那份到达前后重复 spawn。
+     * 判定让出/验证时不能用它，原因见 {@link #ragdollPresent(int)}。
+     */
+    private static boolean ragdollPresentOrPending(int entityId) {
+        return ragdollPresent(entityId) || hasPendingOrActive(entityId);
     }
 
     private static boolean hasRagdollById(int entityId) {

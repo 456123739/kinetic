@@ -361,6 +361,11 @@ dependencies {
 
 tasks.withType(Test).configureEach {
     useJUnitPlatform()
+    // 失败时把用例名与异常打出来：CI 日志里否则只有"有测试失败"，得去下载 HTML 报告。
+    testLogging {
+        exceptionFormat = 'full'
+        events 'failed'
+    }
 }
 
 tasks.register('processorTest', Test) {

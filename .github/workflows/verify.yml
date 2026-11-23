@@ -49,6 +49,16 @@ jobs:
           LC_ALL: C.UTF-8
         run: ./gradlew build --console=plain
 
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            build/test-results/**
+            build/reports/tests/**
+          if-no-files-found: warn
+
       - name: Upload jar
         if: success()
         uses: actions/upload-artifact@v4

@@ -88,6 +88,62 @@ public final class TaczBakedGunMesh {
         return chunks.isEmpty() ? null : new TaczBakedGunMesh(chunks, total);
     }
 
+    /**
+     * 分帧烘焙器：每调用一次只烘一块。
+     *
+     * <p>AK74M 一把 4.25 万顶点，一次烘完要 0.3~0.5 ms；平摊到 14 帧后每帧只有几十微秒，
+     * 玩家不会在"第一次掏出这把枪"时感到掉帧。烘焙期间该枪继续走 TaCZ 原路径。
+     */
+    public static final class Builder {
+        private final ArrayList<BedrockPart> pending = new ArrayList<>();
+        private final ArrayList<Chunk> chunks = new ArrayList<>();
+        private int total;
+        private boolean baked;
+
+        public Builder(List<BedrockPart> roots) {
+            for (var root : roots) {
+                if (root.children.isEmpty()) {
+                    pending.add(root);
+                } else {
+                    pending.addAll(root.children);
+                }
+            }
+        }
+
+        /** @return 是否已经烘完 */
+        public boolean bakeNextChunk() {
+            if (baked) {
+                return true;
+            }
+            if (pending.isEmpty()) {
+                baked = true;
+                return true;
+            }
+            var part = pending.remove(0);
+            var capture = new VertexCapture();
+            try {
+                part.render(new PoseStack(), ItemDisplayContext.FIRST_PERSON_RIGHT_HAND, capture,
+                        0xF000F0, 0, 1f, 1f, 1f, 1f, null);
+            } catch (RuntimeException failure) {
+                baked = true;
+                chunks.clear();
+                return true;
+            }
+            float[] data = capture.toArray();
+            if (data.length > 0) {
+                chunks.add(new Chunk(part, data));
+                total += data.length / FLOATS_PER_VERTEX;
+            }
+            baked = pending.isEmpty();
+            return baked;
+        }
+
+        /** 烘完之后取结果；一块都没成就返回 null（调用方回退原路径）。 */
+        public TaczBakedGunMesh finish() {
+            return chunks.isEmpty() ? null : new TaczBakedGunMesh(chunks, total);
+        }
+    }
+
     /** 一段静态子树：顶点已经算好，只有根骨骼的变换每帧会变。 */
     public static final class Chunk {
         private final BedrockPart root;

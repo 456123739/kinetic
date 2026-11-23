@@ -13,11 +13,13 @@ import net.minecraft.client.renderer.RenderType;
  *
  * <p>只在 {@code tacz.StaticGunMesh} 打开、且 TaCZ 存在时生效；任何失败都永久回退。
  *
- * <p>烘焙在渲染线程同步完成，代价约 0.3~0.5 ms，只在该枪**第一次出现**时付一次。
- * 这一点是 v1 的已知瑕疵（首次持枪可能掉一帧），后续改成每帧烘一块、把尖峰摊平。
+ * <p>烘焙是**分帧**的：每帧只烘一块（AK74M 14 块），一次约几十微秒，玩家不会在第一次掏出某把枪时
+ * 感到掉帧。烘焙期间该枪继续走 TaCZ 原路径，画面上没有任何中间状态。
  */
 public final class TaczGunMeshHook {
     private static final Map<BedrockGunModel, TaczGunMeshRenderer.BakedMeshes> MESHES = new WeakHashMap<>();
+    /** 正在分帧烘焙的枪：每帧只推进一步，期间继续走原路径。 */
+    private static final Map<BedrockGunModel, TaczBakedGunMesh.Builder> PENDING = new WeakHashMap<>();
     private static boolean loggedFallback;
 
     private TaczGunMeshHook() {
@@ -32,7 +34,13 @@ public final class TaczGunMeshHook {
         }
         var meshes = MESHES.get(model);
         if (meshes == null) {
-            var baked = TaczBakedGunMesh.bake(model.getShouldRender());
+            // 没烘完就继续走 TaCZ 原路径；每帧只推进一块，避免"第一次掏枪"掉一帧。
+            var builder = PENDING.computeIfAbsent(model, m -> new TaczBakedGunMesh.Builder(m.getShouldRender()));
+            if (!builder.bakeNextChunk()) {
+                return false;
+            }
+            PENDING.remove(model);
+            var baked = builder.finish();
             if (baked == null) {
                 return false;
             }
@@ -53,6 +61,7 @@ public final class TaczGunMeshHook {
 
     public static void clear() {
         MESHES.clear();
+        PENDING.clear();
     }
 
     private static boolean enabled() {

@@ -60,6 +60,10 @@ public final class TaczGunMeshRenderer {
             return false;
         }
         try {
+            // 有骨骼动过就不能用烘焙几何：本帧回退到 TaCZ 原路径，画面由调用方继续渲染。
+            if (meshes.anyChunkMoved()) {
+                return false;
+            }
             if (meshes.light() != light) {
                 meshes.reuploadForLight(light);
             }
@@ -99,6 +103,16 @@ public final class TaczGunMeshRenderer {
 
         public boolean ready() {
             return uploaded;
+        }
+
+        /** 任何一块的子树相对烘焙时刻动过，就整把枪回退，避免出现"半冻结"的枪。 */
+        public boolean anyChunkMoved() {
+            for (var chunk : mesh.chunks()) {
+                if (chunk.movedSinceBake()) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public int light() {

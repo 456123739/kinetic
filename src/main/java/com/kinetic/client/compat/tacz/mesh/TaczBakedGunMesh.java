@@ -92,10 +92,53 @@ public final class TaczBakedGunMesh {
     public static final class Chunk {
         private final BedrockPart root;
         private final float[] vertices;
+        /** 烘焙瞬间整棵子树里每根骨骼的局部变换，每骨骼 3 个平移 + 3 个旋转。 */
+        private final BedrockPart[] bones;
+        private final float[] snapshot;
 
         private Chunk(BedrockPart root, float[] vertices) {
             this.root = root;
             this.vertices = vertices;
+            var collected = new ArrayList<BedrockPart>();
+            collect(root, collected);
+            this.bones = collected.toArray(new BedrockPart[0]);
+            this.snapshot = new float[this.bones.length * 6];
+            for (int i = 0; i < this.bones.length; i++) {
+                snapshot[i * 6] = this.bones[i].x;
+                snapshot[i * 6 + 1] = this.bones[i].y;
+                snapshot[i * 6 + 2] = this.bones[i].z;
+                snapshot[i * 6 + 3] = this.bones[i].xRot;
+                snapshot[i * 6 + 4] = this.bones[i].yRot;
+                snapshot[i * 6 + 5] = this.bones[i].zRot;
+            }
+        }
+
+        private static void collect(BedrockPart part, List<BedrockPart> out) {
+            out.add(part);
+            for (var child : part.children) {
+                collect(child, out);
+            }
+        }
+
+        /**
+         * 子树里有没有骨骼相对烘焙时刻动过。
+         *
+         * <p>烘焙把整棵子树的顶点算成了静态几何，所以只要其中任何一根骨骼变了（拉栓、弹匣、
+         * 瞄具、换弹时摆动的枪机），这一块的几何就不成立。此时本帧必须回退到 TaCZ 原路径，
+         * 否则动画会被冻结在烘焙那一刻——这是视觉错误，不是崩溃，但同样不可接受。
+         *
+         * <p>成本是每块每帧若干次浮点比较，相对被省下的 215~270 µs 可以忽略。
+         */
+        public boolean movedSinceBake() {
+            for (int i = 0; i < bones.length; i++) {
+                var bone = bones[i];
+                if (bone.x != snapshot[i * 6] || bone.y != snapshot[i * 6 + 1]
+                        || bone.z != snapshot[i * 6 + 2] || bone.xRot != snapshot[i * 6 + 3]
+                        || bone.yRot != snapshot[i * 6 + 4] || bone.zRot != snapshot[i * 6 + 5]) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public BedrockPart root() {
@@ -104,6 +147,10 @@ public final class TaczBakedGunMesh {
 
         public float[] vertices() {
             return vertices;
+        }
+
+        public boolean staticAtThisFrame() {
+            return !movedSinceBake();
         }
 
         public int vertexCount() {

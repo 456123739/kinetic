@@ -68,7 +68,23 @@ public final class RagdollifiedCompat {
     private static final String PLAYER_ENTITY_ID = "minecraft:player";
 
     /** 死亡姿态最多保鲜这么久（毫秒）；超时仍未构造出布娃娃就放弃。 */
-    private static final long PENDING_POSE_TTL_MS = 20_000L;
+    /**
+     * 姿态重写的存活窗口。
+     *
+     * <p>只覆盖"布娃娃还没出现"的那段时间。原来是 20 秒，而提供方的采用窗口是 50ms ——
+     * 一旦存活判定失灵（比如按布娃娃 id 查询却传了玩家 id），这 20 秒内就变成**每 tick 把死亡姿态
+     * 重新写回去**：尸体被钉成站立死姿、推不动、只在物理与重写之间抖。2 秒足够跨过生成延迟。
+     */
+    private static final long PENDING_POSE_TTL_MS = 2_000L;
+
+    /**
+     * 已经在渲染的布娃娃的原实体 id。
+     *
+     * <p>这是 KINETIC 自己的存活事实：只要本帧真的画到了这具布娃娃，就没有必要再给提供方喂姿态。
+     * 不依赖提供方任何反射入口，也不会因为 id 语义（原实体 id / 布娃娃 id）不一致而失灵。
+     */
+    private static final java.util.Set<Integer> RAGDOLL_PRESENT =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     private static boolean installed;
     private static boolean apiResolved;
@@ -426,6 +442,11 @@ public final class RagdollifiedCompat {
      * 于是它会退回自行捕获——而 KINETIC 替换了渲染器，那条路必然失败。这里在客户端每 tick 重写
      * 同一份姿态，把新鲜度窗口续上，确保它最终仍会采用我们的死亡姿态。
      */
+    /** 渲染路径调用的存活上报：本帧确实画到了该实体对应的布娃娃。 */
+    public static void noteRagdollPresent(int originalEntityId) {
+        RAGDOLL_PRESENT.add(originalEntityId);
+    }
+
     public static void refreshPendingDeathPoses() {
         if (PENDING_POSES.isEmpty() || !poseResolved || storePoseMethod == null) {
             return;
@@ -439,8 +460,8 @@ public final class RagdollifiedCompat {
         Iterator<Map.Entry<Integer, PendingPose>> iterator = PENDING_POSES.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<Integer, PendingPose> entry = iterator.next();
-            if (hasRagdoll(entry.getKey())) {
-                // 姿态已被消费
+            if (hasRagdoll(entry.getKey()) || RAGDOLL_PRESENT.contains(entry.getKey())) {
+                // 姿态已被消费，或布娃娃已经在画了：继续重写只会把尸体钉回死亡姿态。
                 iterator.remove();
                 continue;
             }
@@ -455,6 +476,10 @@ public final class RagdollifiedCompat {
                 iterator.remove();
             }
         }
+    }
+
+    static void clearPresence() {
+        RAGDOLL_PRESENT.clear();
     }
 
     private static boolean hasRagdoll(int entityId) {

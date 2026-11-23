@@ -193,6 +193,7 @@ public final class KineticRagdollRenderer {
             // 全部原生状态与捕获快照，否则它们会一直留到下一个世界的第一帧。
             clearStates();
             CAPTURED.clear();
+            RagdollifiedCompat.clearPresence();
             return;
         }
         if (!RagdollifiedCompat.isAvailable() || !isEnabled()) {
@@ -266,6 +267,8 @@ public final class KineticRagdollRenderer {
             return;
         }
         AbstractClientPlayer player = findPlayer(ragdoll.getPlayerUUID());
+        // 本帧确实画到了这具布娃娃：告诉兼容层"别再给提供方喂死亡姿态了"。
+        RagdollifiedCompat.noteRagdollPresent(ragdoll.getOriginalEntityId());
         var captured = CAPTURED.get(ragdoll.getOriginalEntityId());
 
         var model = resolveModelSource(ragdollId, player, captured);

@@ -998,8 +998,13 @@ idea {
 }
 
 if (project.hasProperty('kineticSmoke')) {
-    configurations.configureEach {
-        exclude group: 'maven.modrinth', module: 'emi'
-        exclude group: 'maven.modrinth', module: 'jei'
+    // 开发环境的类名是命名映射，而发布版联动模组的 mixin refmap 指向生产名（SRG），
+    // @Shadow 找不到字段就直接崩（EMI、moonlight 都栽在这上面）。冒烟只验证 KINETIC 自身的
+    // mixin 能在干净客户端上应用，所以运行时把外部联动模组整体剔除；编译期依赖不受影响。
+    configurations.configureEach { configuration ->
+        if (configuration.name.toLowerCase(java.util.Locale.ROOT).contains('runtime')) {
+            configuration.exclude group: 'maven.modrinth'
+            configuration.exclude group: 'curse.maven'
+        }
     }
 }

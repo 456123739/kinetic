@@ -54,15 +54,69 @@ def builtinToolLauncher = javaToolchains.launcherFor {
     languageVersion = JavaLanguageVersion.of(17)
 }
 
+def sigFreeJarsDir = layout.buildDirectory.dir('sigFreeJars')
+def stripSignedJars = tasks.register('stripSignedJars') {
+    def input = sourceSets.builtinIndexTool.runtimeClasspath
+    inputs.files(input)
+    outputs.dir(sigFreeJarsDir)
+    doLast {
+        def dir = sigFreeJarsDir.get().asFile
+        dir.deleteDir()
+        dir.mkdirs()
+        def mapping = new StringBuilder()
+        input.files.eachWithIndex { file, index ->
+            if (!file.name.endsWith('.jar') || !file.isFile()) {
+                return
+            }
+            def signed = new java.util.zip.ZipFile(file).withCloseable { zip ->
+                zip.entries().any { e -> e.name ==~ /META-INF\/[^\/]+\.(SF|RSA|DSA)/ }
+            }
+            if (!signed) {
+                return
+            }
+            def copy = new File(dir, "${index}-${file.name}")
+            new java.util.zip.ZipFile(file).withCloseable { zip ->
+                new java.util.zip.ZipOutputStream(new FileOutputStream(copy)).withCloseable { out ->
+                    zip.entries().each { entry ->
+                        if (entry.name ==~ /META-INF\/[^\/]+\.(SF|RSA|DSA)/) {
+                            return
+                        }
+                        out.putNextEntry(new java.util.zip.ZipEntry(entry.name))
+                        if (!entry.directory) {
+                            zip.getInputStream(entry).withCloseable { stream -> out.write(stream.bytes) }
+                        }
+                        out.closeEntry()
+                    }
+                }
+            }
+            mapping.append(file.absolutePath).append('\t').append(copy.absolutePath).append('\n')
+        }
+        new File(dir, 'map.tsv').setText(mapping.toString(), 'UTF-8')
+    }
+}
+
 def configureBuiltinToolTask = { BuiltinModelToolTask task, String command ->
     task.command.set(command)
-    // forge-*-universal.jar 是带签名的原始发行包，而 moddev 已经把打过补丁、去掉签名的
-    // forge 构件放进了 runtimeClasspath。两个都在时，JVM 会为前者做 jar 摘要校验，
-    // 一旦环境差异导致摘要不符就抛 "SHA-384 digest error" 把工具进程直接打死（CI 复现过）。
-    // 工具只需要类，这里把带签名的原始 universal 包排除掉。
+    // 带签名的 jar（forge 的 universal/merged 等）会让 JVM 在首次加载 net.minecraftforge.* 时
+    // 做摘要校验；一旦构件被构建过程改写过，就抛 "SHA-384 digest error" 把工具进程打死（CI 复现）。
+    // 工具只需要类，所以对带签名的 jar 用剥离 META-INF/*.SF|*.RSA|*.DSA 的副本替换，
+    // 其余 jar 与目录原样保留（顺序与数量都不变）。
+    task.dependsOn(stripSignedJars)
     task.toolClasspath.from(providers.provider {
-        sourceSets.builtinIndexTool.runtimeClasspath.files.findAll {
-            !it.name.endsWith('-universal.jar')
+        def dir = sigFreeJarsDir.get().asFile
+        def mapping = new File(dir, 'map.tsv')
+        def replaced = [:]
+        if (mapping.isFile()) {
+            mapping.eachLine('UTF-8') { line ->
+                def parts = line.split('\t')
+                if (parts.length == 2) {
+                    replaced[parts[0]] = parts[1]
+                }
+            }
+        }
+        sourceSets.builtinIndexTool.runtimeClasspath.files.collect { file ->
+            def copy = replaced[file.absolutePath]
+            copy == null ? file : new File(copy)
         }
     })
     task.nativeLibrary.set(kineticNativeLibraryFile)

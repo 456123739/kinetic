@@ -39,6 +39,15 @@ jobs:
             cp gradle/mcp/intermediateToNamed.zip build/moddev/artifacts/
           fi
 
+      # 拉一次依赖，让 forge 构件落进 Gradle 缓存，然后把签名剥掉。
+      # 不这么做的话，任何加载 net.minecraftforge.* 的 JVM（代码生成、JUnit）都可能
+      # 抛 "SHA-384 digest error"——CI 上实际发生过两次。
+      - name: Prefetch dependencies
+        run: ./gradlew --no-daemon -q dependencies --configuration runtimeClasspath > /dev/null 2>&1 || true
+
+      - name: Strip jar signatures from Gradle cache
+        run: python3 .github/scripts/strip-cache-signatures.py
+
       - name: Documentation gate
         run: python3 docs/tools/check_docs.py
 

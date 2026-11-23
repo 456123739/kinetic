@@ -1,7 +1,5 @@
 package com.kinetic.mixin.plugin;
 
-import com.kinetic.client.compat.create.CreateCompat;
-import com.kinetic.client.compat.parcool.ParCoolCompat;
 import com.google.common.collect.Lists;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.loading.FMLEnvironment;
@@ -56,7 +54,7 @@ public class MixinTweaker implements IMixinConfigPlugin {
         if (FMLEnvironment.dist == Dist.CLIENT) {
             List<String> list = Lists.newArrayList();
 
-            if (ParCoolCompat.isInstalled()) {
+            if (net.minecraftforge.fml.ModList.get().isLoaded("parcool")) {
                 list.add("client.parcool.AnimationAccessor");
                 list.add("client.parcool.DodgeAnimatorAccessor");
                 list.add("client.parcool.ExaggeratedSideDodgeAnimatorAccessor");
@@ -78,7 +76,7 @@ public class MixinTweaker implements IMixinConfigPlugin {
                 list.add("client.tacz.BedrockGunModelMixin");
             }
 
-            if (CreateCompat.isInstalled()) {
+            if (net.minecraftforge.fml.ModList.get().isLoaded("create")) {
                 list.add("client.create.PlayerSkyhookRendererAccessor");
             }
 

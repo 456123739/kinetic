@@ -24,6 +24,11 @@ jobs:
           java-version: '17'
 
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          # 缓存会连 neoform 的中间产物一起带走；CI 上曾因此出现
+          # "Missing required MCP data: intermediateToNamed.zip" 的半成品状态。
+          # 构建时间换正确性，等确认稳定后再开回。
+          cache-disabled: true
 
       - name: Documentation gate
         run: python3 docs/tools/check_docs.py

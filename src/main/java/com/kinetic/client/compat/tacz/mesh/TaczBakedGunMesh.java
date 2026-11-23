@@ -50,6 +50,11 @@ public final class TaczBakedGunMesh {
     /**
      * 用 TaCZ 自己的渲染路径把模型烘成块。
      *
+     * <p><b>已知限制（必须先补上再默认启用）</b>：现在把"根级骨骼的整棵子树"一起烘进来，
+     * 如果子树里还有会动的骨骼（拉栓、弹匣、瞄具），它们的姿态会被冻结在烘焙那一刻。
+     * 下一步要在 {@link Chunk} 里记下子树内所有骨骼的局部变换，每帧比对；一旦有变化就本帧回退到
+     * TaCZ 原路径。在没有这个校验之前，这个开关只能是实验性的。
+     *
      * @param roots {@link BedrockModel#getShouldRender()} 给出的根级骨骼
      */
     public static TaczBakedGunMesh bake(List<BedrockPart> roots) {

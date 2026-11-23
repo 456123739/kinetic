@@ -1,0 +1,53 @@
+name: tacz-mesh-smoke
+
+# 只验证一件事：装上 TaCZ 之后，静态网格补丁的 mixin 能应用、客户端能起到主菜单、不崩。
+# 渲染正确性（拉栓/换弹/瞄具、光照、接缝）仍需真实 GPU 下的截图对照，这个工作流不替代它。
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'src/main/java/com/kinetic/client/compat/tacz/mesh/**'
+      - 'src/main/java/com/kinetic/mixin/client/tacz/**'
+      - '.github/workflows/tacz-mesh-smoke.yml'
+
+jobs:
+  boot-with-tacz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Mesa + xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libgl1-mesa-dri mesa-utils libgl1-mesa-glx
+      - name: Seed moddev inputs
+        run: |
+          mkdir -p build/moddev/artifacts
+          cp gradle/mcp/intermediateToNamed.zip build/moddev/artifacts/
+          python3 .github/scripts/strip-cache-signatures.py
+      - name: Boot client with TaCZ
+        env:
+          KINETIC_AUDIO_FIXTURE_DIR: ${{ github.workspace }}/gradle/audio-fixtures
+        run: |
+          xvfb-run -a ./gradlew runClient -PkineticSmoke -PkineticTacz --console=plain > client.log 2>&1 &
+          PID=$!
+          for i in $(seq 1 60); do
+            if grep -qE 'OpenAL initialized|Created:.*minecraft:textures|Stopping!' client.log; then break; fi
+            if ! kill -0 $PID 2>/dev/null; then break; fi
+            sleep 5
+          done
+          kill $PID 2>/dev/null || true
+          sleep 2
+          if grep -qE 'Mixin apply failed|Mixin apply error|Minecraft has crashed|BUILD FAILED' client.log; then
+            echo "::error::client failed to boot with TaCZ"; tail -80 client.log; exit 1
+          fi
+          echo "booted with TaCZ"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tacz-smoke-log
+          path: client.log

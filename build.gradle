@@ -1002,9 +1002,17 @@ if (project.hasProperty('kineticSmoke')) {
     // @Shadow 找不到字段就直接崩（EMI、moonlight 都栽在这上面）。冒烟只验证 KINETIC 自身的
     // mixin 能在干净客户端上应用，所以运行时把外部联动模组整体剔除；编译期依赖不受影响。
     configurations.configureEach { configuration ->
-        if (configuration.name.toLowerCase(java.util.Locale.ROOT).contains('runtime')) {
-            configuration.exclude group: 'maven.modrinth'
-            configuration.exclude group: 'curse.maven'
+        if (!configuration.name.toLowerCase(java.util.Locale.ROOT).contains('runtime')) {
+            return
+        }
+        configuration.exclude group: 'maven.modrinth'
+        configuration.exclude group: 'curse.maven'
+        // 只想验 TaCZ 联动（静态网格补丁）时，把 TaCZ 单独放回来。
+        if (project.hasProperty('kineticTacz')) {
+            configuration.dependencies.removeIf { dependency ->
+                dependency.group == 'maven.modrinth'
+                        && dependency.name.contains('timeless-and-classics-zero')
+            }
         }
     }
 }

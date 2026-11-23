@@ -16,6 +16,8 @@ public class ClientConfig {
     public static ForgeConfigSpec.BooleanValue USE_COMPATIBILITY_RENDERER;
     public static ForgeConfigSpec.BooleanValue FORCE_CUTOUT_RENDERER;
     public static ForgeConfigSpec.BooleanValue CULL_BACK_FACES;
+    /** TaCZ 枪械静态烘焙（实验性，默认关闭）。 */
+    public static ForgeConfigSpec.BooleanValue TACZ_STATIC_MESH;
     public static ForgeConfigSpec.IntValue MAX_ANIMATION_EVALUATION_RATE;
     public static ForgeConfigSpec.IntValue ANIMATION_EVALUATION_DISTANCE_NEAR;
     public static ForgeConfigSpec.IntValue ANIMATION_EVALUATION_RATE_NEAR;
@@ -95,6 +97,13 @@ public class ClientConfig {
                 "LOD). Those faces are single-sided by design and the back side is meant to be drawn.",
                 "Default off so packs cannot break; turn it on for known fully closed models.");
         CULL_BACK_FACES = builder.define("CullBackFaces", false);
+
+        builder.comment("Bake TaCZ gun models into static meshes so a frame stops re-emitting their vertices.",
+                "Measured on the bundled gun pack: per-gun CPU drops from 215-270 us to 2-8 us plus 11-16 draw calls.",
+                "Experimental: any failure falls back to TaCZ's own path for that frame.",
+                "Does not affect anything when Timeless and Classics Zero is absent.").push("tacz");
+        TACZ_STATIC_MESH = builder.define("StaticGunMesh", false);
+        builder.pop();
 
         builder.comment("Upper bound for how many times per second an entity's animation is evaluated.",
                 "This is the near/on-screen base rate: effective = min(display refresh rate, this).",

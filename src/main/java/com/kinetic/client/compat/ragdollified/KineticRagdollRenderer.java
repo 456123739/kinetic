@@ -86,6 +86,10 @@ public final class KineticRagdollRenderer {
     private static final java.util.Set<String> LOGGED_BAILS = new java.util.HashSet<>();
 
     private static long lastFrameNanos;
+    /** `-Dkinetic.debug.ragdoll=true` 时输出布娃娃诊断行（默认关闭，不影响正常日志）。 */
+    private static final boolean DIAGNOSTICS =
+            Boolean.getBoolean("kinetic.debug.ragdoll");
+    private static long DIAGNOSTIC_COUNTER;
 
     private KineticRagdollRenderer() {
     }
@@ -359,6 +363,7 @@ public final class KineticRagdollRenderer {
             dropState(ragdollId);
             return;
         }
+        dumpDiagnostics(ragdollId, state, positions, rotations, camera);
         draw(state, ragdollId, texture, poseStack, buffers, camera, torso);
     }
 
@@ -369,6 +374,36 @@ public final class KineticRagdollRenderer {
      * 死亡 20 tick 后会被移除并触发 KINETIC 的能力重置，此时只有快照还能画出尸体。两者都没有时返回
      * {@code null}，由调用方让位给提供方的原版人形。
      */
+    /**
+     * 诊断输出：`-Dkinetic.debug.ragdoll=true` 时每 20 帧打一行，用来定位"悬浮/卡顿/不受物理影响"。
+     *
+     * <p>这些症状各自对应完全不同的代码位置（锚点、静止阈值、断肢缺位），没有实机数据只能猜。
+     * 这里把决策所依赖的原始量都打出来：躯干位姿、算出的髋部、模型根枢轴、每个部位是否拿到位姿、
+     * 以及本帧是否走了"静止复用"的快路径。
+     */
+    private static void dumpDiagnostics(int ragdollId, KineticRagdollState state,
+                                        org.joml.Vector3f[] positions,
+                                        org.joml.Quaternionf[] rotations,
+                                        net.minecraft.world.phys.Vec3 camera) {
+        if (!DIAGNOSTICS) {
+            return;
+        }
+        if ((DIAGNOSTIC_COUNTER++ % 20) != 0) {
+            return;
+        }
+        var torso = rotations[com.raiiiden.ragdollified.RagdollPart.TORSO.index];
+        var torsoPosition = positions[com.raiiiden.ragdollified.RagdollPart.TORSO.index];
+        Kinetic.LOGGER.info("[Ragdollified][diag] id={} asleep={} torsoPos=({}, {}, {}) "
+                        + "torsoRot=({}, {}, {}, {}) hips=({}, {}, {}) pivot=({}, {}, {}) "
+                        + "scale=({}, {}) camY={}",
+                ragdollId, state.isAsleep(),
+                torsoPosition.x, torsoPosition.y, torsoPosition.z,
+                torso.x, torso.y, torso.z, torso.w,
+                state.hipsX(), state.hipsY(), state.hipsZ(),
+                state.rootPivotX(), state.rootPivotY(), state.rootPivotZ(),
+                state.widthScale(), state.heightScale(), camera.y);
+    }
+
     @Nullable
     private static ModelSource resolveModelSource(int ragdollId, @Nullable AbstractClientPlayer player,
                                                   @Nullable CapturedPose captured) {

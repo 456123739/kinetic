@@ -415,15 +415,15 @@ final class KineticRagdollState {
                 continue;
             }
 
-            // 重力与父级线加速度投影到父级坐标系。
+            // 重力投影到父级坐标系。
+            //
+            // 这里**刻意不再**叠加父级线加速度（旧实现用相邻帧位置差分求加速度，再乘 inertia
+            // 当作滞后项）。提供方在接触求解、休眠切换时会产生毫米级的瞬时修正，二阶层差会把
+            // 它放大成十几弧度/秒的角速度——实机表现就是尸体的小腿/前臂在静止时抽搐。
+            // 重力项本身就能让关节摆到自然下垂方向并停住，不需要这个噪声源。
             tmpA.set(parentWorld).invert();
             tmpV1.set(GRAVITY).rotate(tmpA);
-            tmpV2.set(acceleration[dynamic.macroPart]).rotate(tmpA);
-
-            // 力矩 = 重力下垂 + 惯性滞后。
-            tmpV3.set(restDirection[i]).cross(tmpV1).mul(dynamic.gravity);
-            tmpV4.set(restDirection[i]).cross(tmpV2).mul(-dynamic.inertia);
-            tmpV3.add(tmpV4);
+            SubJointDynamics.gravityTorque(restDirection[i], tmpV1, dynamic.gravity, tmpV3);
 
             int base = i * 3;
             for (int axis = 0; axis < 3; axis++) {
@@ -433,7 +433,7 @@ final class KineticRagdollState {
                 float torque = tmpV3.get(axis)
                         - dynamic.damping * velocity[base + axis];
 
-                float next = velocity[base + axis] + torque * dt;
+                float next = SubJointDynamics.stepAngularVelocity(velocity[base + axis], torque, dt);
                 float updated = current + next * dt;
 
                 // 到达关节范围边界时按完全非弹性处理：清零速度，避免贴边抖动。

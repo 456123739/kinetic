@@ -173,16 +173,12 @@ public class PlayerModelScreen extends Screen {
                     ignored -> backToParent()).setTooltips("gui.back"));
         }
 
-        addRenderableWidget(new Checkbox(x + 5, y - 22, 20, 20,
+        addRenderableWidget(new ToggleCheckbox(x + 5, y - 22, 20, 20,
                 Component.translatable("gui.kinetic.show_model_id_first"),
-                ClientConfig.SHOW_MODEL_ID_FIRST.get(), true) {
-            @Override
-            public void onPress() {
-                super.onPress();
-                ClientConfig.SHOW_MODEL_ID_FIRST.set(selected());
-                ClientConfig.SHOW_MODEL_ID_FIRST.save();
-            }
-        });
+                ClientConfig.SHOW_MODEL_ID_FIRST.get(), box -> {
+                    ClientConfig.SHOW_MODEL_ID_FIRST.set(box.value());
+                    ClientConfig.SHOW_MODEL_ID_FIRST.save();
+                }));
 
         addCategoryButton(x + 328, 32, CatalogBrowserState.Category.ALL, "gui.kinetic.all_models");
         addCategoryButton(x + 308, 48, CatalogBrowserState.Category.AUTH, "gui.kinetic.auth_models");

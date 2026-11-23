@@ -52,14 +52,10 @@ public class ExtraPlayerConfigScreen extends Screen {
 
         Component name = Component.translatable("gui.kinetic.hide_or_show");
         int nameWidth = this.font.width(name) + 24;
-        this.addRenderableWidget(new Checkbox((this.width - nameWidth) / 2, this.height + yOffset, nameWidth, 20,
-                name, ExtraPlayerScreenConfig.DISABLE_PLAYER_RENDER.get(), true) {
-            @Override
-            public void onPress() {
-                super.onPress();
-                ExtraPlayerScreenConfig.DISABLE_PLAYER_RENDER.set(this.selected());
-            }
-        });
+        this.addRenderableWidget(new ToggleCheckbox((this.width - nameWidth) / 2,
+                this.height + yOffset, nameWidth, 20, name,
+                ExtraPlayerScreenConfig.DISABLE_PLAYER_RENDER.get(),
+                box -> ExtraPlayerScreenConfig.DISABLE_PLAYER_RENDER.set(box.value())));
     }
 
     @Override
